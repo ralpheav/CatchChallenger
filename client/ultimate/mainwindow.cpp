@@ -1677,8 +1677,14 @@ void MainWindow::gameSolo_play(const std::string &savegamesPath)
         socket=NULL;
         realSslSocket=NULL;
     }
-    socket=new CatchChallenger::ConnectedSocket(new CatchChallenger::QFakeSocket());
-    CatchChallenger::Api_client_virtual *client=new CatchChallenger::Api_client_virtual(socket);//QCoreApplication::applicationDirPath()+QStringLiteral("/datapack/internal/")
+    socket = new CatchChallenger::ConnectedSocket(new CatchChallenger::QFakeSocket());
+    CatchChallenger::Settings setting;
+    setting
+            .setAppPath(QCoreApplication::applicationDirPath().toStdString())
+            .setDatapackDir("/datapack");
+
+    CatchChallenger::Api_client_virtual *client = new CatchChallenger::Api_client_virtual(socket, setting);
+    //QCoreApplication::applicationDirPath()+QStringLiteral("/datapack/internal/")
     this->client=client;
 
     if(!connect(client,               &CatchChallenger::Api_protocol::Qtprotocol_is_good,   this,&MainWindow::protocol_is_good))
