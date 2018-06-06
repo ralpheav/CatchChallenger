@@ -1,16 +1,349 @@
 #ifndef API_PROTOCOL_2_H
 #define API_PROTOCOL_2_H
 
+#include <iostream>
+#include <vector>
+
+#include <QObject>
+#include <QString>
+#include <QCoreApplication>
+#include <QString>
+#include <QByteArray>
+#include <QList>
+#include <QPair>
+#include <QDir>
+#include <QFileInfo>
+#include <QDateTime>
+#include <QCryptographicHash>
+#include <QStandardPaths>
+#include <QSslKey>
+#include <QDataStream>
+
 
 #include "ClientStructures.h"
 #include "../../general/base/GeneralStructures.h"
+#include "../../general/base/GeneralVariable.h"
+#include "../../general/base/ProtocolParsing.h"
+#include "../../general/base/MoveOnTheMap.h"
+#include "../../general/base/ProtocolVersion.h"
+#include "../../general/base/tinyXML2/tinyxml2.h"
+#include "../../general/base/tinyXML2/customtinyxml2.h"
+#include "../../general/base/CommonDatapack.h"
+#include "../../general/base/CommonSettingsCommon.h"
+#include "../../general/base/CommonSettingsServer.h"
+#include "../../general/base/FacilityLib.h"
+#include "../../general/base/FacilityLibGeneral.h"
+#include "../../general/base/GeneralType.h"
+
 
 namespace CatchChallenger {
 
-    class Api_protocol_2
+    class Api_protocol_2 : public ProtocolParsingInputOutput, public MoveOnTheMap
     {
         public:
-            explicit Api_protocol_2();
+            static bool internalVersionDisplayed;
+
+        public:
+            explicit Api_protocol_2(ConnectedSocket *socket, bool tolerantMode = false);
+            ~Api_protocol_2();
+
+            bool disconnectClient();
+            void unloadSelection();
+            const ServerFromPoolForDisplay &getCurrentServer(const unsigned int &index);
+            bool dataToPlayerMonster(QDataStream &in, PlayerMonster &monster);
+
+            //protocol command
+            bool tryLogin(const std::string &login,const std::string &pass);
+            bool tryCreateAccount();
+            bool sendProtocol();
+            bool protocolWrong() const;
+            virtual std::string socketDisconnectedForReconnect();
+            const std::vector<ServerFromPoolForDisplay> &getServerOrdenedList();
+
+            //get the stored data
+            Player_private_and_public_informations &get_player_informations();
+            const Player_private_and_public_informations &get_player_informations_ro() const;
+            std::string getPseudo();
+            uint16_t getId();
+
+            virtual void sendDatapackContentBase(const std::string &hashBase=std::string()) = 0;
+            virtual void sendDatapackContentMainSub(const std::string &hashMain=std::string(),const std::string &hashSub=std::string()) = 0;
+            virtual void tryDisconnect() = 0;
+            virtual std::string datapackPathBase() const;
+            virtual std::string datapackPathMain() const;
+            virtual std::string datapackPathSub() const;
+            virtual std::string mainDatapackCode() const;
+            virtual std::string subDatapackCode() const;
+            void setDatapackPath(const std::string &datapackPath);
+            std::string toUTF8WithHeader(const std::string &text);
+            void have_main_and_sub_datapack_loaded();//can now load player_informations
+            bool character_select_is_send();
+
+            enum StageConnexion
+            {
+                Stage1=0x01,//Connect on login server
+                Stage2=0x02,//reconnexion in progress
+                Stage3=0x03,//connecting on game server
+                Stage4=0x04,//connected on game server
+            };
+            StageConnexion stage() const;
+            enum DatapackStatus
+            {
+                Base=0x01,
+                Main=0x02,
+                Sub=0x03,
+                Finished=0x04
+            };
+            DatapackStatus datapackStatus;
+
+            //to reset all
+            void resetAll();
+
+            bool getIsLogged() const;
+            bool getCaracterSelected() const;
+            std::map<uint8_t,uint64_t> getQuerySendTimeList() const;
+
+            //to manipulate the monsters
+            Player_private_and_public_informations player_informations;
+
+            enum ProxyMode
+            {
+                Reconnect=0x01,
+                Proxy=0x02
+            };
+            ProxyMode proxyMode;
+
+            bool setMapNumber(const unsigned int number_of_map);
+        private:
+            //status for the query
+            bool haveFirstHeader;
+            bool is_logged;
+            bool character_selected;
+            bool character_select_send;
+            bool have_send_protocol;
+            bool have_receive_protocol;
+            bool tolerantMode;
+            bool haveTheServerList;
+            bool haveTheLogicalGroupList;
+
+            static std::string text_balise_root_start;
+            static std::string text_balise_root_stop;
+            static std::string text_name;
+            static std::string text_description;
+            static std::string text_en;
+            static std::string text_lang;
+            static std::string text_slash;
+
+            LogicialGroup logicialGroup;
+
+            StageConnexion stageConnexion;
+
+            //to send trame
+            std::vector<uint8_t> lastQueryNumber;
+
+            #ifdef BENCHMARKMUTIPLECLIENT
+                static char hurgeBufferForBenchmark[4096];
+                static bool precomputeDone;
+                static char hurgeBufferMove[4];
+            #endif
+
+            struct DelayedReply
+            {
+                uint8_t packetCode;
+                uint8_t queryNumber;
+                std::string data;
+            };
+            DelayedReply delayedLogin;
+            struct DelayedMessage
+            {
+                uint8_t packetCode;
+                std::string data;
+            };
+            std::vector<DelayedMessage> delayedMessages;
+        protected:
+            void QtsocketDestroyed();
+            virtual void socketDestroyed();
+            void parseIncommingData();
+            void readForFirstHeader();
+            void sslHandcheckIsFinished();
+            void connectTheExternalSocketInternal();
+            void saveCert(const std::string &file);
+
+            void errorParsingLayer(const std::string &error);
+            void messageParsingLayer(const std::string &message) const;
+
+            bool parseCharacterBlockServer(const uint8_t &packetCode,const uint8_t &queryNumber,const std::string &data);
+            bool parseCharacterBlockCharacter(const uint8_t &packetCode,const uint8_t &queryNumber,const std::string &data);
+
+            /// \note This is note into server part to force to write manually the serial and improve the performance, this function is more easy but implies lot of memory copy via SIMD
+            //send message without reply
+            bool packOutcommingData(const uint8_t &packetCode,const char * const data,const int &size);
+            //send query with reply
+            bool packOutcommingQuery(const uint8_t &packetCode,const uint8_t &queryNumber,const char * const data,const int &size);
+            //send reply
+            bool postReplyData(const uint8_t &queryNumber, const char * const data,const int &size);
+            //the internal serialiser
+            void send_player_move_internal(const uint8_t &moved_unit,const CatchChallenger::Direction &direction);
+        protected:
+            //have message without reply
+            virtual bool parseMessage(const uint8_t &packetCode,const char * const data,const unsigned int &size);
+            //have query with reply
+            virtual bool parseQuery(const uint8_t &packetCode,const uint8_t &queryNumber,const char * const data,const unsigned int &size);
+            //send reply
+            virtual bool parseReplyData(const uint8_t &packetCode,const uint8_t &queryNumber,const char * const data,const unsigned int &size);
+
+            //have message without reply
+            virtual bool parseMessage(const uint8_t &packetCode,const std::string &data);
+            //have query with reply
+            virtual bool parseQuery(const uint8_t &packetCode,const uint8_t &queryNumber,const std::string &data);
+            //send reply
+            virtual bool parseReplyData(const uint8_t &packetCode,const uint8_t &queryNumber,const std::string &data);
+
+            //servers list
+            LogicialGroup * addLogicalGroup(const std::string &path, const std::string &xml, const std::string &language);
+            ServerFromPoolForDisplay *addLogicalServer(const ServerFromPoolForDisplayTemp &server, const std::string &language);
+
+            //error
+            void parseError(const std::string &userMessage, const std::string &errorString);
+
+            //general data
+            virtual void defineMaxPlayers(const uint16_t &maxPlayers) = 0;
+
+            //stored local player info
+            uint16_t max_players;
+            uint16_t max_players_real;
+            uint32_t number_of_map;
+
+            //to send trame
+            uint8_t queryNumber();
+            static std::unordered_set<std::string> extensionAllowed;
+            std::map<uint8_t,uint64_t> querySendTime;
+
+            //inventory
+            std::vector<uint16_t> lastObjectUsed;
+
+            //datapack
+            std::string mDatapackBase;
+            std::string mDatapackMain;
+            std::string mDatapackSub;
+
+            //teleport list query id
+            struct TeleportQueryInformation
+            {
+                uint8_t queryId;
+                Direction direction;//for the internal set of last_direction
+            };
+
+            std::vector<TeleportQueryInformation> teleportList;
+
+            //trade
+            std::vector<uint8_t> tradeRequestId;
+            bool isInTrade;
+            //battle
+            std::vector<uint8_t> battleRequestId;
+            bool isInBattle;
+            std::string token;
+            std::string passHash;
+            std::string loginHash;
+
+            //server list
+            int32_t selectedServerIndex;
+            std::vector<ServerFromPoolForDisplay> serverOrdenedList;
+            std::vector<LogicialGroup *> logicialGroupIndexList;
+            std::vector<std::vector<CharacterEntry> > characterListForSelection;
+            std::string tokenForGameServer;
+
+        public:
+            void send_player_direction(const CatchChallenger::Direction &the_direction);
+            void send_player_move(const uint8_t &moved_unit,const CatchChallenger::Direction &direction);
+
+            void sendChatText(const CatchChallenger::Chat_type &chatType,const std::string &text);
+            void sendPM(const std::string &text,const std::string &pseudo);
+            bool teleportDone();
+
+            //character
+            bool addCharacter(const uint8_t &charactersGroupIndex,const uint8_t &profileIndex, const std::string &pseudo, const uint8_t &monsterGroupId, const uint8_t &skinId);
+            bool removeCharacter(const uint8_t &charactersGroupIndex,const uint32_t &characterId);
+            bool selectCharacter(const uint8_t &charactersGroupIndex, const uint32_t &serverUniqueKey, const uint32_t &characterId);
+            bool selectCharacter(const uint8_t &charactersGroupIndex, const uint32_t &serverUniqueKey, const uint32_t &characterId,const uint32_t &serverIndex);
+            LogicialGroup getLogicialGroup() const;
+
+            //plant, can do action only if the previous is finish
+            void useSeed(const uint8_t &plant_id);
+            void collectMaturePlant();
+            //crafting
+            void useRecipe(const uint16_t &recipeId);
+            void addRecipe(const uint16_t &recipeId);
+
+            //trade
+            void tradeRefused();
+            void tradeAccepted();
+            void tradeCanceled();
+            void tradeFinish();
+            void addTradeCash(const uint64_t &cash);
+            void addObject(const uint16_t &item,const uint32_t &quantity);
+            void addMonsterByPosition(const uint8_t &monsterPosition);
+
+            //battle
+            void battleRefused();
+            void battleAccepted();
+
+            //inventory
+            void destroyObject(const uint16_t &object,const uint32_t &quantity=1);
+            bool useObject(const uint16_t &object);
+            bool useObjectOnMonsterByPosition(const uint16_t &object, const uint8_t &monsterPosition);
+            void wareHouseStore(const int64_t &cash, const std::vector<std::pair<uint16_t, int32_t> > &items, const std::vector<uint32_t> &withdrawMonsters, const std::vector<uint32_t> &depositeMonsters);
+            void takeAnObjectOnMap();
+
+            //shop
+            void getShopList(const uint16_t &shopId);/// \see CommonMap, std::unordered_map<std::pair<uint8_t,uint8_t>,std::vector<uint16_t>, pairhash> shops;
+            void buyObject(const uint16_t &shopId,const uint16_t &objectId,const uint32_t &quantity,const uint32_t &price);/// \see CommonMap, std::unordered_map<std::pair<uint8_t,uint8_t>,std::vector<uint16_t>, pairhash> shops;
+            void sellObject(const uint16_t &shopId, const uint16_t &objectId, const uint32_t &quantity, const uint32_t &price);/// \see CommonMap, std::unordered_map<std::pair<uint8_t,uint8_t>,std::vector<uint16_t>, pairhash> shops;
+
+            //factory
+            void getFactoryList(const uint16_t &factoryId);
+            void buyFactoryProduct(const uint16_t &factoryId,const uint16_t &objectId,const uint32_t &quantity,const uint32_t &price);
+            void sellFactoryResource(const uint16_t &factoryId, const uint16_t &objectId, const uint32_t &quantity, const uint32_t &price);
+
+            //fight
+            void tryEscape();
+            void useSkill(const uint16_t &skill);
+            void heal();
+            void requestFight(const uint16_t &fightId);
+            void changeOfMonsterInFightByPosition(const uint8_t &monsterPosition);
+
+            //monster
+            void learnSkillByPosition(const uint8_t &monsterPosition, const uint16_t &skill);
+            void monsterMoveDown(const uint8_t &number);
+            void monsterMoveUp(const uint8_t &number);
+            void confirmEvolutionByPosition(const uint8_t &monterPosition);
+
+            //quest
+            void startQuest(const uint16_t &questId);
+            void finishQuest(const uint16_t &questId);
+            void cancelQuest(const uint16_t &questId);
+            void nextQuestStep(const uint16_t &questId);
+
+            //clan
+            void createClan(const std::string &name);
+            void leaveClan();
+            void dissolveClan();
+            void inviteClan(const std::string &pseudo);
+            void ejectClan(const std::string &pseudo);
+            void inviteAccept(const bool &accept);
+            void waitingForCityCapture(const bool &cancel);
+
+            //market
+            void getMarketList();
+            void buyMarketObject(const uint32_t &marketObjectId,const uint32_t &quantity=1);
+            void buyMarketMonster(const uint32_t &monsterMarketId);
+            void putMarketObject(const uint16_t &objectId, const uint32_t &quantity, const uint64_t &price);
+            void putMarketMonsterByPosition(const uint8_t &monsterPosition,const uint64_t &price);
+            void recoverMarketCash();
+            void withdrawMarketObject(const uint16_t &objectPosition, const uint32_t &quantity=1);
+            void withdrawMarketMonster(const uint32_t &monsterMarketId);
+
+
 
         public:
             void newError(const std::string &error,const std::string &detailedError);
