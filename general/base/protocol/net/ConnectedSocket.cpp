@@ -9,22 +9,22 @@
 
 using namespace CatchChallenger;
 
-ConnectedSocket::ConnectedSocket(QFakeSocket *socket) :
+ConnectedSocket::ConnectedSocket(FakeSocket* socket) :
     fakeSocket(socket),
     sslSocket(NULL),
     tcpSocket(NULL)
 {
-    connect(socket,&QFakeSocket::destroyed,     this,&ConnectedSocket::destroyedSocket,Qt::DirectConnection);
-    connect(socket,&QFakeSocket::connected,     this,&ConnectedSocket::connected,Qt::QueuedConnection);
-    connect(socket,&QFakeSocket::disconnected,  this,&ConnectedSocket::disconnected,Qt::QueuedConnection);
-    connect(socket,static_cast<void(QFakeSocket::*)(QAbstractSocket::SocketError)>(&QFakeSocket::error),this,static_cast<void(ConnectedSocket::*)(QAbstractSocket::SocketError)>(&ConnectedSocket::error));
-    connect(socket,&QFakeSocket::stateChanged,   this,&ConnectedSocket::stateChanged,Qt::QueuedConnection);
-    connect(socket,&QFakeSocket::readyRead,     this,&ConnectedSocket::readyRead,Qt::DirectConnection);
+    connect(socket,&FakeSocket::destroyed,     this,&ConnectedSocket::destroyedSocket,Qt::DirectConnection);
+    connect(socket,&FakeSocket::connected,     this,&ConnectedSocket::connected,Qt::QueuedConnection);
+    connect(socket,&FakeSocket::disconnected,  this,&ConnectedSocket::disconnected,Qt::QueuedConnection);
+    connect(socket,static_cast<void(FakeSocket::*)(QAbstractSocket::SocketError)>(&FakeSocket::error),this,static_cast<void(ConnectedSocket::*)(QAbstractSocket::SocketError)>(&ConnectedSocket::error));
+    connect(socket,&FakeSocket::stateChanged,   this,&ConnectedSocket::stateChanged,Qt::QueuedConnection);
+    connect(socket,&FakeSocket::readyRead,     this,&ConnectedSocket::readyRead,Qt::DirectConnection);
 
     open(QIODevice::ReadWrite|QIODevice::Unbuffered);
 }
 
-ConnectedSocket::ConnectedSocket(QSslSocket *socket) :
+ConnectedSocket::ConnectedSocket(QSslSocket* socket) :
     fakeSocket(NULL),
     sslSocket(socket),
     tcpSocket(NULL)
@@ -43,12 +43,12 @@ ConnectedSocket::ConnectedSocket(QSslSocket *socket) :
     open(QIODevice::ReadWrite|QIODevice::Unbuffered);
 }
 
-ConnectedSocket::ConnectedSocket(QTcpSocket *socket) :
+ConnectedSocket::ConnectedSocket(QTcpSocket* socket) :
     fakeSocket(NULL),
     sslSocket(NULL),
     tcpSocket(socket)
 {
-    socket->setSocketOption(QAbstractSocket::KeepAliveOption,1);
+    socket->setSocketOption(QAbstractSocket::KeepAliveOption, 1);
     connect(socket,&QTcpSocket::readyRead,      this,&ConnectedSocket::readyRead,Qt::DirectConnection);
     connect(socket,&QTcpSocket::connected,      this,&ConnectedSocket::connected,Qt::QueuedConnection);
     connect(socket,&QTcpSocket::destroyed,      this,&ConnectedSocket::destroyedSocket,Qt::DirectConnection);

@@ -3,27 +3,23 @@
 #ifndef CATCHCHALLENGER_FAKESERVER_H
 #define CATCHCHALLENGER_FAKESERVER_H
 
-#include <QObject>
-#include <QPair>
-#include <QList>
-#include <QMutex>
-#include <QMutexLocker>
-#include <QHostAddress>
-
 #include "FakeSocket.h"
-
 #include <vector>
+#include <list>
+#include <utility>
+#include <mutex>
 
 namespace CatchChallenger {
 
     class FakeSocket;
 
-    class FakeServer : public QObject
+    class FakeServer
     {
         private:
             explicit FakeServer();
         public:
             friend class FakeSocket;
+
             static FakeServer server;
 
             virtual bool hasPendingConnections();
@@ -34,10 +30,10 @@ namespace CatchChallenger {
         signals:
             void newConnection();
         private:
-            QMutex mutex;
+            std::mutex mutex;
             bool m_isListening;
-            QList<QPair<FakeSocket*, FakeSocket*> > m_listOfConnexion;
-            QList<QPair<FakeSocket*, FakeSocket*> > m_pendingConnection;
+            std::list<std::pair<FakeSocket*, FakeSocket*>> m_listOfConnexion;
+            std::list<std::pair<FakeSocket*, FakeSocket*>> m_pendingConnection;
         protected:
             //from the server
             void addPendingConnection(FakeSocket* socket);
