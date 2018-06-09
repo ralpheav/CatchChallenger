@@ -4,6 +4,7 @@
 #define CATCHCHALLENGER_FAKESERVER_H
 
 #include "FakeSocket.h"
+
 #include <vector>
 #include <list>
 #include <utility>

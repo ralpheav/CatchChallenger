@@ -1,19 +1,9 @@
 #include "Client.h"
 
-Client::Client() {
-    socket_handler = socket(AF_INET, SOCK_STREAM, 0);
-    if (!haveSocket())
-    {
-        std::cerr << "Socket creation error" << std::endl;
-    }
+Client::Client() : Socket() {
 }
 
-
-bool Client::haveSocket() const {
-    return socket_handler > 0;
-}
-
-bool Client::create(std::string host, uint32_t port) {
+int Client::create(const std::string& host, uint32_t port) {
     if (!haveSocket()) {
         return false;
     }
@@ -38,7 +28,7 @@ bool Client::connect() {
         return false;
     }
 
-    int result = ::connect(socket_handler, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    int result = ::connect(socket_file_descriptor, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 
     if (result < 0)
     {
@@ -47,18 +37,4 @@ bool Client::connect() {
     }
 
     return true;
-}
-
-int Client::send(const std::string& message) {
-    if (!haveSocket()) {
-        return 0;
-    }
-
-    ::send(socket_handler, message.c_str(), message.size(), 0);
-
-    return read(socket_handler, buffer, 1024);
-}
-
-std::string Client::getBuffer() const {
-    return buffer;
 }

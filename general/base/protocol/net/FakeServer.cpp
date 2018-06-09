@@ -71,7 +71,6 @@ void FakeServer::close()
     for(it = m_listOfConnexion.begin(); it != m_listOfConnexion.end(); it++) {
         it->first->disconnectFromHost();
     }
-
 }
 
 void FakeServer::disconnectedSocket()
@@ -81,27 +80,29 @@ void FakeServer::disconnectedSocket()
     {
         int index = 0;
         int loop_size = m_listOfConnexion.size();
+        std::list<std::pair<FakeSocket*, FakeSocket*>>::iterator it = m_listOfConnexion.begin();
 
-        while(index < loop_size)
+        while(it != m_listOfConnexion.end())
         {
-            if(m_listOfConnexion.at(index).first->theOtherSocket == socket || m_listOfConnexion.at(index).second->theOtherSocket == socket)
+            if (it->first->theOtherSocket == socket || it->second->theOtherSocket == socket)
             {
-                m_listOfConnexion.at(index).first->disconnectFromFakeServer();
-                m_listOfConnexion.at(index).second->disconnectFromFakeServer();
-                m_listOfConnexion.removeAt(index);
+                it->first->disconnectFromFakeServer();
+                it->second->disconnectFromFakeServer();
+                m_listOfConnexion.erase(it);
                 loop_size--;
             } else {
                 index++;
             }
         }
         loop_size = m_pendingConnection.size();
-        while(index < loop_size)
+        it = m_listOfConnexion.begin();
+        while(it != m_listOfConnexion.end())
         {
-            if(m_pendingConnection.at(index).first->theOtherSocket == socket || m_pendingConnection.at(index).second->theOtherSocket == socket)
+            if(it->first->theOtherSocket == socket || it->second->theOtherSocket == socket)
             {
-                m_pendingConnection.at(index).first->disconnectFromFakeServer();
-                m_pendingConnection.at(index).second->disconnectFromFakeServer();
-                m_pendingConnection.removeAt(index);
+                it->first->disconnectFromFakeServer();
+                it->second->disconnectFromFakeServer();
+                m_pendingConnection.erase(it);
                 loop_size--;
             } else {
                 index++;
@@ -113,22 +114,24 @@ void FakeServer::disconnectedSocket()
     {
         int index = 0;
         int loop_size = m_listOfConnexion.size();
-        while(index < loop_size)
+        it = m_listOfConnexion.begin();
+        while(it != m_listOfConnexion.end())
         {
-            if(m_listOfConnexion.at(index).first->theOtherSocket == NULL || m_listOfConnexion.at(index).second->theOtherSocket == NULL)
+            if(it->first->theOtherSocket == NULL || it->second->theOtherSocket == NULL)
             {
-                m_listOfConnexion.removeAt(index);
+                m_listOfConnexion.erase(it);
                 loop_size--;
             } else {
                 index++;
             }
         }
         loop_size = m_pendingConnection.size();
+        it = m_listOfConnexion.begin();
         while(index < loop_size)
         {
-            if(m_pendingConnection.at(index).first->theOtherSocket == NULL || m_pendingConnection.at(index).second->theOtherSocket == NULL)
+            if(it->first->theOtherSocket == NULL || it->second->theOtherSocket == NULL)
             {
-                m_pendingConnection.removeAt(index);
+                m_pendingConnection.erase(it);
                 loop_size--;
             } else {
                 index++;
