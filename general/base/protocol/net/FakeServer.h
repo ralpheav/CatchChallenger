@@ -28,17 +28,23 @@ namespace CatchChallenger {
             bool listen();
             virtual FakeSocket* nextPendingConnection();
             void close();
-        signals:
-            void newConnection();
+            virtual void newConnection() = 0;
+            virtual void disconnected()  = 0;
+            virtual void aboutToDelete() = 0;
+            virtual void destroyed()     = 0;
         private:
             std::mutex mutex;
             bool m_isListening;
+            enum {
+                DISCONNECTED = 0,
+                CONNECTED    = 1
+            } m_state;
             std::list<std::pair<FakeSocket*, FakeSocket*>> m_listOfConnexion;
             std::list<std::pair<FakeSocket*, FakeSocket*>> m_pendingConnection;
         protected:
             //from the server
             void addPendingConnection(FakeSocket* socket);
-        public slots:
+        public:
             void disconnectedSocket();
     };
 }

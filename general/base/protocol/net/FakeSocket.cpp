@@ -5,22 +5,23 @@ using namespace CatchChallenger;
 
 FakeSocket::FakeSocket()
 {
-    theOtherSocket = NULL;
+    theOtherSocket = nullptr;
     RX_size        = 0;
     //open(QIODevice::ReadWrite | QIODevice::Unbuffered);
 }
 
 FakeSocket::~FakeSocket()
 {
-    if(theOtherSocket != NULL)
+    if (theOtherSocket != nullptr)
     {
         FakeSocket *tempOtherSocket = theOtherSocket;
-        theOtherSocket = NULL;
-        tempOtherSocket->theOtherSocket = NULL;
-        //tempOtherSocket->state = QAbstractSocket::UnconnectedState;
-        //tempOtherSocket->disconnected();
+        theOtherSocket = nullptr;
+        tempOtherSocket->theOtherSocket = nullptr;
+        tempOtherSocket->m_state = FakeSocket::unconnected;;
+        tempOtherSocket->disconnected();
     }
-    //emit aboutToDelete();//OWN
+
+    aboutToDelete();
 }
 
 void FakeSocket::abort()
@@ -33,7 +34,7 @@ void FakeSocket::abort()
 
 void FakeSocket::disconnectFromHost()
 {
-    if(theOtherSocket == NULL) {
+    if (theOtherSocket == nullptr) {
         return;
     }
 
@@ -42,20 +43,20 @@ void FakeSocket::disconnectFromHost()
     #endif
 
     FakeSocket *tempOtherSocket = theOtherSocket;
-    theOtherSocket = NULL;
+    theOtherSocket = nullptr;
     tempOtherSocket->disconnectFromHost();
     {
         lock_guard<mutex> guard(FakeSocket::mutex);
         data.clear();
     }
-    //tempOtherSocket->state = QAbstractSocket::UnconnectedState;
-    //emit stateChanged(QAbstractSocket::UnconnectedState);//own
-    //emit disconnected();//own
+    m_state = FakeSocket::unconnected;
+
+    disconnected();
 }
 
 void FakeSocket::disconnectFromFakeServer()
 {
-    if(theOtherSocket == NULL) {
+    if (theOtherSocket == nullptr) {
         return;
     }
 
@@ -63,13 +64,14 @@ void FakeSocket::disconnectFromFakeServer()
         Logger::instance().log(Logger::Debug, std::stringLiteral("FakeSocket::disconnectFromFakeServer()"));
     #endif
 
-    theOtherSocket = NULL;
+    theOtherSocket = nullptr;
     {
         lock_guard<mutex> guard(FakeSocket::mutex);
         data.clear();
     }
-    //emit stateChanged(QAbstractSocket::UnconnectedState);
-    //emit disconnected();
+    m_state = FakeSocket::unconnected;
+
+    disconnected();
 }
 
 void FakeSocket::connectToHost()
@@ -82,8 +84,9 @@ void FakeSocket::connectToHost()
     }
 
     FakeServer::server.addPendingConnection(this);
-    //emit stateChanged(QAbstractSocket::ConnectedState);
-    //emit connected();
+    m_state = FakeSocket::connected;
+
+    connected();
 }
 
 int64_t FakeSocket::bytesAvailableWithMutex()
@@ -114,7 +117,7 @@ void FakeSocket::close()
 
 bool FakeSocket::isValid()
 {
-    return theOtherSocket != NULL;
+    return theOtherSocket != nullptr;
 }
 
 FakeSocket * FakeSocket::getTheOtherSocket()
@@ -129,26 +132,24 @@ uint64_t FakeSocket::getRXSize()
 
 uint64_t FakeSocket::getTXSize()
 {
-    if (theOtherSocket == NULL) {
+    if (theOtherSocket == nullptr) {
         return 0;
     }
 
     return theOtherSocket->getRXSize();
 }
 
-/*QAbstractSocket::SocketError FakeSocket::error() const
-{
-    return QAbstractSocket::UnknownSocketError;
+int FakeSocket::error() const {
+    return 0;
 }
 
-QAbstractSocket::SocketState FakeSocket::state() const
+int FakeSocket::state() const
 {
     if (theOtherSocket == NULL) {
-        return QAbstractSocket::UnconnectedState;
-    } else {
-        return QAbstractSocket::ConnectedState;
+        return FakeSocket::connected;
     }
-}*/
+    return FakeSocket::unconnected;
+}
 
 int64_t FakeSocket::readData(char* rawData, int64_t maxSize)
 {
@@ -164,8 +165,8 @@ int64_t FakeSocket::readData(char* rawData, int64_t maxSize)
         Logger::instance().log(Logger::Debug, std::stringLiteral("readData(): extractedData.size(): %1, data.size(): %2, extractedData: %3").arg(extractedData.size()).arg(data.size()).arg(std::string(extractedData.toHex())));
     #endif
 
-    memcpy(rawData, extractedData.data(), extractedData.size());
-    //this->data.remove(0, extractedData.size());
+    rawData = new char[extractedData.size()];
+    memcpy(rawData, &(extractedData[0]), sizeof(extractedData[0]) * extractedData.size());
     this->data.erase(this->data.begin(), it);
 
     return extractedData.size();
@@ -173,10 +174,9 @@ int64_t FakeSocket::readData(char* rawData, int64_t maxSize)
 
 int64_t FakeSocket::writeData(const char* rawData, int64_t size)
 {
-    if (theOtherSocket == NULL)
+    if (theOtherSocket == nullptr)
     {
         Logger::instance().log(Logger::Debug, "writeData(): theOtherSocket==NULL");
-        //emit error(QAbstractSocket::NetworkError);
 
         return size;
     }
@@ -190,14 +190,13 @@ int64_t FakeSocket::writeData(const char* rawData, int64_t size)
         for(int index = 0; rawData[index] != 0; index++) {
             dataToSend.push_back(rawData[index]);
         }
-        //dataToSend=QByteArray(rawData,static_cast<int>(size));
     }
     theOtherSocket->internal_writeData(dataToSend);
 
     return size;
 }
 
-void FakeSocket::internal_writeData(std::vector<unsigned char>/*QByteArray*/ rawData)
+void FakeSocket::internal_writeData(std::vector<unsigned char> rawData)
 {
     {
         lock_guard<mutex> guard(FakeSocket::mutex);
@@ -210,7 +209,7 @@ void FakeSocket::internal_writeData(std::vector<unsigned char>/*QByteArray*/ raw
         this->data += rawData;
     }
 
-    //emit readyRead();
+    readyRead();
 }
 
 bool FakeSocket::isSequential() const

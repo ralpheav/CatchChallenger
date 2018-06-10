@@ -9,258 +9,318 @@
 
 using namespace CatchChallenger;
 
-ConnectedSocket::ConnectedSocket(FakeSocket* socket) :
-    fakeSocket(socket),
-    sslSocket(NULL),
-    tcpSocket(NULL)
-{
-    connect(socket,&FakeSocket::destroyed,     this,&ConnectedSocket::destroyedSocket,Qt::DirectConnection);
-    connect(socket,&FakeSocket::connected,     this,&ConnectedSocket::connected,Qt::QueuedConnection);
-    connect(socket,&FakeSocket::disconnected,  this,&ConnectedSocket::disconnected,Qt::QueuedConnection);
-    connect(socket,static_cast<void(FakeSocket::*)(QAbstractSocket::SocketError)>(&FakeSocket::error),this,static_cast<void(ConnectedSocket::*)(QAbstractSocket::SocketError)>(&ConnectedSocket::error));
-    connect(socket,&FakeSocket::stateChanged,   this,&ConnectedSocket::stateChanged,Qt::QueuedConnection);
-    connect(socket,&FakeSocket::readyRead,     this,&ConnectedSocket::readyRead,Qt::DirectConnection);
+std::string HostAddress::localhost = "127.0.0.1";
+std::string HostAddress::Null      = "0.0.0.0";
 
-    open(QIODevice::ReadWrite|QIODevice::Unbuffered);
+ConnectedSocket::ConnectedSocket(FakeSocket* socket) :
+    //TODO: needs to be changed to a Interface call
+    fakeSocket(socket),
+    sslSocket(nullptr),
+    tcpSocket(nullptr)
+{
+    //open(QIODevice::ReadWrite | QIODevice::Unbuffered);
 }
 
 ConnectedSocket::ConnectedSocket(QSslSocket* socket) :
-    fakeSocket(NULL),
+    //TODO: needs to be changed to a Interface call
+    fakeSocket(nullptr),
     sslSocket(socket),
-    tcpSocket(NULL)
+    tcpSocket(nullptr)
 {
-    socket->setSocketOption(QAbstractSocket::KeepAliveOption,1);
-    connect(socket,&QSslSocket::readyRead,      this,&ConnectedSocket::readyRead,Qt::DirectConnection);
-    connect(socket,&QSslSocket::encrypted,      this,&ConnectedSocket::purgeBuffer,Qt::QueuedConnection);
-    connect(socket,&QSslSocket::connected,      this,&ConnectedSocket::connected,Qt::QueuedConnection);
-    connect(socket,&QSslSocket::destroyed,      this,&ConnectedSocket::destroyedSocket,Qt::DirectConnection);
-    //connect(socket,&QSslSocket::connected,      this,&ConnectedSocket::startHandshake,Qt::QueuedConnection);
-    connect(socket,&QSslSocket::disconnected,   this,&ConnectedSocket::disconnected,Qt::QueuedConnection);
-    connect(socket,static_cast<void(QAbstractSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error),this,static_cast<void(ConnectedSocket::*)(QAbstractSocket::SocketError)>(&ConnectedSocket::error));
-    connect(socket,&QSslSocket::stateChanged,   this,&ConnectedSocket::stateChanged,Qt::QueuedConnection);
-    connect(socket,static_cast<void(QSslSocket::*)(const QList<QSslError> &errors)>(&QSslSocket::sslErrors),this,static_cast<void(ConnectedSocket::*)(const QList<QSslError> &errors)>(&ConnectedSocket::sslErrors),Qt::QueuedConnection);
+    socket->setSocketOption(QAbstractSocket::KeepAliveOption, 1);
+
     purgeBuffer();
-    open(QIODevice::ReadWrite|QIODevice::Unbuffered);
+    //open(QIODevice::ReadWrite|QIODevice::Unbuffered);
 }
 
 ConnectedSocket::ConnectedSocket(QTcpSocket* socket) :
-    fakeSocket(NULL),
-    sslSocket(NULL),
+    //TODO: needs to be changed to a Interface call
+    fakeSocket(nullptr),
+    sslSocket(nullptr),
     tcpSocket(socket)
 {
     socket->setSocketOption(QAbstractSocket::KeepAliveOption, 1);
-    connect(socket,&QTcpSocket::readyRead,      this,&ConnectedSocket::readyRead,Qt::DirectConnection);
-    connect(socket,&QTcpSocket::connected,      this,&ConnectedSocket::connected,Qt::QueuedConnection);
-    connect(socket,&QTcpSocket::destroyed,      this,&ConnectedSocket::destroyedSocket,Qt::DirectConnection);
-    //connect(socket,&QTcpSocket::connected,      this,&ConnectedSocket::startHandshake,Qt::QueuedConnection);
-    connect(socket,&QTcpSocket::disconnected,   this,&ConnectedSocket::disconnected,Qt::QueuedConnection);
-    connect(socket,static_cast<void(QAbstractSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error),this,static_cast<void(ConnectedSocket::*)(QAbstractSocket::SocketError)>(&ConnectedSocket::error));
-    connect(socket,&QTcpSocket::stateChanged,   this,&ConnectedSocket::stateChanged,Qt::QueuedConnection);
-    open(QIODevice::ReadWrite|QIODevice::Unbuffered);
+
+    //open(QIODevice::ReadWrite|QIODevice::Unbuffered);
 }
 
 ConnectedSocket::~ConnectedSocket()
 {
-    if(sslSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         sslSocket->deleteLater();
-    if(tcpSocket!=NULL)
+    }
+
+    if (tcpSocket != nullptr) {
         tcpSocket->deleteLater();
-    if(fakeSocket!=NULL)
+    }
+
+    if (fakeSocket != nullptr) {
         fakeSocket->deleteLater();
+    }
 }
 
-QList<QSslError> ConnectedSocket::sslErrors() const
+std::list<QSslError> ConnectedSocket::sslErrors() const
 {
-    if(sslSocket!=NULL)
+    if (sslSocket != nullptr) {
         return sslSocket->sslErrors();
-    return QList<QSslError>();
+    }
+
+    return std::list<QSslError>();
 }
 
 void ConnectedSocket::purgeBuffer()
 {
-    if(sslSocket!=NULL)
-    {
-        if(sslSocket->bytesAvailable())
-            emit readyRead();
-        if(sslSocket->encryptedBytesAvailable())
-            emit readyRead();
+    if (sslSocket != nullptr) {
+        if (sslSocket->bytesAvailable()) {
+             readyRead();
+        }
+
+        if (sslSocket->encryptedBytesAvailable()) {
+            readyRead();
+        }
     }
 }
 
 void ConnectedSocket::destroyedSocket()
 {
-    sslSocket=NULL;
-    tcpSocket=NULL;
-    fakeSocket=NULL;
+    sslSocket = nullptr;
+    tcpSocket = nullptr;
+    fakeSocket = nullptr;
+
     hostName.clear();
-    port=0;
+    port = 0;
 }
 
 void ConnectedSocket::abort()
 {
     hostName.clear();
     port=0;
-
-    if(fakeSocket!=NULL)
-        fakeSocket->abort();
-    if(sslSocket!=NULL)
+//TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         sslSocket->abort();
-    if(tcpSocket!=NULL)
+    }
+
+    if (tcpSocket != nullptr) {
         tcpSocket->abort();
-}
+    }
 
-void ConnectedSocket::connectToHost(const QString & hostName, uint16_t port)
-{
-    if(state()!=QAbstractSocket::UnconnectedState)
-        return;
-    if(fakeSocket!=NULL)
-        fakeSocket->connectToHost();
-    else
-    {
-        //workaround because QSslSocket don't return correct value for i2p via proxy
-        this->hostName=hostName;
-        this->port=port;
-
-        if(sslSocket!=NULL)
-            sslSocket->connectToHost(hostName,port);
-        else if(tcpSocket!=NULL)
-            tcpSocket->connectToHost(hostName,port);
+    if (fakeSocket != nullptr) {
+        fakeSocket->abort();
     }
 }
 
-void ConnectedSocket::connectToHost(const QHostAddress & address, uint16_t port)
+void ConnectedSocket::connectToHost(const std::string& hostName, uint16_t port)
 {
-    if(state()!=QAbstractSocket::UnconnectedState)
+    if (state() != ConnectedSocket::unconnected) {
         return;
-    if(fakeSocket!=NULL)
+    }
+
+    if (fakeSocket != nullptr) {
         fakeSocket->connectToHost();
-    else if(sslSocket!=NULL)
-        sslSocket->connectToHost(address.toString(),port);
-    else if(tcpSocket!=NULL)
-        tcpSocket->connectToHost(address,port);
+    } else {
+        //workaround because QSslSocket don't return correct value for i2p via proxy
+        this->hostName = hostName;
+        this->port = port;
+//TODO: needs to be changed to a Interface call
+        if (sslSocket != nullptr) {
+            sslSocket->connectToHost(hostName,port);
+        }
+
+        if (tcpSocket != nullptr) {
+            tcpSocket->connectToHost(hostName,port);
+        }
+    }
+}
+
+void ConnectedSocket::connectToHost(const HostAddress& address, uint16_t port)
+{
+    if(state() != ConnectedSocket::unconnected) {
+        return;
+    }
+
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
+        sslSocket->connectToHost(address.toString(), port);
+    }
+
+    if (tcpSocket != nullptr) {
+        tcpSocket->connectToHost(address, port);
+    }
+
+    if (fakeSocket != nullptr) {
+        fakeSocket->connectToHost();
+    }
 }
 
 void ConnectedSocket::disconnectFromHost()
 {
-    if(state()!=QAbstractSocket::ConnectedState)
+    if (state() != ConnectedSocket::unconnected) {
         return;
+    }
+
     hostName.clear();
-    port=0;
-    if(fakeSocket!=NULL)
-        fakeSocket->disconnectFromHost();
-    if(sslSocket!=NULL)
+    port = 0;
+
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         sslSocket->disconnectFromHost();
-    if(tcpSocket!=NULL)
+    }
+
+    if (tcpSocket != nullptr) {
         tcpSocket->disconnectFromHost();
+    }
+
+    if (fakeSocket != nullptr) {
+        fakeSocket->disconnectFromHost();
+    }
 }
 
-QAbstractSocket::SocketError ConnectedSocket::error() const
+int ConnectedSocket::error() const
 {
-    if(fakeSocket!=NULL)
-        return fakeSocket->error();
-    if(sslSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         return sslSocket->error();
-    if(tcpSocket!=NULL)
+    }
+
+    if (tcpSocket != nullptr) {
         return tcpSocket->error();
-    return QAbstractSocket::UnknownSocketError;
+    }
+
+    if (fakeSocket != nullptr) {
+        return fakeSocket->error();
+    }
+
+    return 0;//unknown
 }
 
 bool ConnectedSocket::flush()
 {
-    if(fakeSocket!=NULL)
-        return true;
-    if(sslSocket!=NULL)
-        return sslSocket->flush();
-    if(tcpSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
+       return  sslSocket->flush();
+    }
+
+    if (tcpSocket != nullptr) {
         return tcpSocket->flush();
+    }
+
     return false;
 }
 
 bool ConnectedSocket::isValid() const
 {
-    if(fakeSocket!=NULL)
-        return fakeSocket->isValid();
-    else if(sslSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         return sslSocket->isValid();
-    else if(tcpSocket!=NULL)
+    }
+
+    if (tcpSocket != nullptr) {
         return tcpSocket->isValid();
+    }
+
+    if (fakeSocket != nullptr) {
+        return fakeSocket->isValid();
+    }
+
     return false;
 }
 
-void ConnectedSocket::setTcpCork(const bool &cork)
+void ConnectedSocket::setTcpCork(const bool& cork)
 {
     #ifdef __linux__
-        if(sslSocket!=NULL)
+        if (sslSocket != nullptr)
         {
             #if ! defined(EPOLLCATCHCHALLENGERSERVER) && ! defined (ONLYMAPRENDER)
-                const qintptr &infd=
+                const int* &infd;
             #else
-                const int32_t &infd=
+                const int32_t &infd;
             #endif
 
             sslSocket->socketDescriptor();
-            if(infd!=-1)
+            if (infd != -1)
             {
                 int state = cork;
-                if(setsockopt(static_cast<int>(infd), IPPROTO_TCP, TCP_CORK, &state, sizeof(state))!=0)
+                if (setsockopt(static_cast<int>(infd), IPPROTO_TCP, TCP_CORK, &state, sizeof(state)) != 0)
                     std::cerr << "Unable to apply tcp cork" << std::endl;
             }
         }
-        if(tcpSocket!=NULL)
+        if (tcpSocket != nullptr)
         {
             #if ! defined(EPOLLCATCHCHALLENGERSERVER) && ! defined (ONLYMAPRENDER)
-                const qintptr &infd=
+                const qintptr &inf;
             #else
-                const int32_t &infd=
+                const int32_t &infd;
             #endif
 
             tcpSocket->socketDescriptor();
-            if(infd!=-1)
+            if (infd != -1)
             {
                 int state = cork;
-                if(setsockopt(static_cast<int>(infd), IPPROTO_TCP, TCP_CORK, &state, sizeof(state))!=0)
+                if (setsockopt(static_cast<int>(infd), IPPROTO_TCP, TCP_CORK, &state, sizeof(state)) != 0)
                     std::cerr << "Unable to apply tcp cork" << std::endl;
             }
         }
     #endif
 }
 
-QHostAddress ConnectedSocket::localAddress() const
+HostAddress ConnectedSocket::localAddress() const
 {
     //deprecated form incorrect value for i2p
     std::cerr << "ConnectedSocket::localAddress(): deprecated form incorrect value for i2p" << std::endl;
 
-    if(fakeSocket!=NULL)
-        return QHostAddress::LocalHost;
-    if(sslSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         return sslSocket->localAddress();
-    if(tcpSocket!=NULL)
+    }
+
+    if (tcpSocket != nullptr) {
         return tcpSocket->localAddress();
-    return QHostAddress::Null;
+    }
+
+    if (fakeSocket != nullptr) {
+        return HostAddress::localhost;
+    }
+
+    return HostAddress::Null;
 }
 
-quint16	ConnectedSocket::localPort() const
+uint16_t ConnectedSocket::localPort() const
 {
-    if(fakeSocket!=NULL)
-        return 9999;
-    if(sslSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         return sslSocket->localPort();
-    if(tcpSocket!=NULL)
+    }
+
+    if (tcpSocket != nullptr) {
         return tcpSocket->localPort();
+    }
+
+    if (fakeSocket != nullptr) {
+        return 9999;//??
+    }
+
     return 0;
 }
 
-QHostAddress ConnectedSocket::peerAddress() const
+HostAddress ConnectedSocket::peerAddress() const
 {
     //deprecated form incorrect value for i2p
     std::cerr << "ConnectedSocket::peerAddress(): deprecated form incorrect value for i2p" << std::endl;
 
-    if(fakeSocket!=NULL)
-        return QHostAddress::LocalHost;
-    if(sslSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         return sslSocket->peerAddress();
-    if(tcpSocket!=NULL)
+    }
+
+    if (tcpSocket != nullptr) {
         return tcpSocket->peerAddress();
+    }
+
+    if (fakeSocket != nullptr) {
+        return HostAddress::LocalHost;
+    }
+
     return QHostAddress::Null;
 }
 
@@ -268,94 +328,146 @@ std::string ConnectedSocket::peerName() const
 {
     /// \warning via direct value for i2p. Never pass by peerAddress()
     QString pearName;
-    if(fakeSocket!=NULL)
-        return QString();
-    if(sslSocket!=NULL)
-        pearName=sslSocket->peerName();
-    if(tcpSocket!=NULL)
-        pearName=tcpSocket->peerName();
-    if(!pearName.isEmpty())
-        return pearName;
-    else
-        return hostName;
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
+        pearName = sslSocket->peerName();
+    }
+
+    if (tcpSocket != nullptr) {
+        pearName = tcpSocket->peerName();
+    }
+
+    if (fakeSocket != nullptr) {
+        return std::string();
+    }
+
+    return (pearName.isEmpty())? hostName : pearName;
 }
 
 uint16_t ConnectedSocket::peerPort() const
 {
-    if(fakeSocket!=NULL)
-        return 15000;
-    if(sslSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         return sslSocket->peerPort();
-    if(tcpSocket!=NULL)
+    }
+
+    if (tcpSocket != nullptr) {
         return tcpSocket->peerPort();
+    }
+
+    if (fakeSocket != nullptr) {
+        return 15000; //?
+    }
+
     return 0;
 }
 
-QAbstractSocket::SocketState ConnectedSocket::state() const
+int ConnectedSocket::state() const
 {
-    if(fakeSocket!=NULL)
-        return fakeSocket->state();
-    if(sslSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         return sslSocket->state();
-    if(tcpSocket!=NULL)
+    }
+
+    if (tcpSocket != nullptr) {
         return tcpSocket->state();
-    return QAbstractSocket::UnconnectedState;
+    }
+
+    if (fakeSocket != nullptr) {
+        return fakeSocket->state();
+    }
+
+    return ConnectedSocket::unconnected;
 }
 
 bool ConnectedSocket::waitForConnected(int msecs)
 {
-    if(fakeSocket!=NULL)
-        return true;
-    if(sslSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         return sslSocket->waitForConnected(msecs);
-    if(tcpSocket!=NULL)
+    }
+
+    if (tcpSocket != nullptr) {
         return tcpSocket->waitForConnected(msecs);
+    }
+
+    if (fakeSocket != nullptr) {
+        return true;
+    }
+
     return false;
 }
 
 bool ConnectedSocket::waitForDisconnected(int msecs)
 {
-    if(fakeSocket!=NULL)
-        return true;
-    if(sslSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         return sslSocket->waitForDisconnected(msecs);
-    if(tcpSocket!=NULL)
+    }
+
+    if (tcpSocket != nullptr) {
         return tcpSocket->waitForDisconnected(msecs);
+    }
+
+    if (fakeSocket != nullptr) {
+        return true;
+    }
+
     return false;
 }
 
 int64_t ConnectedSocket::bytesAvailable() const
 {
-    if(fakeSocket!=NULL)
-        return fakeSocket->bytesAvailable();
-    if(tcpSocket!=NULL)
-        return tcpSocket->bytesAvailable();
-    if(sslSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         return sslSocket->bytesAvailable();
-        else
+    }
+
+    if (tcpSocket != nullptr) {
+        return tcpSocket->bytesAvailable();
+    }
+
+    if (fakeSocket != nullptr) {
+        return fakeSocket->bytesAvailable();
+    }
+
     return -1;
 }
 
-QIODevice::OpenMode ConnectedSocket::openMode() const
+OpenMode ConnectedSocket::openMode() const
 {
-    if(fakeSocket!=NULL)
-        return fakeSocket->openMode();
-    if(sslSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         return sslSocket->openMode();
-    if(tcpSocket!=NULL)
+    }
+
+    if (tcpSocket != nullptr) {
         return tcpSocket->openMode();
-    return QIODevice::NotOpen;
+    }
+
+    if (fakeSocket != nullptr) {
+        return fakeSocket->openMode();
+    }
+
+    return 0;
 }
 
 std::string ConnectedSocket::errorString() const
 {
-    if(fakeSocket!=NULL)
-        return fakeSocket->errorString();
-    if(sslSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         return sslSocket->errorString();
-    if(tcpSocket!=NULL)
+    }
+
+    if (tcpSocket != nullptr) {
         return tcpSocket->errorString();
-    return QString();
+    }
+
+    if (fakeSocket != nullptr) {
+        return fakeSocket->errorString();
+    }
+
+    return std::string();
 }
 
 void ConnectedSocket::close()
@@ -365,23 +477,37 @@ void ConnectedSocket::close()
 
 int64_t ConnectedSocket::readData(char * data, int64_t maxSize)
 {
-    if(fakeSocket!=NULL)
-        return fakeSocket->read(data,maxSize);
-    if(tcpSocket!=NULL)
-        return tcpSocket->read(data,maxSize);
-    if(sslSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         return sslSocket->read(data,maxSize);
+    }
+
+    if (tcpSocket != nullptr) {
+        return tcpSocket->read(data,maxSize);
+    }
+
+    if (fakeSocket != nullptr) {
+        return fakeSocket->read(data,maxSize);
+    }
+
     return -1;
 }
 
 int64_t ConnectedSocket::writeData(const char * data, int64_t maxSize)
 {
-    if(fakeSocket!=NULL)
-        return fakeSocket->write(data,maxSize);
-    if(tcpSocket!=NULL)
-        return tcpSocket->write(data,maxSize);
-    if(sslSocket!=NULL)
+    //TODO: needs to be changed to a Interface call
+    if (sslSocket != nullptr) {
         return sslSocket->write(data,maxSize);
+    }
+
+    if (tcpSocket != nullptr) {
+        return tcpSocket->write(data,maxSize);
+    }
+
+    if (fakeSocket != nullptr) {
+        return fakeSocket->write(data,maxSize);
+    }
+
     return -1;
 }
 

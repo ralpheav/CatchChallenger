@@ -26,20 +26,13 @@ void FakeServer::addPendingConnection(FakeSocket* socket)
     newEntry.first->RX_size = 0;
     newEntry.second->RX_size = 0;
 
-//    connect(newEntry.first, &QFakeSocket::disconnected, this, &FakeServer::disconnectedSocket, Qt::DirectConnection);
-//    connect(newEntry.second,&QFakeSocket::disconnected, this, &FakeServer::disconnectedSocket, Qt::DirectConnection);
-//    connect(newEntry.first, &QFakeSocket::aboutToDelete,this, &FakeServer::disconnectedSocket, Qt::DirectConnection);
-//    connect(newEntry.second,&QFakeSocket::aboutToDelete,this, &FakeServer::disconnectedSocket, Qt::DirectConnection);
-//    connect(newEntry.first, &QFakeSocket::destroyed,    this, &FakeServer::disconnectedSocket, Qt::DirectConnection);
-//    connect(newEntry.second,&QFakeSocket::destroyed,    this, &FakeServer::disconnectedSocket, Qt::DirectConnection);
-
-    //emit newConnection();
+    newConnection();
 }
 
 bool FakeServer::hasPendingConnections()
 {
     std::lock_guard<std::mutex> locker(mutex);
-    return m_pendingConnection.size();
+    return !m_pendingConnection.empty();
 }
 
 bool FakeServer::isListening() const
@@ -57,7 +50,7 @@ FakeSocket* FakeServer::nextPendingConnection()
 {
     std::lock_guard<std::mutex> locker(mutex);
     FakeSocket* socket = m_pendingConnection.begin()->second;
-    m_pendingConnection.pop_front();
+    m_pendingConnection.pop_front(); // remove first
 
     return socket;
 }
@@ -73,15 +66,11 @@ void FakeServer::close()
     }
 }
 
-void FakeServer::disconnectedSocket()
+void FakeServer::disconnectedSocket(FakeSocket* socket)
 {
     std::lock_guard<std::mutex> locker(mutex);
-    FakeSocket* socket = null;//qobject_cast<FakeSocket*>(QObject::sender());
+    std::list<std::pair<FakeSocket*, FakeSocket*>>::iterator it = m_listOfConnexion.begin();
     {
-        int index = 0;
-        int loop_size = m_listOfConnexion.size();
-        std::list<std::pair<FakeSocket*, FakeSocket*>>::iterator it = m_listOfConnexion.begin();
-
         while(it != m_listOfConnexion.end())
         {
             if (it->first->theOtherSocket == socket || it->second->theOtherSocket == socket)
@@ -89,52 +78,38 @@ void FakeServer::disconnectedSocket()
                 it->first->disconnectFromFakeServer();
                 it->second->disconnectFromFakeServer();
                 m_listOfConnexion.erase(it);
-                loop_size--;
-            } else {
-                index++;
             }
         }
-        loop_size = m_pendingConnection.size();
-        it = m_listOfConnexion.begin();
-        while(it != m_listOfConnexion.end())
+
+        it = m_pendingConnection.begin();
+        while(it != m_pendingConnection.end())
         {
             if(it->first->theOtherSocket == socket || it->second->theOtherSocket == socket)
             {
                 it->first->disconnectFromFakeServer();
                 it->second->disconnectFromFakeServer();
                 m_pendingConnection.erase(it);
-                loop_size--;
-            } else {
-                index++;
             }
         }
     }
 
     //drop the NULL co
     {
-        int index = 0;
-        int loop_size = m_listOfConnexion.size();
         it = m_listOfConnexion.begin();
         while(it != m_listOfConnexion.end())
         {
-            if(it->first->theOtherSocket == NULL || it->second->theOtherSocket == NULL)
+            if (it->first->theOtherSocket == nullptr || it->second->theOtherSocket == nullptr)
             {
                 m_listOfConnexion.erase(it);
-                loop_size--;
-            } else {
-                index++;
             }
         }
-        loop_size = m_pendingConnection.size();
-        it = m_listOfConnexion.begin();
-        while(index < loop_size)
+
+        it = m_pendingConnection.begin();
+        while(it != m_pendingConnection.end())
         {
-            if(it->first->theOtherSocket == NULL || it->second->theOtherSocket == NULL)
+            if (it->first->theOtherSocket == nullptr || it->second->theOtherSocket == nullptr)
             {
                 m_pendingConnection.erase(it);
-                loop_size--;
-            } else {
-                index++;
             }
         }
     }

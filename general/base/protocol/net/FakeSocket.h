@@ -13,7 +13,7 @@
 
 namespace CatchChallenger {
 
-    class FakeSocket /*: public QIODevice*/
+    class FakeSocket
     {
         public:
             friend class FakeServer;
@@ -31,16 +31,21 @@ namespace CatchChallenger {
             FakeSocket* getTheOtherSocket();
             uint64_t getRXSize();
             uint64_t getTXSize();
-            //QAbstractSocket::SocketError error() const;
-            //QAbstractSocket::SocketState state() const;
+            int error() const;
+            int state() const;
             bool isValid() const;
 
-        /*signals:
-            void connected();
-            void disconnected();
-            void error(QAbstractSocket::SocketError socketError);
-            void stateChanged(QAbstractSocket::SocketState socketState);
-            void aboutToDelete();*/
+            enum {
+                unconnected = 0,
+                connected   = 1
+            } m_state;
+
+            virtual void connected() = 0;
+            virtual void disconnected() = 0;
+            virtual void error(QAbstractSocket::SocketError socketError) = 0;
+            virtual void stateChanged(QAbstractSocket::SocketState socketState) = 0;
+            virtual void aboutToDelete() = 0;
+            virtual void readyRead() = 0;
 
         protected:
             FakeSocket* theOtherSocket;
