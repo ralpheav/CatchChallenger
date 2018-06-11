@@ -3,10 +3,10 @@
 
 #include <string>
 
-#include "GeneralStructures.h"
-#include "protocol/log/logger.h"
+#include "general/GeneralStructures.h"
+#include "log/logger.h"
 #include "CommonMap.h"
-#include "GeneralVariable.h"
+#include "general/GeneralVariable.h"
 
 namespace CatchChallenger {
 
