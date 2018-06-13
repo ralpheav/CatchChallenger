@@ -7,7 +7,7 @@
 #include "general/GeneralStructures.h"
 #include "CommonDatapack.h"
 #include "CommonSettingsServer.h"
-#include "PortableEndian.h"
+#include "lib/PortableEndian.h"
 
 namespace CatchChallenger {
     class FacilityLib

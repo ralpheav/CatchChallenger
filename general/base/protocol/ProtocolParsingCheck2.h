@@ -2,8 +2,8 @@
 #ifndef CATCHCHALLENGER_PROTOCOLPARSINGCHECK_H
 #define CATCHCHALLENGER_PROTOCOLPARSINGCHECK_H
 
-#include "ProtocolParsing.h"
-#include "GeneralVariable.h"
+#include "ProtocolParsing2.h"
+#include "general/GeneralVariable.h"
 
 #ifdef CATCHCHALLENGER_EXTRA_CHECK
 

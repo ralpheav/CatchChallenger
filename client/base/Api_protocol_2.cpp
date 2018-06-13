@@ -40,116 +40,117 @@ std::string Api_protocol_2::text_en                = "en";
 std::string Api_protocol_2::text_lang              = "lang";
 std::string Api_protocol_2::text_slash             = "/";
 
-Api_protocol_2::Api_protocol_2(ConnectedSocket *socket, bool tolerantMode) :
-    ProtocolParsingInputOutput(socket,PacketModeTransmission_Client),
+Api_protocol_2::Api_protocol_2(ConnectedSocket* socket, bool tolerantMode) :
+    ProtocolParsingInputOutput(socket, PacketModeTransmission_Client),
     tolerantMode(tolerantMode)
 {
-    datapackStatus=DatapackStatus::Base;
+    datapackStatus = DatapackStatus::Base;
 
     #ifdef BENCHMARKMUTIPLECLIENT
-        if(!Api_protocol::precomputeDone)
+        if (!Api_protocol_2::precomputeDone)
         {
-            Api_protocol::precomputeDone=true;
-            hurgeBufferMove[0]=0x40;
+            Api_protocol_2::precomputeDone = true;
+            hurgeBufferMove[0] = 0x40;
         }
     #endif
 
-    if(extensionAllowed.empty())
+    if (extensionAllowed.empty())
     {
-        const std::vector<std::string> &v=stringsplit(std::string(CATCHCHALLENGER_EXTENSION_ALLOWED),';');
-        extensionAllowed=std::unordered_set<std::string>(v.cbegin(),v.cend());
+        const std::vector<std::string>& extensions = stringsplit(std::string(CATCHCHALLENGER_EXTENSION_ALLOWED), ';');
+        extensionAllowed = std::unordered_set<std::string>(extensions.cbegin(), extensions.cend());
     }
 
-    player_informations.recipes=NULL;
-    player_informations.encyclopedia_monster=NULL;
-    player_informations.encyclopedia_item=NULL;
-    player_informations.bot_already_beaten=NULL;
-    stageConnexion=StageConnexion::Stage1;
+    player_informations.recipes              = NULL;
+    player_informations.encyclopedia_monster = NULL;
+    player_informations.encyclopedia_item    = NULL;
+    player_informations.bot_already_beaten   = NULL;
+    stageConnexion = StageConnexion::Stage1;
     resetAll();
 
-    if(!QObject::connect(socket,&ConnectedSocket::destroyed,this,&Api_protocol::QtsocketDestroyed))
+    /*if(!QObject::connect(socket,&ConnectedSocket::destroyed,this,&Api_protocol::QtsocketDestroyed))
         abort();
-    if(socket->sslSocket!=NULL)
+    */
+    if (socket->sslSocket != NULL)
     {
-        if(!QObject::connect(socket,&ConnectedSocket::readyRead,this,&Api_protocol::readForFirstHeader))
-            abort();
-        if(socket->bytesAvailable())
+        /*if(!QObject::connect(socket,&ConnectedSocket::readyRead,this,&Api_protocol::readForFirstHeader))
+            abort();*/
+        if (socket->bytesAvailable()) {
             readForFirstHeader();
-    }
-    else
-    {
-        if(socket->fakeSocket!=NULL)
-            haveFirstHeader=true;
-        if(!QObject::connect(socket,&ConnectedSocket::readyRead,this,&Api_protocol::parseIncommingData,Qt::QueuedConnection))//put queued to don't have circular loop Client -> Server -> Client
-            abort();
-        if(socket->bytesAvailable())
-            parseIncommingData();
-    }
-
-    if(!Api_protocol::internalVersionDisplayed)
-    {
-        Api_protocol::internalVersionDisplayed=true;
-        std::cout << "Qt version: " << qVersion() << std::endl;
-    }
-
-    {
-        lastQueryNumber.reserve(16);
-        uint8_t index=1;
-        while(index<16)
-        {
-            lastQueryNumber.push_back(index);
-            index++;
         }
+    } else {
+        if (socket->fakeSocket != NULL) {
+            haveFirstHeader = true;
+        }
+        /*if(!QObject::connect(socket,&ConnectedSocket::readyRead,this,&Api_protocol::parseIncommingData,Qt::QueuedConnection))
+            //put queued to don't have circular loop Client -> Server -> Client
+            abort();*/
+        if (socket->bytesAvailable()) {
+            parseIncommingData();
+        }
+    }
+
+    if (!Api_protocol_2::internalVersionDisplayed)
+    {
+        Api_protocol_2::internalVersionDisplayed = true;
+        std::cout << "C++ version: " << __cplusplus << std::endl;
+    }
+
+    lastQueryNumber.reserve(16);
+    uint8_t index = 1;
+    while (index < 16)
+    {
+        lastQueryNumber.push_back(index);
+        index++;
     }
 
     inProgress = false;
 }
 
-Api_protocol_2::~Api_protocol_2()
-{
-    qDebug() << "Api_protocol_2::~Api_protocol_2()";
-    if(player_informations.encyclopedia_monster!=NULL)
+void Api_protocol_2::destroyPlayerInfo() {
+    if (player_informations.encyclopedia_monster != NULL)
     {
         delete player_informations.encyclopedia_monster;
-        player_informations.encyclopedia_monster=NULL;
+        player_informations.encyclopedia_monster = NULL;
     }
-    if(player_informations.encyclopedia_item!=NULL)
+
+    if (player_informations.encyclopedia_item != NULL)
     {
         delete player_informations.encyclopedia_item;
-        player_informations.encyclopedia_item=NULL;
+        player_informations.encyclopedia_item = NULL;
     }
+}
+
+Api_protocol_2::~Api_protocol_2()
+{
+    Logger::instance().log(Logger::Debug, "Api_protocol_2::~Api_protocol_2()");
+
+    destroyPlayerInfo();
 }
 
 bool Api_protocol_2::disconnectClient()
 {
-    if(socket!=NULL)
+    if (socket != NULL) {
         socket->disconnect();
-    is_logged=false;
-    character_selected=false;
-    if(player_informations.encyclopedia_monster!=NULL)
-    {
-        delete player_informations.encyclopedia_monster;
-        player_informations.encyclopedia_monster=NULL;
     }
-    if(player_informations.encyclopedia_item!=NULL)
-    {
-        delete player_informations.encyclopedia_item;
-        player_informations.encyclopedia_item=NULL;
-    }
+
+    is_logged = false;
+    character_selected = false;
+    destroyPlayerInfo();
+
     return true;
 }
 
-void Api_protocol_2::QtsocketDestroyed()
+/*void Api_protocol_2::QtsocketDestroyed()
 {
     socketDestroyed();
-}
+}*/
 
 void Api_protocol_2::socketDestroyed()
 {
-    socket=NULL;
+    socket = NULL;
 }
 
-std::map<uint8_t,uint64_t> Api_protocol_2::getQuerySendTimeList() const
+std::map<uint8_t, uint64_t> Api_protocol_2::getQuerySendTimeList() const
 {
     return querySendTime;
 }
@@ -159,56 +160,55 @@ void Api_protocol_2::parseIncommingData()
     ProtocolParsingInputOutput::parseIncommingData();
 }
 
-void Api_protocol_2::errorParsingLayer(const std::string &error)
+//void Api_protocol_2::errorParsingLayer(const std::string& error)
+//{
+//    #ifdef CATCHCHALLENGER_EXTRA_CHECK
+//        abort();
+//    #endif
+
+//    newError(("Internal error, file: "+std::string(__FILE__)+":"+std::to_string(__LINE__)),error);
+//}
+
+void Api_protocol_2::messageParsingLayer(const std::string& message) const
 {
+    Logger::instance().log(Logger::Debug, message);
+}
+
+void Api_protocol_2::parseError(const std::string& userMessage,const std::string& errorString)
+{
+    if (tolerantMode) {
+        std::cerr << "packet ignored due to: " << errorString << std::endl;
+    } else {
+        std::cerr << userMessage << " " << errorString << std::endl;
+        //newError(userMessage,errorString);
+        Logger::instance().log(Logger::Debug, userMessage + " " + errorString);
+    }
     #ifdef CATCHCHALLENGER_EXTRA_CHECK
         abort();
     #endif
-    newError(("Internal error, file: "+std::string(__FILE__)+":"+std::to_string(__LINE__)),error);
 }
 
-void Api_protocol_2::messageParsingLayer(const std::string &message) const
+Player_private_and_public_informations& Api_protocol_2::get_player_informations()
 {
-    qDebug() << QString::fromStdString(message);
-}
-
-void Api_protocol_2::parseError(const std::string &userMessage,const std::string &errorString)
-{
-    if(tolerantMode)
-        std::cerr << "packet ignored due to: " << errorString << std::endl;
-    else
-    {
-        std::cerr << userMessage << " " << errorString << std::endl;
-        newError(userMessage,errorString);
-    }
-    #ifdef CATCHCHALLENGER_EXTRA_CHECK
-    abort();
-    #endif
-}
-
-Player_private_and_public_informations &Api_protocol_2::get_player_informations()
-{
-    if(!getCaracterSelected())
+    if (!getCaracterSelected())
     {
         std::cerr << "Api_protocol_2::get_player_informations(): !getCharacterSelected() (internal error)" << std::endl;
-        return player_informations;
     }
     return player_informations;
 }
 
-const Player_private_and_public_informations &Api_protocol_2::get_player_informations_ro() const
+const Player_private_and_public_informations& Api_protocol_2::get_player_informations_ro() const
 {
-    if(!getCaracterSelected())
+    if (!getCaracterSelected())
     {
         std::cerr << "Api_protocol_2::get_player_informations_ro(): !getCharacterSelected() (internal error)" << std::endl;
-        return player_informations;
     }
     return player_informations;
 }
 
 std::string Api_protocol_2::getPseudo()
 {
-    if(!getCaracterSelected())
+    if (!getCaracterSelected())
     {
         std::cerr << "Api_protocol_2::getPseudo(): !getCaracterSelected() (internal error)" << std::endl;
         return std::string();
@@ -218,7 +218,7 @@ std::string Api_protocol_2::getPseudo()
 
 uint16_t Api_protocol_2::getId()
 {
-    if(!getCaracterSelected())
+    if (!getCaracterSelected())
     {
         std::cerr << "Api_protocol_2::getId(): !getCaracterSelected() (internal error)" << std::endl;
         return 0;
@@ -228,41 +228,43 @@ uint16_t Api_protocol_2::getId()
 
 uint8_t Api_protocol_2::queryNumber()
 {
-    if(lastQueryNumber.empty())
+    if (lastQueryNumber.empty())
     {
         std::cerr << "Api_protocol_2::queryNumber(): no more lastQueryNumber" << std::endl;
         abort();
     }
-    const uint8_t lastQueryNumberTemp=this->lastQueryNumber.back();
+    const uint8_t lastQueryNumberTemp = this->lastQueryNumber.back();
     const std::time_t result = std::time(nullptr);
-    querySendTime[lastQueryNumberTemp]=result;
+    querySendTime[lastQueryNumberTemp] = result;
     this->lastQueryNumber.pop_back();
+
     return lastQueryNumberTemp;
 }
 
 bool Api_protocol_2::sendProtocol()
 {
-    if(have_send_protocol)
+    if (have_send_protocol)
     {
-        newError("Internal problem","Api_protocol_2::sendProtocol() Have already send the protocol");
+        //newError("Internal problem","Api_protocol_2::sendProtocol() Have already send the protocol");
+        Logger::instance().log(Logger::Debug, "Internal problem: Api_protocol_2::sendProtocol() Have already send the protocol");
         return false;
     }
     if(!haveFirstHeader)
     {
-        newError("Internal problem","Api_protocol_2::sendProtocol() !haveFirstHeader");
+        //newError("Internal problem","Api_protocol_2::sendProtocol() !haveFirstHeader");
+        Logger::instance().log(Logger::Debug, "Internal problem: Api_protocol_2::sendProtocol() !haveFirstHeader");
         return false;
     }
 
-    have_send_protocol=true;
-    if(stageConnexion==StageConnexion::Stage1)
-        packOutcommingQuery(0xA0,queryNumber(),reinterpret_cast<const char *>(protocolHeaderToMatchLogin),sizeof(protocolHeaderToMatchLogin));
-    else if(stageConnexion==StageConnexion::Stage3)
-    {
-        stageConnexion=CatchChallenger::Api_protocol_2::StageConnexion::Stage4;
-        packOutcommingQuery(0xA0,queryNumber(),reinterpret_cast<const char *>(protocolHeaderToMatchGameServer),sizeof(protocolHeaderToMatchGameServer));
-    }
-    else
+    have_send_protocol = true;
+    if (stageConnexion == StageConnexion::Stage1) {
+        packOutcommingQuery(0xA0, queryNumber(), reinterpret_cast<const char *>(protocolHeaderToMatchLogin), sizeof(protocolHeaderToMatchLogin));
+    } else if(stageConnexion==StageConnexion::Stage3) {
+        stageConnexion = CatchChallenger::Api_protocol_2::StageConnexion::Stage4;
+        packOutcommingQuery(0xA0, queryNumber(), reinterpret_cast<const char *>(protocolHeaderToMatchGameServer), sizeof(protocolHeaderToMatchGameServer));
+    } else {
         newError("Internal problem","stageConnexion!=StageConnexion::Stage1/3");
+    }
     return true;
 }
 
@@ -272,40 +274,48 @@ std::string Api_protocol_2::socketDisconnectedForReconnect()
     {
         if(stageConnexion!=StageConnexion::Stage3)
         {
-            newError("Internal problem","Api_protocol_2::socketDisconnectedForReconnect(): "+std::to_string((int)stageConnexion));
+            //newError("Internal problem","Api_protocol_2::socketDisconnectedForReconnect(): "+std::to_string((int)stageConnexion));
+            Logger::instance().log(Logger::Debug, "Internal problem: Api_protocol_2::socketDisconnectedForReconnect(): " + std::to_string((int)stageConnexion);
+
             return std::string();
         }
         else
         {
-            std::cerr << "socketDisconnectedForReconnect() double call detected, just drop it" << std::endl;
+            //std::cerr << "socketDisconnectedForReconnect() double call detected, just drop it" << std::endl;
+            Logger::instance().log(Logger::Debug, "socketDisconnectedForReconnect() double call detected, just drop it");
+
             return std::string();
         }
     }
-    if(selectedServerIndex==-1)
+    if (selectedServerIndex == s - 1)
     {
-        parseError("Internal error, file: "+std::string(__FILE__)+":"+std::to_string(__LINE__),std::string("selectedServerIndex==-1 with Api_protocol_2::socketDisconnectedForReconnect()"));
+        parseError("Internal error, file: " + std::string(__FILE__) + ":" + std::to_string(__LINE__), std::string("selectedServerIndex==-1 with Api_protocol_2::socketDisconnectedForReconnect()"));
         return std::string();
     }
-    const ServerFromPoolForDisplay &serverFromPoolForDisplay=serverOrdenedList.at(selectedServerIndex);
-    if(serverFromPoolForDisplay.host.empty())
+
+    const ServerFromPoolForDisplay& serverFromPoolForDisplay = serverOrdenedList.at(selectedServerIndex);
+    if (serverFromPoolForDisplay.host.empty())
     {
-        parseError("Internal error, file: "+std::string(__FILE__)+":"+std::to_string(__LINE__),std::string("serverFromPoolForDisplay.host.isEmpty() with Api_protocol_2::socketDisconnectedForReconnect()"));
+        parseError("Internal error, file: " + std::string(__FILE__) + ":" + std::to_string(__LINE__), std::string("serverFromPoolForDisplay.host.isEmpty() with Api_protocol_2::socketDisconnectedForReconnect()"));
         return std::string();
     }
-    if(socket==NULL)
+    if (socket == NULL)
     {
-        parseError("Internal error, file: "+std::string(__FILE__)+":"+std::to_string(__LINE__),std::string("socket==NULL with Api_protocol_2::socketDisconnectedForReconnect()"));
-        return serverFromPoolForDisplay.host+":"+std::to_string(serverFromPoolForDisplay.port);
+        parseError("Internal error, file: " + std::string(__FILE__) + ":" + std::to_string(__LINE__), std::string("socket==NULL with Api_protocol_2::socketDisconnectedForReconnect()"));
+        return serverFromPoolForDisplay.host + ":" + std::to_string(serverFromPoolForDisplay.port);
     }
-    message("stageConnexion=CatchChallenger::Api_protocol_2::StageConnexion::Stage3 set at "+std::string(__FILE__)+":"+std::to_string(__LINE__));
-    stageConnexion=CatchChallenger::Api_protocol_2::StageConnexion::Stage3;//prevent loop in stage2
-    haveFirstHeader=false;
+
+    message("stageConnexion=CatchChallenger::Api_protocol_2::StageConnexion::Stage3 set at " + std::string(__FILE__) + ":" + std::to_string(__LINE__));
+    stageConnexion = CatchChallenger::Api_protocol_2::StageConnexion::Stage3;//prevent loop in stage2
+    haveFirstHeader = false;
     std::cout << "Api_protocol_2::socketDisconnectedForReconnect(), Try connect to: " << serverFromPoolForDisplay.host << ":" << serverFromPoolForDisplay.port << std::endl;
-    socket->connectToHost(QString::fromStdString(serverFromPoolForDisplay.host),serverFromPoolForDisplay.port);
-    return serverFromPoolForDisplay.host+":"+std::to_string(serverFromPoolForDisplay.port);
+
+    socket->connectToHost(QString::fromStdString(serverFromPoolForDisplay.host), serverFromPoolForDisplay.port);
+
+    return serverFromPoolForDisplay.host + ":" + std::to_string(serverFromPoolForDisplay.port);
 }
 
-const std::vector<ServerFromPoolForDisplay> &Api_protocol_2::getServerOrdenedList()
+const std::vector<ServerFromPoolForDisplay>& Api_protocol_2::getServerOrdenedList()
 {
     return serverOrdenedList;
 }
@@ -315,197 +325,252 @@ bool Api_protocol_2::protocolWrong() const
     return have_send_protocol && !have_receive_protocol;
 }
 
-bool Api_protocol_2::tryLogin(const std::string &login, const std::string &pass)
+bool Api_protocol_2::tryLogin(const std::string& login, const std::string& pass)
 {
-    if(!have_send_protocol)
+    if (!have_send_protocol)
     {
-        newError(std::string("Internal problem"),std::string("Have not send the protocol"));
+        Logger::instance().log(Logger::Debug, "Internal problem: Have not send the protocol");
+        //newError(std::string("Internal problem"), std::string("Have not send the protocol"));
         return false;
     }
-    if(is_logged)
+
+    if (is_logged)
     {
-        newError(std::string("Internal problem"),std::string("Is already logged"));
+        Logger::instance().log(Logger::Debug, "Internal problem: Is already logged");
+        //newError(std::string("Internal problem"), std::string("Is already logged"));
         return false;
     }
-    if(token.empty())
+
+    if (token.empty())
     {
-        newError(std::string("Internal problem"),std::string("Token is empty"));
+        Logger::instance().log(Logger::Debug, "Internal problem: Token is empty");
+        //newError(std::string("Internal problem"),std::string("Token is empty"));
         return false;
     }
+
     std::string outputData;
     #ifdef CATCHCHALLENGER_EXTRA_CHECK
         std::string tempDoubleHash;
     #endif
     {
-        QCryptographicHash hashLogin(QCryptographicHash::Sha224);
-        hashLogin.addData((QString::fromStdString(login)+/*salt*/"RtR3bm9Z1DFMfAC3").toUtf8());
-        loginHash=std::string(hashLogin.result().constData(),hashLogin.result().size());
-        outputData+=loginHash;
+        unsigned char digest[SHA224_DIGEST_LENGTH];
+        std::string string = login + "RtR3bm9Z1DFMfAC3";
+        SHA224((unsigned char*)&string.c_str(), string.size(), (unsigned char*)&digest);
+        char loginHash[SHA224_DIGEST_LENGTH * 2 + 1];
+        for (int i = 0; i < SHA224_DIGEST_LENGTH; i++) {
+             sprintf(&loginHash[i * 2], "%02x", (unsigned int)digest[i]);
+        }
+        //QCryptographicHash hashLogin(QCryptographicHash::Sha224);
+        //hashLogin.addData((QString::fromStdString(login)+/*salt*/"RtR3bm9Z1DFMfAC3").toUtf8());
+        //loginHash = std::string(hashLogin.result().constData(), hashLogin.result().size());
+        outputData += loginHash;
+
         #ifdef CATCHCHALLENGER_EXTRA_CHECK
             {
-                QCryptographicHash hashLogin2(QCryptographicHash::Sha224);
-                hashLogin2.addData(QByteArray(loginHash.data(),loginHash.size()));
-                tempDoubleHash=std::string(hashLogin2.result().data(),hashLogin2.result().size());
+                unsigned char digest[SHA224_DIGEST_LENGTH];
+                std::string string = loginHash;
+                SHA224((unsigned char*)&string.c_str(), string.size(), (unsigned char*)&digest);
+                char hashLogin2[SHA224_DIGEST_LENGTH * 2 + 1];
+                for (int i = 0; i < SHA224_DIGEST_LENGTH; i++) {
+                     sprintf(&hashLogin2[i * 2], "%02x", (unsigned int)digest[i]);
+                }
+                tempDoubleHash = hashLogin2;
+                //QCryptographicHash hashLogin2(QCryptographicHash::Sha224);
+                //hashLogin2.addData(QByteArray(loginHash.data(),loginHash.size()));
+                //tempDoubleHash=std::string(hashLogin2.result().data(),hashLogin2.result().size());
             }
         #endif
     }
-    QCryptographicHash hashAndToken(QCryptographicHash::Sha224);
-    {
-        QCryptographicHash hashPass(QCryptographicHash::Sha224);
-        hashPass.addData((QString::fromStdString(pass)+/*salt*/"AwjDvPIzfJPTTgHs"+QString::fromStdString(login)/*add unique salt*/).toUtf8());
-        passHash=std::string(hashPass.result().data(),hashPass.result().size());
-
-        hashAndToken.addData(QByteArray(passHash.data(),passHash.size()));
-        hashAndToken.addData(QByteArray(token.data(),token.size()));
-        outputData+=std::string(hashAndToken.result().data(),hashAndToken.result().size());
+    unsigned char digest[SHA224_DIGEST_LENGTH];
+    std::string string = pass + "AwjDvPIzfJPTTgHs" + login;
+    SHA224((unsigned char*)&string.c_str(), string.size(), (unsigned char*)&digest);
+    char hashLogin3[SHA224_DIGEST_LENGTH * 2 + 1];
+    for (int i = 0; i < SHA224_DIGEST_LENGTH; i++) {
+         sprintf(&hashLogin3[i * 2], "%02x", (unsigned int)digest[i]);
     }
+    passHash = hashLogin3;
+    SHA224((unsigned char*)&passHash.c_str(), passHash.size(), (unsigned char*)&digest);
+    SHA224((unsigned char*)&token.c_str(), token.size(), (unsigned char*)&digest);
+    char hashLogin4[SHA224_DIGEST_LENGTH * 2 + 1];
+    for (int i = 0; i < SHA224_DIGEST_LENGTH; i++) {
+         sprintf(&hashLogin4[i * 2], "%02x", (unsigned int)digest[i]);
+    }
+    outputData += hashLogin4;
+    //QCryptographicHash hashAndToken(QCryptographicHash::Sha224);
+    //{
+        //QCryptographicHash hashPass(QCryptographicHash::Sha224);
+        //hashPass.addData((QString::fromStdString(pass)+/*salt*/"AwjDvPIzfJPTTgHs"+QString::fromStdString(login)/*add unique salt*/).toUtf8());
+        //passHash=std::string(hashPass.result().data(),hashPass.result().size());
+
+        //hashAndToken.addData(QByteArray(passHash.data(),passHash.size()));
+        //hashAndToken.addData(QByteArray(token.data(),token.size()));
+        //outputData+=std::string(hashAndToken.result().data(),hashAndToken.result().size());
+    //}
 
     #ifdef CATCHCHALLENGER_EXTRA_CHECK
-        std::cout << "Try auth: password " << binarytoHexa(passHash.data(),passHash.size())
-                  << ", token: " << binarytoHexa(token.data(),token.size())
-                  << ", password+token " << binarytoHexa(hashAndToken.result().data(),hashAndToken.result().size())
-                  << " (" << binarytoHexa(tempDoubleHash.data(),tempDoubleHash.size())
+        std::cout << "Try auth: password " << binarytoHexa(passHash.data(), passHash.size())
+                  << ", token: " << binarytoHexa(token.data(), token.size())
+                  << ", password+token " << binarytoHexa(digest, SHA224_DIGEST_LENGTH)
+                  << " (" << binarytoHexa(tempDoubleHash.data(), tempDoubleHash.size())
                   << ") for the login: "
-                  << binarytoHexa(passHash.data(),passHash.size());
+                  << binarytoHexa(passHash.data(), passHash.size());
     #endif
 
-    std::string peerName=socket->peerName().toStdString();
-    if(peerName.size()>255)
+    std::string peerName = socket->peerName().toStdString();
+    if (peerName.size() > 255)
     {
-        newError(QObject::tr("Hostname too big").toStdString(),std::string("Hostname too big"));
+        Logger::instance().log(Logger::Debug, "Hostname too big");
+        //newError(QObject::tr("Hostname too big").toStdString(),std::string("Hostname too big"));
         return false;
     }
 
-    packOutcommingQuery(0xA8,queryNumber(),outputData.data(),outputData.size());
+    packOutcommingQuery(0xA8, queryNumber(), outputData.data(), outputData.size());
+
     return true;
 }
 
 bool Api_protocol_2::tryCreateAccount()
 {
-    if(!have_send_protocol)
+    if (!have_send_protocol)
     {
-        newError(std::string("Internal problem"),std::string("Have not send the protocol"));
+        Logger::instance().log(Logger::Debug, "Internal problem, Have not send the protocol");
+        //newError(std::string("Internal problem"),std::string("Have not send the protocol"));
         return false;
     }
-    if(is_logged)
+
+    if (is_logged)
     {
-        newError(std::string("Internal problem"),std::string("Is already logged"));
+        Logger::instance().log(Logger::Debug, "Internal problem, Is already logged");
+        //newError(std::string("Internal problem"),std::string("Is already logged"));
         return false;
     }
+
     /*double hashing on client part
      * '''Prevent login leak in case of MiM attack re-ask the password''' (Trafic modification, replace the server return code OK by ACCOUNT CREATION)
      * Do some DDOS protection because it offload the hashing */
-    std::string outputData;
-    {
-        QCryptographicHash hashLogin(QCryptographicHash::Sha224);
-        hashLogin.addData(QByteArray(loginHash.data(),loginHash.size()));
-        outputData+=std::string(hashLogin.result().data(),hashLogin.result().size());
+//    std::string outputData;
+//    {
+//        QCryptographicHash hashLogin(QCryptographicHash::Sha224);
+//        hashLogin.addData(QByteArray(loginHash.data(),loginHash.size()));
+//        outputData+=std::string(hashLogin.result().data(),hashLogin.result().size());
+//    }
+    unsigned char digest[SHA224_DIGEST_LENGTH];
+    std::string string = loginHash;
+    SHA224((unsigned char*)&string.c_str(), string.size(), (unsigned char*)&digest);
+    char hashLogin[SHA224_DIGEST_LENGTH * 2 + 1];
+    for (int i = 0; i < SHA224_DIGEST_LENGTH; i++) {
+         sprintf(&hashLogin[i * 2], "%02x", (unsigned int)digest[i]);
     }
+    outputData = hashLogin;
     //pass
-    outputData+=passHash;
+    outputData += passHash;
 
-    packOutcommingQuery(0xA9,queryNumber(),outputData.data(),outputData.size());
-    std::cout << "Try create account: login: " << binarytoHexa(loginHash.data(),loginHash.size())
-              << " and pass: " << binarytoHexa(passHash.data(),passHash.size()) << std::endl;
+    packOutcommingQuery(0xA9, queryNumber(), outputData.data(), outputData.size());
+
+    std::cout << "Try create account: login: " << binarytoHexa(loginHash.data(), loginHash.size())
+              << " and pass: " << binarytoHexa(passHash.data(), passHash.size()) << std::endl;
+
     return true;
 }
 
-void Api_protocol_2::send_player_move(const uint8_t &moved_unit,const Direction &direction)
+void Api_protocol_2::send_player_move(const uint8_t& moved_unit, const Direction& direction)
 {
     #ifdef BENCHMARKMUTIPLECLIENT
-        hurgeBufferMove[1]=moved_unit;
-        hurgeBufferMove[2]=direction;
-        const int &infd=socket->sslSocket->socketDescriptor();
-        if(infd!=-1)
+        hurgeBufferMove[1] = moved_unit;
+        hurgeBufferMove[2] = direction;
+        const int& infd = socket->sslSocket->socketDescriptor();
+        if (infd != -1) {
             ::write(infd,hurgeBufferMove,3);
-        else
+        } else {
             internalSendRawSmallPacket(hurgeBufferMove,3);
+        }
         return;
     #endif
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    uint8_t directionInt=static_cast<uint8_t>(direction);
-    if(directionInt<1 || directionInt>8)
+    uint8_t directionInt = static_cast<uint8_t>(direction);
+    if (directionInt < 1 || directionInt > 8)
     {
         std::cerr << "direction given wrong: " << directionInt << std::endl;
         abort();
     }
-    if(last_direction_is_set==false)
+    if (last_direction_is_set == false) {
         abort();
-    //correct integration with MoveOnTheMap::newDirection()
-    if(last_direction!=direction)
-    {
-        send_player_move_internal(last_step,last_direction);
-        send_player_move_internal(moved_unit,direction);
     }
-    else
+    //correct integration with MoveOnTheMap::newDirection()
+    if (last_direction != direction)
     {
-        bool isAMove=false;
+        send_player_move_internal(last_step, last_direction);
+        send_player_move_internal(moved_unit, direction);
+    } else {
+        bool isAMove = false;
         switch(direction)
         {
             case Direction_move_at_top:
             case Direction_move_at_right:
             case Direction_move_at_bottom:
             case Direction_move_at_left:
-                isAMove=true;
-            return;
-            break;
+                isAMove = true;
+                return;
             default:
-            break;
+                break;
         }
-        if(isAMove)
+        if (isAMove)
         {
-            last_step+=moved_unit;
+            last_step += moved_unit;
             return;
-        }
-        else // if look
+        } else // if look
         {
             #ifdef CATCHCHALLENGER_EXTRA_CHECK
-            if(moved_unit>0)
-                abort();
-            if(last_step>0)
-                abort();
+                if (moved_unit > 0) {
+                    abort();
+                }
+                if (last_step > 0) {
+                    abort();
+                }
             #endif
-            last_step=0;
+            last_step = 0;
             return;//2x time look on smae direction, drop
         }
     }
-    last_step=0;
-    last_direction=direction;
+    last_step = 0;
+    last_direction = direction;
 }
 
-void Api_protocol_2::send_player_move_internal(const uint8_t &moved_unit,const CatchChallenger::Direction &direction)
+void Api_protocol_2::send_player_move_internal(const uint8_t& moved_unit,const CatchChallenger::Direction& direction)
 {
-    uint8_t directionInt=static_cast<uint8_t>(direction);
-    if(directionInt<1 || directionInt>8)
+    uint8_t directionInt = static_cast<uint8_t>(direction);
+    if (directionInt < 1 || directionInt > 8)
     {
         std::cerr << "direction given wrong: " << directionInt << std::endl;
         abort();
     }
-    QByteArray outputData;
+    std::vector<unsigned char> outputData;
+    //QByteArray outputData;
     QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(QDataStream::LittleEndian);
     out << moved_unit;
     out << directionInt;
-    packOutcommingData(0x02,outputData.constData(),outputData.size());
+    packOutcommingData(0x02, outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::send_player_direction(const Direction &the_direction)
+void Api_protocol_2::send_player_direction(const Direction& the_direction)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
@@ -513,7 +578,7 @@ void Api_protocol_2::send_player_direction(const Direction &the_direction)
     newDirection(the_direction);
 }
 
-void Api_protocol_2::sendChatText(const Chat_type &chatType, const std::string &text)
+void Api_protocol_2::sendChatText(const Chat_type& chatType, const std::string& text)
 {
     if(!is_logged)
     {

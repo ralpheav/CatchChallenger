@@ -19,32 +19,35 @@
 #include <QSslKey>
 #include <QDataStream>
 
-
-#include "ClientStructures.h"
-#include "../../general/base/GeneralStructures.h"
-#include "../../general/base/GeneralVariable.h"
-#include "../../general/base/ProtocolParsing.h"
-#include "../../general/base/MoveOnTheMap.h"
-#include "../../general/base/ProtocolVersion.h"
 #include "../../general/base/tinyXML2/tinyxml2.h"
 #include "../../general/base/tinyXML2/customtinyxml2.h"
-#include "../../general/base/CommonDatapack.h"
+
+#include "ClientStructures.h"
+#include "../../general/base/protocol/general/GeneralStructures.h"
+#include "../../general/base/protocol/general/GeneralVariable.h"
+
+#include "../../general/base/protocol/ProtocolParsing2.h"
+#include "../../general/base/protocol/MoveOnTheMap.h"
+#include "../../general/base/protocol/ProtocolVersion2.h"
+#include "../../general/base/protocol/CommonDatapack.h"
+
 #include "../../general/base/CommonSettingsCommon.h"
-#include "../../general/base/CommonSettingsServer.h"
-#include "../../general/base/FacilityLib.h"
-#include "../../general/base/FacilityLibGeneral.h"
-#include "../../general/base/GeneralType.h"
 
+#include "../../general/base/protocol/CommonSettingsServer.h"
+#include "../../general/base/protocol/FacilityLib.h"
+#include "../../general/base/protocol/FacilityLibGeneral.h"
+#include "../../general/base/protocol/general/GeneralType.h"
+#include "../../general/base/protocol/log/logger.h"
 
-namespace CatchChallenger {
-
+namespace CatchChallenger
+{
     class Api_protocol_2 : public ProtocolParsingInputOutput, public MoveOnTheMap
     {
         public:
             static bool internalVersionDisplayed;
 
         public:
-            explicit Api_protocol_2(ConnectedSocket *socket, bool tolerantMode = false);
+            explicit Api_protocol_2(ConnectedSocket* socket, bool tolerantMode = false);
             ~Api_protocol_2();
 
             bool disconnectClient();
@@ -81,18 +84,19 @@ namespace CatchChallenger {
 
             enum StageConnexion
             {
-                Stage1=0x01,//Connect on login server
-                Stage2=0x02,//reconnexion in progress
-                Stage3=0x03,//connecting on game server
-                Stage4=0x04,//connected on game server
+                Stage1 = 0x01, //Connect on login server
+                Stage2 = 0x02, //reconnexion in progress
+                Stage3 = 0x03, //connecting on game server
+                Stage4 = 0x04, //connected on game server
             };
             StageConnexion stage() const;
+
             enum DatapackStatus
             {
-                Base=0x01,
-                Main=0x02,
-                Sub=0x03,
-                Finished=0x04
+                Base     = 0x01,
+                Main     = 0x02,
+                Sub      = 0x03,
+                Finished = 0x04
             };
             DatapackStatus datapackStatus;
 
@@ -108,8 +112,8 @@ namespace CatchChallenger {
 
             enum ProxyMode
             {
-                Reconnect=0x01,
-                Proxy=0x02
+                Reconnect = 0x01,
+                Proxy     = 0x02
             };
             ProxyMode proxyMode;
 

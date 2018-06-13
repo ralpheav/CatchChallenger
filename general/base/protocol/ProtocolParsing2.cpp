@@ -1,19 +1,4 @@
 #include "ProtocolParsing2.h"
-#include "../GeneralVariable.h"
-#include "../GeneralStructures.h"
-#include "ProtocolParsingCheck2.h"
-
-#include <iostream>
-#include <cstring>
-#include <openssl/sha.h>
-
-#ifndef EPOLLCATCHCHALLENGERSERVER
-    #include <QMetaType>
-#endif
-
-#ifndef EPOLLCATCHCHALLENGERSERVERNOCOMPRESSION
-    #include "zstd.h"
-#endif
 
 using namespace CatchChallenger;
 

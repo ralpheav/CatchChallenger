@@ -8,6 +8,7 @@
 #include <string>
 
 #include "../GeneralVariable.h"
+
 #ifdef EPOLLCATCHCHALLENGERSERVER
     #ifdef SERVERSSL
         #include "../../server/epoll/EpollSslClient.h"
@@ -48,7 +49,7 @@ namespace CatchChallenger {
 #if ! defined (ONLYMAPRENDER)
 class ProtocolParsingCheck;
 
-class ProtocolParsingBase : public ProtocolParsing
+class ProtocolParsingBase : public ProtocolParsing2
 {
 public:
     ProtocolParsingBase(
