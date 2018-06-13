@@ -14,10 +14,11 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QDateTime>
-#include <QCryptographicHash>
 #include <QStandardPaths>
 #include <QSslKey>
 #include <QDataStream>
+
+#include <openssl/sha.h>
 
 #include "../../general/base/tinyXML2/tinyxml2.h"
 #include "../../general/base/tinyXML2/customtinyxml2.h"
