@@ -349,69 +349,55 @@ bool Api_protocol_2::tryLogin(const std::string& login, const std::string& pass)
     }
 
     std::string outputData;
+    char digestHexaTemp[64];
     #ifdef CATCHCHALLENGER_EXTRA_CHECK
         std::string tempDoubleHash;
     #endif
     {
-        unsigned char digest[SHA224_DIGEST_LENGTH];
+        char digest[64];
         std::string string = login + "RtR3bm9Z1DFMfAC3";
-        SHA224((unsigned char*)&string.c_str(), string.size(), (unsigned char*)&digest);
-        char loginHash[SHA224_DIGEST_LENGTH * 2 + 1];
-        for (int i = 0; i < SHA224_DIGEST_LENGTH; i++) {
-             sprintf(&loginHash[i * 2], "%02x", (unsigned int)digest[i]);
-        }
-        //QCryptographicHash hashLogin(QCryptographicHash::Sha224);
-        //hashLogin.addData((QString::fromStdString(login)+/*salt*/"RtR3bm9Z1DFMfAC3").toUtf8());
-        //loginHash = std::string(hashLogin.result().constData(), hashLogin.result().size());
+        SHA224 hashLogin(string.c_str());
+        hashLogin.execute();
+        hashLogin.getDigest(digest);
+        loginHash = std::string(digest);
         outputData += loginHash;
 
         #ifdef CATCHCHALLENGER_EXTRA_CHECK
-            {
-                unsigned char digest[SHA224_DIGEST_LENGTH];
-                std::string string = loginHash;
-                SHA224((unsigned char*)&string.c_str(), string.size(), (unsigned char*)&digest);
-                char hashLogin2[SHA224_DIGEST_LENGTH * 2 + 1];
-                for (int i = 0; i < SHA224_DIGEST_LENGTH; i++) {
-                     sprintf(&hashLogin2[i * 2], "%02x", (unsigned int)digest[i]);
-                }
-                tempDoubleHash = hashLogin2;
-                //QCryptographicHash hashLogin2(QCryptographicHash::Sha224);
-                //hashLogin2.addData(QByteArray(loginHash.data(),loginHash.size()));
-                //tempDoubleHash=std::string(hashLogin2.result().data(),hashLogin2.result().size());
-            }
+        char digestTemp[64];
+        {
+            SHA224 hashLogin2(loginHash.c_str());
+            hashLogin2.execute();
+            hashLogin2.getDigest(digestTemp);
+            hashLogin2.getDigestHex(digestHexaTemp);
+            tempDoubleHash = std::string(digestTemp);
+
+        }
         #endif
     }
-    unsigned char digest[SHA224_DIGEST_LENGTH];
-    std::string string = pass + "AwjDvPIzfJPTTgHs" + login;
-    SHA224((unsigned char*)&string.c_str(), string.size(), (unsigned char*)&digest);
-    char hashLogin3[SHA224_DIGEST_LENGTH * 2 + 1];
-    for (int i = 0; i < SHA224_DIGEST_LENGTH; i++) {
-         sprintf(&hashLogin3[i * 2], "%02x", (unsigned int)digest[i]);
-    }
-    passHash = hashLogin3;
-    SHA224((unsigned char*)&passHash.c_str(), passHash.size(), (unsigned char*)&digest);
-    SHA224((unsigned char*)&token.c_str(), token.size(), (unsigned char*)&digest);
-    char hashLogin4[SHA224_DIGEST_LENGTH * 2 + 1];
-    for (int i = 0; i < SHA224_DIGEST_LENGTH; i++) {
-         sprintf(&hashLogin4[i * 2], "%02x", (unsigned int)digest[i]);
-    }
-    outputData += hashLogin4;
-    //QCryptographicHash hashAndToken(QCryptographicHash::Sha224);
-    //{
-        //QCryptographicHash hashPass(QCryptographicHash::Sha224);
-        //hashPass.addData((QString::fromStdString(pass)+/*salt*/"AwjDvPIzfJPTTgHs"+QString::fromStdString(login)/*add unique salt*/).toUtf8());
-        //passHash=std::string(hashPass.result().data(),hashPass.result().size());
+    char digestpass[64];
+    char digestpassHexa[64];
+    char digest[64];
+    char digestHexa[64];
+    std::string string = pass + std::string("AwjDvPIzfJPTTgHs") + login;
+    SHA224 hashPass(string.c_str());
+    hashPass.execute();
+    hashPass.getDigest(digestpass);
+    hashPass.getDigestHex(digestpassHexa);
+    passHash = std::string(digestpass);
 
-        //hashAndToken.addData(QByteArray(passHash.data(),passHash.size()));
-        //hashAndToken.addData(QByteArray(token.data(),token.size()));
-        //outputData+=std::string(hashAndToken.result().data(),hashAndToken.result().size());
-    //}
+    SHA224 hashAndToken(passHash.c_str());
+    hashAndToken.addData(token.c_str());
+    hashAndToken.execute();
+    hashAndToken.getDigest(digest);
+    hashAndToken.getDigestHex(digestHexa);
+
+    outputData += std::string(digest);
 
     #ifdef CATCHCHALLENGER_EXTRA_CHECK
-        std::cout << "Try auth: password " << binarytoHexa(passHash.data(), passHash.size())
+        std::cout << "Try auth: password " << digestpassHexa
                   << ", token: " << binarytoHexa(token.data(), token.size())
-                  << ", password+token " << binarytoHexa(digest, SHA224_DIGEST_LENGTH)
-                  << " (" << binarytoHexa(tempDoubleHash.data(), tempDoubleHash.size())
+                  << ", password+token " << digestpassHexa
+                  << " (" << digestHexaTemp
                   << ") for the login: "
                   << binarytoHexa(passHash.data(), passHash.size());
     #endif
@@ -448,20 +434,12 @@ bool Api_protocol_2::tryCreateAccount()
     /*double hashing on client part
      * '''Prevent login leak in case of MiM attack re-ask the password''' (Trafic modification, replace the server return code OK by ACCOUNT CREATION)
      * Do some DDOS protection because it offload the hashing */
-//    std::string outputData;
-//    {
-//        QCryptographicHash hashLogin(QCryptographicHash::Sha224);
-//        hashLogin.addData(QByteArray(loginHash.data(),loginHash.size()));
-//        outputData+=std::string(hashLogin.result().data(),hashLogin.result().size());
-//    }
-    unsigned char digest[SHA224_DIGEST_LENGTH];
-    std::string string = loginHash;
-    SHA224((unsigned char*)&string.c_str(), string.size(), (unsigned char*)&digest);
-    char hashLogin[SHA224_DIGEST_LENGTH * 2 + 1];
-    for (int i = 0; i < SHA224_DIGEST_LENGTH; i++) {
-         sprintf(&hashLogin[i * 2], "%02x", (unsigned int)digest[i]);
-    }
-    outputData = hashLogin;
+    std::string outputData;
+    char digestlogin[64];
+    SHA224 hashLogin(loginHash.c_str());
+    hashLogin.execute();
+    hashLogin.getDigest(digestlogin);
+    outputData = digestlogin;
     //pass
     outputData += passHash;
 
@@ -553,13 +531,14 @@ void Api_protocol_2::send_player_move_internal(const uint8_t& moved_unit,const C
         std::cerr << "direction given wrong: " << directionInt << std::endl;
         abort();
     }
-    std::vector<unsigned char> outputData;
-    //QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(QDataStream::LittleEndian);
+    //std::vector<unsigned char> outputData;
+    ByteArray outputData;
+    DataStream out(&outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << moved_unit;
     out << directionInt;
+
     packOutcommingData(0x02, outputData.constData(), outputData.size());
 }
 

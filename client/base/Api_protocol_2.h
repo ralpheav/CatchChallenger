@@ -8,7 +8,6 @@
 #include <QString>
 #include <QCoreApplication>
 #include <QString>
-#include <QByteArray>
 #include <QList>
 #include <QPair>
 #include <QDir>
@@ -16,9 +15,11 @@
 #include <QDateTime>
 #include <QStandardPaths>
 #include <QSslKey>
-#include <QDataStream>
 
-#include <openssl/sha.h>
+
+#include "../../general/base/protocol/util/DataStream.h"
+#include "../../general/base/protocol/util/ByteArray.h"
+#include "../../general/base/protocol/util/sha224.h"
 
 #include "../../general/base/tinyXML2/tinyxml2.h"
 #include "../../general/base/tinyXML2/customtinyxml2.h"
