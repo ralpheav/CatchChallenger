@@ -40,6 +40,14 @@ private:
         return (reinterpret_cast<const uint8_t*>(&t)) ? LittleEndian : BigEndian;
     }
 
+    static ByteOrder systemByteOrderU(){
+        union {
+            uint32_t i;
+            char c[4];
+        } bint = {0x01020304};
+        return (bint.c[0] == 1) ? BigEndian: LittleEndian;
+    }
+
     bool has(size_t count) const {
 
         return m_idx + count <= m_data->size();

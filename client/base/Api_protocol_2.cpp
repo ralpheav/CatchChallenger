@@ -523,7 +523,7 @@ void Api_protocol_2::send_player_move(const uint8_t& moved_unit, const Direction
     last_direction = direction;
 }
 
-void Api_protocol_2::send_player_move_internal(const uint8_t& moved_unit,const CatchChallenger::Direction& direction)
+void Api_protocol_2::send_player_move_internal(const uint8_t& moved_unit, const CatchChallenger::Direction& direction)
 {
     uint8_t directionInt = static_cast<uint8_t>(direction);
     if (directionInt < 1 || directionInt > 8)
@@ -533,7 +533,7 @@ void Api_protocol_2::send_player_move_internal(const uint8_t& moved_unit,const C
     }
     //std::vector<unsigned char> outputData;
     ByteArray outputData;
-    DataStream out(&outputData, DataStream::WriteOnly);
+    DataStream out(outputData, DataStream::WriteOnly);
     //out.setVersion(QDataStream::Qt_4_4);
     out.setByteOrder(DataStream::LittleEndian);
     out << moved_unit;
@@ -559,214 +559,232 @@ void Api_protocol_2::send_player_direction(const Direction& the_direction)
 
 void Api_protocol_2::sendChatText(const Chat_type& chatType, const std::string& text)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(chatType!=Chat_type_local && chatType!=Chat_type_all && chatType!=Chat_type_clan && chatType!=Chat_type_aliance && chatType!=Chat_type_system && chatType!=Chat_type_system_important)
+    if (chatType != Chat_type_local && chatType != Chat_type_all && chatType != Chat_type_clan && chatType != Chat_type_aliance && chatType != Chat_type_system && chatType != Chat_type_system_important)
     {
         std::cerr << "chatType wrong: " << chatType << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)chatType;
     {
-        const std::string &tempText=text;
-        if(tempText.size()>255)
+        const std::string& tempText = text;
+        if (tempText.size() > 255)
         {
             std::cerr << "text in Utf8 too big, line: " << __FILE__ << ": " << __LINE__ << std::endl;
             return;
         }
         out << (uint8_t)tempText.size();
-        outputData+=QByteArray(tempText.data(),tempText.size());
-        out.device()->seek(out.device()->pos()+tempText.size());
+        outputData += ByteArray(tempText.data(), tempText.size());
+        //TODO: need to route to the ConnectSocket
+        //out.device()->seek(out.device()->pos() + tempText.size());
     }
-    packOutcommingData(0x03,outputData.constData(),outputData.size());
+    packOutcommingData(0x03, outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::sendPM(const std::string &text,const std::string &pseudo)
+void Api_protocol_2::sendPM(const std::string& text,const std::string& pseudo)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(this->player_informations.public_informations.pseudo==pseudo)
+    if (this->player_informations.public_informations.pseudo == pseudo) {
         return;
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    }
+
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);//TODO: needs to be pointer of outputData
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)Chat_type_pm;
     {
-        const std::string &tempText=text;
-        if(tempText.size()>255)
+        const std::string& tempText = text;
+        if (tempText.size() > 255)
         {
             std::cerr << "text in Utf8 too big, line: " << __FILE__ << ": " << __LINE__ << std::endl;
             return;
         }
         out << (uint8_t)tempText.size();
-        outputData+=QByteArray(tempText.data(),tempText.size());
-        out.device()->seek(out.device()->pos()+tempText.size());
+        outputData += ByteArray(tempText.data(), tempText.size());
+        //TODO: rotute to connectSocket
+        //out.device()->seek(out.device()->pos()+tempText.size());
     }
     {
-        const std::string &tempText=pseudo;
-        if(tempText.size()>255)
+        const std::string& tempText = pseudo;
+        if (tempText.size() > 255)
         {
             std::cerr << "text in Utf8 too big, line: " << __FILE__ << ": " << __LINE__ << std::endl;
             return;
         }
         out << (uint8_t)tempText.size();
-        outputData+=QByteArray(tempText.data(),tempText.size());
-        out.device()->seek(out.device()->pos()+tempText.size());
+        outputData += ByteArray(tempText.data(), tempText.size());
+        //TODO: rotute to connectSocket
+        //out.device()->seek(out.device()->pos()+tempText.size());
     }
-    packOutcommingData(0x03,outputData.constData(),outputData.size());
+    packOutcommingData(0x03, outputData.constData(), outputData.size());
 }
 
 bool Api_protocol_2::teleportDone()
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return false;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return false;
     }
-    const TeleportQueryInformation &teleportQueryInformation=teleportList.front();
-    if(!last_direction_is_set)
+    const TeleportQueryInformation& teleportQueryInformation = teleportList.front();
+    if (!last_direction_is_set)
     {
         parseError("Procotol wrong or corrupted",
-                   "Api_protocol_2::teleportDone() !last_direction_is_set value, line: "+std::string(__FILE__)+":"+std::to_string(__LINE__));
+                   "Api_protocol_2::teleportDone() !last_direction_is_set value, line: " + std::string(__FILE__) + ":" + std::to_string(__LINE__));
         return false;
     }
-    last_direction=teleportQueryInformation.direction;
-    last_step=0;
-    postReplyData(teleportQueryInformation.queryId,NULL,0);
+    last_direction = teleportQueryInformation.direction;
+    last_step = 0;
+    postReplyData(teleportQueryInformation.queryId, NULL, 0);
     teleportList.erase(teleportList.cbegin());
     return true;
 }
 
-bool Api_protocol_2::addCharacter(const uint8_t &charactersGroupIndex,const uint8_t &profileIndex, const std::string &pseudo, const uint8_t &monsterGroupId, const uint8_t &skinId)
+bool Api_protocol_2::addCharacter(const uint8_t& charactersGroupIndex, const uint8_t& profileIndex, const std::string& pseudo, const uint8_t& monsterGroupId, const uint8_t& skinId)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return false;
     }
-    if(skinId>=CommonDatapack::commonDatapack.skins.size())
+
+    if (skinId>=CommonDatapack::commonDatapack.skins.size())
     {
-        newError(std::string("Internal problem"),"skin provided: "+std::to_string(skinId)+" is not into skin listed");
+        Logger::instance().log(Logger::Debug, " Internal problem: skin provided: " + std::to_string(skinId) + " is not into skin listed");
+        //newError(std::string("Internal problem"), "skin provided: " + std::to_string(skinId) + " is not into skin listed");
         return false;
     }
-    const Profile &profile=CommonDatapack::commonDatapack.profileList.at(profileIndex);
-    if(!profile.forcedskin.empty() && !vectorcontainsAtLeastOne(profile.forcedskin,skinId))
+    const Profiles& profile = CommonDatapack::commonDatapack.profileList.at(profileIndex);
+    if (!profile.forcedskin.empty() && !vectorcontainsAtLeastOne(profile.forcedskin, skinId))
     {
-        newError(std::string("Internal problem"),"skin provided: "+std::to_string(skinId)+" is not into profile "+std::to_string(profileIndex)+" forced skin list");
+        Logger::instance().log(Logger::Debug, "Internal problem: skin provided: " + std::to_string(skinId) + " is not into profile " + std::to_string(profileIndex) + " forced skin list");
+        //newError(std::string("Internal problem"),"skin provided: "+std::to_string(skinId)+" is not into profile "+std::to_string(profileIndex)+" forced skin list");
         return false;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)charactersGroupIndex;
     out << (uint8_t)profileIndex;
     {
-        const std::string &rawPseudo=toUTF8WithHeader(pseudo);
-        if(rawPseudo.size()>255 || rawPseudo.empty())
+        const std::string& rawPseudo = toUTF8WithHeader(pseudo);
+        if (rawPseudo.size() > 255 || rawPseudo.empty())
         {
             std::cerr << "rawPseudo too big or not compatible with utf8" << std::endl;
             return false;
         }
-        outputData+=QByteArray(rawPseudo.data(),rawPseudo.size());
-        out.device()->seek(out.device()->size());
+        outputData += ByteArray(rawPseudo.data(), rawPseudo.size());
+        //TODO: route
+        //out.device()->seek(out.device()->size());
     }
     out << (uint8_t)monsterGroupId;
     out << (uint8_t)skinId;
-    is_logged=packOutcommingQuery(0xAA,queryNumber(),outputData.constData(),outputData.size());
+
+    is_logged = packOutcommingQuery(0xAA, queryNumber(), outputData.constData(), outputData.size());
+
     return true;
 }
 
-bool Api_protocol_2::removeCharacter(const uint8_t &charactersGroupIndex,const uint32_t &characterId)
+bool Api_protocol_2::removeCharacter(const uint8_t& charactersGroupIndex,const uint32_t& characterId)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return false;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);//needs the address
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)charactersGroupIndex;
     out << characterId;
-    is_logged=packOutcommingQuery(0xAB,queryNumber(),outputData.constData(),outputData.size());
+    is_logged = packOutcommingQuery(0xAB, queryNumber(), outputData.constData(), outputData.size());
     return true;
 }
 
-bool Api_protocol_2::selectCharacter(const uint8_t &charactersGroupIndex, const uint32_t &serverUniqueKey, const uint32_t &characterId)
+bool Api_protocol_2::selectCharacter(const uint8_t& charactersGroupIndex, const uint32_t& serverUniqueKey, const uint32_t& characterId)
 {
-    if(characterId==0)
+    if (characterId == 0)
     {
         std::cerr << "Api_protocol_2::selectCharacter() can't have characterId==0" << std::endl;
         abort();
     }
-    unsigned int index=0;
+    unsigned int index = 0;
     while(index<serverOrdenedList.size())
     {
-        const ServerFromPoolForDisplay &server=serverOrdenedList.at(index);
-        if(server.uniqueKey==serverUniqueKey && server.charactersGroupIndex==charactersGroupIndex)
-            return selectCharacter(charactersGroupIndex,serverUniqueKey,characterId,index);
+        const ServerFromPoolForDisplay& server = serverOrdenedList.at(index);
+        if (server.uniqueKey == serverUniqueKey && server.charactersGroupIndex == charactersGroupIndex) {
+            return selectCharacter(charactersGroupIndex, serverUniqueKey, characterId, index);
+        }
         index++;
     }
     std::cerr << "index of server not found, charactersGroupIndex: " << (uint32_t)charactersGroupIndex << ", serverUniqueKey: " << serverUniqueKey << ", line: " << __FILE__ << ": " << __LINE__ << std::endl;
     return false;
 }
 
-bool Api_protocol_2::selectCharacter(const uint8_t &charactersGroupIndex, const uint32_t &serverUniqueKey, const uint32_t &characterId,const uint32_t &serverIndex)
+bool Api_protocol_2::selectCharacter(const uint8_t& charactersGroupIndex, const uint32_t& serverUniqueKey, const uint32_t& characterId, const uint32_t& serverIndex)
 {
-    if(characterId==0)
+    if (characterId == 0)
     {
         std::cerr << "Api_protocol_2::selectCharacter() with server index can't have characterId==0" << std::endl;
         abort();
     }
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return false;
     }
-    if(character_selected)
+    if (character_selected)
     {
         std::cerr << "character already selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return false;
     }
-    if(character_select_send)
+    if (character_select_send)
     {
         std::cerr << "character select already send, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return false;
     }
 
-    character_select_send=true;
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    character_select_send = true;
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);//needs address
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)charactersGroupIndex;
     out << (uint32_t)serverUniqueKey;
     out << characterId;
-    is_logged=packOutcommingQuery(0xAC,queryNumber(),outputData.constData(),outputData.size());
-    this->selectedServerIndex=serverIndex;
+    is_logged = packOutcommingQuery(0xAC, queryNumber(), outputData.constData(), outputData.size());
+    this->selectedServerIndex = serverIndex;
     std::cerr << "this: " << this << ", socket: " << socket << ", select char: " << characterId << ", charactersGroupIndex: " << (uint32_t)charactersGroupIndex << ", serverUniqueKey: " << serverUniqueKey << ", line: " << __FILE__ << ": " << __LINE__ << std::endl;
     return true;
 }
@@ -776,171 +794,181 @@ bool Api_protocol_2::character_select_is_send()
     return character_select_send;
 }
 
-void Api_protocol_2::useSeed(const uint8_t &plant_id)
+void Api_protocol_2::useSeed(const uint8_t& plant_id)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    outputData[0]=plant_id;
-    if(CommonSettingsServer::commonSettingsServer.plantOnlyVisibleByPlayer==false)
-        packOutcommingQuery(0x83,queryNumber(),outputData.constData(),outputData.size());
-    else
-        packOutcommingData(0x19,outputData.constData(),outputData.size());
+    ByteArray outputData;
+    outputData[0] = plant_id;
+    if (CommonSettingsServer::commonSettingsServer.plantOnlyVisibleByPlayer == false) {
+        packOutcommingQuery(0x83, queryNumber(), outputData.constData(), outputData.size());
+    } else {
+        packOutcommingData(0x19, outputData.constData(), outputData.size());
+    }
 }
 
-void Api_protocol_2::monsterMoveUp(const uint8_t &number)
+void Api_protocol_2::monsterMoveUp(const uint8_t& number)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly); // needs address
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
     out << number;
-    packOutcommingData(0x0D,outputData.constData(),outputData.size());
+    packOutcommingData(0x0D, outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::confirmEvolutionByPosition(const uint8_t &monterPosition)
+void Api_protocol_2::confirmEvolutionByPosition(const uint8_t& monterPosition)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)monterPosition;
-    packOutcommingData(0x0F,outputData.constData(),outputData.size());
+    packOutcommingData(0x0F, outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::monsterMoveDown(const uint8_t &number)
+void Api_protocol_2::monsterMoveDown(const uint8_t& number)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
     std::cerr << "confirm evolution of monster position: " << std::to_string(number) << ", line: " << __FILE__ << ": " << __LINE__ << std::endl;
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);//needs address
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
     out << number;
-    packOutcommingData(0x0D,outputData.constData(),outputData.size());
+    packOutcommingData(0x0D, outputData.constData(), outputData.size());
 }
 
 //inventory
-void Api_protocol_2::destroyObject(const uint16_t &object, const uint32_t &quantity)
+void Api_protocol_2::destroyObject(const uint16_t& object, const uint32_t& quantity)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);//nees address
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << object;
     out << quantity;
-    packOutcommingData(0x13,outputData.constData(),outputData.size());
+    packOutcommingData(0x13, outputData.constData(), outputData.size());
 }
 
 bool Api_protocol_2::useObject(const uint16_t &object)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return false;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return false;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << object;
-    packOutcommingQuery(0x86,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x86, queryNumber(), outputData.constData(), outputData.size());
     lastObjectUsed.push_back(object);
+
     return true;
 }
 
 bool Api_protocol_2::useObjectOnMonsterByPosition(const uint16_t &object,const uint8_t &monsterPosition)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return false;
     }
-    if(!character_selected)
+
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return false;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly); // need address
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << object;
     out << monsterPosition;
-    packOutcommingData(0x10,outputData.constData(),outputData.size());
+    packOutcommingData(0x10, outputData.constData(), outputData.size());
     return true;
 }
 
 
-void Api_protocol_2::wareHouseStore(const int64_t &cash, const std::vector<std::pair<uint16_t,int32_t> > &items,
-                                  const std::vector<uint32_t> &withdrawMonsters, const std::vector<uint32_t> &depositeMonsters)
+void Api_protocol_2::wareHouseStore(const int64_t& cash, const std::vector<std::pair<uint16_t,int32_t>>& items,
+                                  const std::vector<uint32_t>& withdrawMonsters, const std::vector<uint32_t>& depositeMonsters)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
-    out << (quint64)cash;
-
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
+    out << (uint64_t)cash;//TODO:  needs to overload on int64
     out << (uint16_t)items.size();
-    unsigned int index=0;
-    while(index<items.size())
+
+    unsigned int index = 0;
+    while (index < items.size())
     {
         out << (uint16_t)items.at(index).first;
         out << (int32_t)items.at(index).second;
@@ -948,948 +976,988 @@ void Api_protocol_2::wareHouseStore(const int64_t &cash, const std::vector<std::
     }
 
     out << (uint32_t)withdrawMonsters.size();
-    index=0;
-    while(index<withdrawMonsters.size())
+    index = 0;
+    while (index < withdrawMonsters.size())
     {
         out << (uint32_t)withdrawMonsters.at(index);
         index++;
     }
     out << (uint32_t)depositeMonsters.size();
-    index=0;
-    while(index<depositeMonsters.size())
+    index = 0;
+    while (index < depositeMonsters.size())
     {
         out << (uint32_t)depositeMonsters.at(index);
         index++;
     }
 
-    packOutcommingData(0x17,outputData.constData(),outputData.size());
+    packOutcommingData(0x17, outputData.constData(), outputData.size());
 }
 
 void Api_protocol_2::takeAnObjectOnMap()
 {
     //std::cout << "Api_protocol_2::takeAnObjectOnMap(): " << player_informations.public_informations.pseudo << std::endl;
-    packOutcommingData(0x18,NULL,0);
+    packOutcommingData(0x18, NULL, 0);
 }
 
-void Api_protocol_2::getShopList(const uint16_t &shopId)/// \see CommonMap, std::unordered_map<std::pair<uint8_t,uint8_t>,std::vector<uint16_t>, pairhash> shops;
+void Api_protocol_2::getShopList(const uint16_t& shopId)/// \see CommonMap, std::unordered_map<std::pair<uint8_t,uint8_t>,std::vector<uint16_t>, pairhash> shops;
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)shopId;
-    packOutcommingQuery(0x87,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x87, queryNumber(), outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::buyObject(const uint16_t &shopId, const uint16_t &objectId, const uint32_t &quantity, const uint32_t &price)/// \see CommonMap, std::unordered_map<std::pair<uint8_t,uint8_t>,std::vector<uint16_t>, pairhash> shops;
+void Api_protocol_2::buyObject(const uint16_t& shopId, const uint16_t& objectId, const uint32_t& quantity, const uint32_t& price)/// \see CommonMap, std::unordered_map<std::pair<uint8_t,uint8_t>,std::vector<uint16_t>, pairhash> shops;
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
-    out << (uint16_t)shopId;
-    out << (uint16_t)objectId;
-    out << (uint32_t)quantity;
-    out << (uint32_t)price;
-    packOutcommingQuery(0x88,queryNumber(),outputData.constData(),outputData.size());
-}
-
-void Api_protocol_2::sellObject(const uint16_t &shopId,const uint16_t &objectId,const uint32_t &quantity,const uint32_t &price)/// \see CommonMap, std::unordered_map<std::pair<uint8_t,uint8_t>,std::vector<uint16_t>, pairhash> shops;
-{
-    if(!is_logged)
-    {
-        std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
-        return;
-    }
-    if(!character_selected)
-    {
-        std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
-        return;
-    }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)shopId;
     out << (uint16_t)objectId;
     out << (uint32_t)quantity;
     out << (uint32_t)price;
-    packOutcommingQuery(0x89,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x88, queryNumber(), outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::getFactoryList(const uint16_t &factoryId)
+void Api_protocol_2::sellObject(const uint16_t& shopId, const uint16_t& objectId, const uint32_t& quantity, const uint32_t& price)/// \see CommonMap, std::unordered_map<std::pair<uint8_t,uint8_t>,std::vector<uint16_t>, pairhash> shops;
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
+    out << (uint16_t)shopId;
+    out << (uint16_t)objectId;
+    out << (uint32_t)quantity;
+    out << (uint32_t)price;
+    packOutcommingQuery(0x89, queryNumber(), outputData.constData(), outputData.size());
+}
+
+void Api_protocol_2::getFactoryList(const uint16_t& factoryId)
+{
+    if (!is_logged)
+    {
+        std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
+        return;
+    }
+    if (!character_selected)
+    {
+        std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
+        return;
+    }
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);//needs addresss
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)factoryId;
-    packOutcommingQuery(0x8A,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x8A, queryNumber(), outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::buyFactoryProduct(const uint16_t &factoryId,const uint16_t &objectId,const uint32_t &quantity,const uint32_t &price)
+void Api_protocol_2::buyFactoryProduct(const uint16_t& factoryId,const uint16_t& objectId,const uint32_t& quantity,const uint32_t& price)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(&outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)factoryId;
     out << (uint16_t)objectId;
     out << (uint32_t)quantity;
     out << (uint32_t)price;
-    packOutcommingQuery(0x8B,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x8B, queryNumber(), outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::sellFactoryResource(const uint16_t &factoryId,const uint16_t &objectId,const uint32_t &quantity,const uint32_t &price)
+void Api_protocol_2::sellFactoryResource(const uint16_t& factoryId,const uint16_t& objectId,const uint32_t& quantity,const uint32_t& price)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(&outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)factoryId;
     out << (uint16_t)objectId;
     out << (uint32_t)quantity;
     out << (uint32_t)price;
-    packOutcommingQuery(0x8C,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x8C, queryNumber(), outputData.constData(), outputData.size());
 }
 
 void Api_protocol_2::tryEscape()
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    packOutcommingData(0x07,NULL,0);
+    packOutcommingData(0x07, NULL, 0);
 }
 
 void Api_protocol_2::heal()
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    packOutcommingData(0x0B,NULL,0);
+    packOutcommingData(0x0B, NULL, 0);
 }
 
-void Api_protocol_2::requestFight(const uint16_t &fightId)
+void Api_protocol_2::requestFight(const uint16_t& fightId)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(player_informations.bot_already_beaten==NULL)
+    if (player_informations.bot_already_beaten == NULL)
     {
         std::cerr << "player_informations.bot_already_beaten==NULL, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         abort();
     }
-    if(player_informations.bot_already_beaten[fightId/8] & (1<<(7-fightId%8)))
+    if (player_informations.bot_already_beaten[fightId / 8] & (1 << (7 - fightId % 8)))
     {
-        std::cerr << "player_informations.bot_already_beaten["+std::to_string(fightId)+"], line: " << __FILE__ << ": " << __LINE__ << std::endl;
+        std::cerr << "player_informations.bot_already_beaten[" + std::to_string(fightId) + "], line: " << __FILE__ << ": " << __LINE__ << std::endl;
         abort();
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(&outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)fightId;
-    packOutcommingData(0x0C,outputData.constData(),outputData.size());
+    packOutcommingData(0x0C, outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::changeOfMonsterInFightByPosition(const uint8_t &monsterPosition)
+void Api_protocol_2::changeOfMonsterInFightByPosition(const uint8_t& monsterPosition)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);//needs an address to byteArray
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)monsterPosition;
-    packOutcommingData(0x0E,outputData.constData(),outputData.size());
+    packOutcommingData(0x0E, outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::useSkill(const uint16_t &skill)
+void Api_protocol_2::useSkill(const uint16_t& skill)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)skill;
-    packOutcommingData(0x11,outputData.constData(),outputData.size());
+    packOutcommingData(0x11, outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::learnSkillByPosition(const uint8_t &monsterPosition,const uint16_t &skill)
+void Api_protocol_2::learnSkillByPosition(const uint8_t& monsterPosition, const uint16_t& skill)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)monsterPosition;
     out << (uint16_t)skill;
-    packOutcommingData(0x09,outputData.constData(),outputData.size());
+    packOutcommingData(0x09, outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::startQuest(const uint16_t &questId)
+void Api_protocol_2::startQuest(const uint16_t& questId)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)questId;
-    packOutcommingData(0x1B,outputData.constData(),outputData.size());
+    packOutcommingData(0x1B, outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::finishQuest(const uint16_t &questId)
+void Api_protocol_2::finishQuest(const uint16_t& questId)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)questId;
-    packOutcommingData(0x1C,outputData.constData(),outputData.size());
+    packOutcommingData(0x1C, outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::cancelQuest(const uint16_t &questId)
+void Api_protocol_2::cancelQuest(const uint16_t& questId)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)questId;
-    packOutcommingData(0x1D,outputData.constData(),outputData.size());
+    packOutcommingData(0x1D, outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::nextQuestStep(const uint16_t &questId)
+void Api_protocol_2::nextQuestStep(const uint16_t& questId)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(QDataStream::LittleEndian);
     out << (uint16_t)questId;
-    packOutcommingData(0x1E,outputData.constData(),outputData.size());
+    packOutcommingData(0x1E, outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::createClan(const std::string &name)
+void Api_protocol_2::createClan(const std::string& name)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
     {
-        const std::string &rawText=toUTF8WithHeader(name);
-        if(rawText.size()>255 || rawText.empty())
+        const std::string& rawText = toUTF8WithHeader(name);
+        if (rawText.size() > 255 || rawText.empty())
         {
             std::cerr << "rawText too big or not compatible with utf8" << std::endl;
             return;
         }
-        outputData+=QByteArray(rawText.data(),rawText.size());
-        out.device()->seek(out.device()->size());
+        outputData += ByteArray(rawText.data(),rawText.size());
+        //TODO:  to connectSocket
+        //out.device()->seek(out.device()->size());
     }
-    packOutcommingQuery(0x92,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x92, queryNumber(), outputData.constData(), outputData.size());
 }
 
 void Api_protocol_2::leaveClan()
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
-    packOutcommingQuery(0x92,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x92, queryNumber(), outputData.constData(), outputData.size());
 }
 
 void Api_protocol_2::dissolveClan()
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x03;
-    packOutcommingQuery(0x92,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x92, queryNumber(), outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::inviteClan(const std::string &pseudo)
+void Api_protocol_2::inviteClan(const std::string& pseudo)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x04;
     {
-        const std::string &rawText=toUTF8WithHeader(pseudo);
-        if(rawText.size()>255 || rawText.empty())
+        const std::string& rawText = toUTF8WithHeader(pseudo);
+        if (rawText.size() > 255 || rawText.empty())
         {
             std::cerr << "rawText too big or not compatible with utf8" << std::endl;
             return;
         }
-        outputData+=QByteArray(rawText.data(),rawText.size());
-        out.device()->seek(out.device()->size());
+        outputData += ByteArray(rawText.data(),rawText.size());
+        //out.device()->seek(out.device()->size());
     }
-    packOutcommingQuery(0x92,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x92, queryNumber(), outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::ejectClan(const std::string &pseudo)
+void Api_protocol_2::ejectClan(const std::string& pseudo)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x05;
     {
-        const std::string &rawText=toUTF8WithHeader(pseudo);
-        if(rawText.size()>255 || rawText.empty())
+        const std::string& rawText = toUTF8WithHeader(pseudo);
+        if (rawText.size() > 255 || rawText.empty())
         {
             std::cerr << "rawText too big or not compatible with utf8" << std::endl;
             return;
         }
-        outputData+=QByteArray(rawText.data(),rawText.size());
-        out.device()->seek(out.device()->size());
+        outputData += ByteArray(rawText.data(), rawText.size());
+        //out.device()->seek(out.device()->size());
     }
-    packOutcommingQuery(0x92,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x92, queryNumber(), outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::inviteAccept(const bool &accept)
+void Api_protocol_2::inviteAccept(const bool& accept)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
-    if(accept)
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(DataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
+    if(accept) {
         out << (uint8_t)0x01;
-    else
+    } else {
         out << (uint8_t)0x02;
-    packOutcommingData(0x04,outputData.constData(),outputData.size());
+    }
+    packOutcommingData(0x04, outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::waitingForCityCapture(const bool &cancel)
+void Api_protocol_2::waitingForCityCapture(const bool& cancel)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
-    if(!cancel)
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
+    if (!cancel) {
         out << (uint8_t)0x00;
-    else
+    } else {
         out << (uint8_t)0x01;
-    packOutcommingData(0x1F,outputData.constData(),outputData.size());
+    }
+    packOutcommingData(0x1F, outputData.constData(), outputData.size());
 }
 
 //market
 void Api_protocol_2::getMarketList()
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    packOutcommingQuery(0x8D,queryNumber(),NULL,0);
+    packOutcommingQuery(0x8D, queryNumber(), NULL, 0);
 }
 
-void Api_protocol_2::buyMarketObject(const uint32_t &marketObjectId, const uint32_t &quantity)
+void Api_protocol_2::buyMarketObject(const uint32_t& marketObjectId, const uint32_t& quantity)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
     out << marketObjectId;
     out << quantity;
-    packOutcommingQuery(0x8E,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x8E, queryNumber(), outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::buyMarketMonster(const uint32_t &monsterMarketId)
+void Api_protocol_2::buyMarketMonster(const uint32_t& monsterMarketId)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
     out << monsterMarketId;
-    packOutcommingQuery(0x8E,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x8E, queryNumber(), outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::putMarketObject(const uint16_t &objectId, const uint32_t &quantity, const uint64_t &price)
+void Api_protocol_2::putMarketObject(const uint16_t& objectId, const uint32_t& quantity, const uint64_t& price)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(QDataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
     out << (quint16)objectId;
     out << (quint32)quantity;
     out << (quint64)price;
-    packOutcommingQuery(0x8F,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x8F, queryNumber(), outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::putMarketMonsterByPosition(const uint8_t &monsterPosition,const uint64_t &price)
+void Api_protocol_2::putMarketMonsterByPosition(const uint8_t& monsterPosition,const uint64_t& price)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(DataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
     out << (uint8_t)monsterPosition;
     out << (quint64)price;
-    packOutcommingQuery(0x8F,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x8F, queryNumber(), outputData.constData(), outputData.size());
 }
 
 void Api_protocol_2::recoverMarketCash()
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    packOutcommingQuery(0x90,queryNumber(),NULL,0);
+    packOutcommingQuery(0x90, squeryNumber(), NULL, 0);
 }
 
-void Api_protocol_2::withdrawMarketObject(const uint16_t &objectPosition,const uint32_t &quantity)
+void Api_protocol_2::withdrawMarketObject(const uint16_t& objectPosition,const uint32_t& quantity)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(DataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
     out << objectPosition;
     out << quantity;
-    packOutcommingQuery(0x91,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x91, queryNumber(), outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::withdrawMarketMonster(const uint32_t &monsterMarketId)
+void Api_protocol_2::withdrawMarketMonster(const uint32_t& monsterMarketId)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(DataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
     out << monsterMarketId;
-    packOutcommingQuery(0x91,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x91, queryNumber(), outputData.constData(), outputData.size());
 }
 
 void Api_protocol_2::collectMaturePlant()
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(CommonSettingsServer::commonSettingsServer.plantOnlyVisibleByPlayer==false)
-        packOutcommingQuery(0x84,queryNumber(),NULL,0);
-    else
-        packOutcommingData(0x1A,NULL,0);
+    if (CommonSettingsServer::commonSettingsServer.plantOnlyVisibleByPlayer == false) {
+        packOutcommingQuery(0x84, queryNumber(), NULL, 0);
+    } else {
+        packOutcommingData(0x1A, NULL, 0);
+    }
 }
 
 //crafting
-void Api_protocol_2::useRecipe(const uint16_t &recipeId)
+void Api_protocol_2::useRecipe(const uint16_t& recipeId)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(DataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)recipeId;
-    packOutcommingQuery(0x85,queryNumber(),outputData.constData(),outputData.size());
+    packOutcommingQuery(0x85, queryNumber(), outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::addRecipe(const uint16_t &recipeId)
+void Api_protocol_2::addRecipe(const uint16_t& recipeId)
 {
-    if(player_informations.recipes==NULL)
+    if (player_informations.recipes == NULL)
     {
         std::cerr << "player_informations.recipes NULL, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    player_informations.recipes[recipeId/8]|=(1<<(7-recipeId%8));
+    player_informations.recipes[recipeId / 8] |= (1 << (7 - recipeId % 8));
 }
 
 void Api_protocol_2::battleRefused()
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(battleRequestId.empty())
+    if (battleRequestId.empty())
     {
-        newError(std::string("Internal problem"),std::string("no battle request to refuse"));
+        newError(std::string("Internal problem"), std::string("no battle request to refuse"));
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(DataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
-    postReplyData(battleRequestId.front(),outputData.data(),outputData.size());
+
+    postReplyData(battleRequestId.front(), outputData.data(), outputData.size());
     battleRequestId.erase(battleRequestId.cbegin());
 }
 
 void Api_protocol_2::battleAccepted()
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(battleRequestId.empty())
+    if (battleRequestId.empty())
     {
         newError(std::string("Internal problem"),std::string("no battle request to accept"));
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(DataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
-    postReplyData(battleRequestId.front(),outputData.data(),outputData.size());
+    postReplyData(battleRequestId.front(), outputData.data(), outputData.size());
     battleRequestId.erase(battleRequestId.cbegin());
 }
 
 //trade
 void Api_protocol_2::tradeRefused()
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(tradeRequestId.empty())
+    if (tradeRequestId.empty())
     {
         newError(std::string("Internal problem"),std::string("no trade request to refuse"));
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(DataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
-    postReplyData(tradeRequestId.front(),outputData.data(),outputData.size());
+    postReplyData(tradeRequestId.front(), outputData.data(), outputData.size());
     tradeRequestId.erase(tradeRequestId.cbegin());
 }
 
 void Api_protocol_2::tradeAccepted()
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(tradeRequestId.empty())
+    if (tradeRequestId.empty())
     {
         newError(std::string("Internal problem"),std::string("no trade request to accept"));
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(DataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
-    postReplyData(tradeRequestId.front(),outputData.constData(),outputData.size());
+    postReplyData(tradeRequestId.front(), outputData.constData(), outputData.size());
     tradeRequestId.erase(tradeRequestId.cbegin());
-    isInTrade=true;
+    isInTrade = true;
 }
 
 void Api_protocol_2::tradeCanceled()
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!isInTrade)
+    if (!isInTrade)
     {
         newError(std::string("Internal problem"),std::string("in not in trade"));
         return;
     }
-    isInTrade=false;
-    packOutcommingData(0x16,NULL,0);
+    isInTrade = false;
+    packOutcommingData(0x16, NULL, 0);
 }
 
 void Api_protocol_2::tradeFinish()
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!isInTrade)
+    if (!isInTrade)
     {
         newError(std::string("Internal problem"),std::string("in not in trade"));
         return;
     }
-    packOutcommingData(0x15,NULL,0);
+    packOutcommingData(0x15, NULL, 0);
 }
 
-void Api_protocol_2::addTradeCash(const uint64_t &cash)
+void Api_protocol_2::addTradeCash(const uint64_t& cash)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(cash==0)
+    if (cash == 0)
     {
         newError(std::string("Internal problem"),std::string("can't send 0 for the cash"));
         return;
     }
-    if(!isInTrade)
+    if (!isInTrade)
     {
         newError(std::string("Internal problem"),std::string("no in trade to send cash"));
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(DataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
     out << (quint64)cash;
-    packOutcommingData(0x14,outputData.data(),outputData.size());
+    packOutcommingData(0x14, outputData.data(), outputData.size());
 }
 
-void Api_protocol_2::addObject(const uint16_t &item, const uint32_t &quantity)
+void Api_protocol_2::addObject(const uint16_t& item, const uint32_t& quantity)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(quantity==0)
+    if (quantity == 0)
     {
         newError(std::string("Internal problem"),std::string("can't send a quantity of 0"));
         return;
     }
-    if(!isInTrade)
+    if (!isInTrade)
     {
         newError(std::string("Internal problem"),std::string("no in trade to send object"));
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(DataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
     out << item;
     out << quantity;
-    packOutcommingData(0x14,outputData.constData(),outputData.size());
+    packOutcommingData(0x14, outputData.constData(), outputData.size());
 }
 
-void Api_protocol_2::addMonsterByPosition(const uint8_t &monsterPosition)
+void Api_protocol_2::addMonsterByPosition(const uint8_t & monsterPosition)
 {
-    if(!is_logged)
+    if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!character_selected)
+    if (!character_selected)
     {
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    if(!isInTrade)
+    if (!isInTrade)
     {
         newError(std::string("Internal problem"),std::string("no in trade to send monster"));
         return;
     }
-    QByteArray outputData;
-    QDataStream out(&outputData, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);out.setByteOrder(QDataStream::LittleEndian);
+    ByteArray outputData;
+    DataStream out(outputData, DataStream::WriteOnly);
+    //out.setVersion(DataStream::Qt_4_4);
+    out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x03;
     out << monsterPosition;
-    packOutcommingData(0x14,outputData.constData(),outputData.size());
+    packOutcommingData(0x14, outputData.constData(), outputData.size());
 }
 
 Api_protocol_2::StageConnexion Api_protocol_2::stage() const
@@ -1900,44 +1968,46 @@ Api_protocol_2::StageConnexion Api_protocol_2::stage() const
 //to reset all
 void Api_protocol_2::resetAll()
 {
-    if(stageConnexion==StageConnexion::Stage2)
+    if (stageConnexion==StageConnexion::Stage2) {
         qDebug() << "Api_protocol_2::resetAll() Suspect internal bug";
+    }
     //status for the query
     token.clear();
     message("Api_protocol_2::resetAll(): stageConnexion=CatchChallenger::Api_protocol_2::StageConnexion::Stage1 set at "+std::string(__FILE__)+":"+std::to_string(__LINE__));
     stageConnexion=StageConnexion::Stage1;
-    if(socket==NULL || socket->fakeSocket==NULL)
-        haveFirstHeader=false;
-    else
-        haveFirstHeader=true;
-    character_select_send=false;
+    if (socket == NULL || socket->fakeSocket == NULL) {
+        haveFirstHeader = false;
+    } else {
+        haveFirstHeader = true;
+    }
+    character_select_send = false;
     delayedLogin.data.clear();
-    delayedLogin.packetCode=0;
-    delayedLogin.queryNumber=0;
-    number_of_map=0;
+    delayedLogin.packetCode = 0;
+    delayedLogin.queryNumber = 0;
+    number_of_map = 0;
     delayedMessages.clear();
-    haveTheServerList=false;
-    haveTheLogicalGroupList=false;
-    is_logged=false;
-    character_selected=false;
-    have_send_protocol=false;
-    have_receive_protocol=false;
-    max_players=65535;
-    max_players_real=65535;
-    selectedServerIndex=-1;
+    haveTheServerList = false;
+    haveTheLogicalGroupList = false;
+    is_logged = false;
+    character_selected = false;
+    have_send_protocol = false;
+    have_receive_protocol = false;
+    max_players = 65535;
+    max_players_real = 65535;
+    selectedServerIndex = -1;
     player_informations.allow.clear();
-    player_informations.cash=0;
-    player_informations.clan=0;
-    player_informations.clan_leader=false;
-    player_informations.warehouse_cash=0;
+    player_informations.cash = 0;
+    player_informations.clan = 0;
+    player_informations.clan_leader = false;
+    player_informations.warehouse_cash = 0;
     player_informations.warehouse_items.clear();
     player_informations.warehouse_playerMonster.clear();
     player_informations.public_informations.pseudo.clear();
-    player_informations.public_informations.simplifiedId=0;
-    player_informations.public_informations.skinId=0;
-    player_informations.public_informations.speed=0;
-    player_informations.public_informations.type=Player_type_normal;
-    player_informations.repel_step=0;
+    player_informations.public_informations.simplifiedId = 0;
+    player_informations.public_informations.skinId = 0;
+    player_informations.public_informations.speed = 0;
+    player_informations.public_informations.type = Player_type_normal;
+    player_informations.repel_step = 0;
     player_informations.playerMonster.clear();
     player_informations.items.clear();
     player_informations.reputation.clear();
@@ -1946,48 +2016,48 @@ void Api_protocol_2::resetAll()
     player_informations.plantOnMap.clear();
     tokenForGameServer.clear();
     //to move by unit
-    last_step=255;
-    last_direction=Direction_look_at_bottom;
-    last_direction_is_set=false;
+    last_step = 255;
+    last_direction = Direction_look_at_bottom;
+    last_direction_is_set = false;
 
     unloadSelection();
-    isInTrade=false;
+    isInTrade = false;
     tradeRequestId.clear();
-    isInBattle=false;
+    isInBattle = false;
     battleRequestId.clear();
-    mDatapackBase=QCoreApplication::applicationDirPath().toStdString()+"/datapack/";
-    mDatapackMain=mDatapackBase+"map/main/[main]/";
-    mDatapackSub=mDatapackMain+"sub/[sub]/";
-    CommonSettingsServer::commonSettingsServer.mainDatapackCode="[main]";
-    CommonSettingsServer::commonSettingsServer.subDatapackCode="[sub]";
-    if(player_informations.recipes!=NULL)
+    mDatapackBase = QCoreApplication::applicationDirPath().toStdString() + "/datapack/";
+    mDatapackMain = mDatapackBase + "map/main/[main]/";
+    mDatapackSub = mDatapackMain + "sub/[sub]/";
+    CommonSettingsServer::commonSettingsServer.mainDatapackCode = "[main]";
+    CommonSettingsServer::commonSettingsServer.subDatapackCode = "[sub]";
+    if(player_informations.recipes != NULL)
     {
         delete player_informations.recipes;
-        player_informations.recipes=NULL;
+        player_informations.recipes = NULL;
     }
-    if(player_informations.encyclopedia_monster!=NULL)
+    if(player_informations.encyclopedia_monster != NULL)
     {
         delete player_informations.encyclopedia_monster;
-        player_informations.encyclopedia_monster=NULL;
+        player_informations.encyclopedia_monster = NULL;
     }
-    if(player_informations.encyclopedia_item!=NULL)
+    if(player_informations.encyclopedia_item != NULL)
     {
         delete player_informations.encyclopedia_item;
-        player_informations.encyclopedia_item=NULL;
+        player_informations.encyclopedia_item = NULL;
     }
-    if(player_informations.bot_already_beaten!=NULL)
+    if(player_informations.bot_already_beaten != NULL)
     {
         delete player_informations.bot_already_beaten;
-        player_informations.bot_already_beaten=NULL;
+        player_informations.bot_already_beaten = NULL;
     }
 
     ProtocolParsingInputOutput::reset();
-    flags|=0x08;
+    flags |= 0x08;
 }
 
 void Api_protocol_2::unloadSelection()
 {
-    selectedServerIndex=-1;
+    selectedServerIndex = -1;
     logicialGroup.logicialGroupList.clear();
     serverOrdenedList.clear();
     characterListForSelection.clear();
@@ -1995,10 +2065,11 @@ void Api_protocol_2::unloadSelection()
     logicialGroup.servers.clear();
 }
 
-const ServerFromPoolForDisplay &Api_protocol_2::getCurrentServer(const unsigned int &index)
+const ServerFromPoolForDisplay& Api_protocol_2::getCurrentServer(const unsigned int& index)
 {
-    if(index>=serverOrdenedList.size())
+    if (index >= serverOrdenedList.size()) {
         abort();
+    }
     return serverOrdenedList.at(index);
 }
 
@@ -2027,16 +2098,17 @@ std::string Api_protocol_2::subDatapackCode() const
     return CommonSettingsServer::commonSettingsServer.subDatapackCode;
 }
 
-void Api_protocol_2::setDatapackPath(const std::string &datapack_path)
+void Api_protocol_2::setDatapackPath(const std::string& datapack_path)
 {
-    if(stringEndsWith(datapack_path,'/'))
-        mDatapackBase=datapack_path;
-    else
-        mDatapackBase=datapack_path+"/";
-    mDatapackMain=mDatapackBase+"map/main/[main]/";
-    mDatapackSub=mDatapackMain+"sub/[sub]/";
-    CommonSettingsServer::commonSettingsServer.mainDatapackCode="[main]";
-    CommonSettingsServer::commonSettingsServer.subDatapackCode="[sub]";
+    if (stringEndsWith(datapack_path,'/')) {
+        mDatapackBase = datapack_path;
+    } else {
+        mDatapackBase = datapack_path+"/";
+    }
+    mDatapackMain = mDatapackBase + "map/main/[main]/";
+    mDatapackSub = mDatapackMain + "sub/[sub]/";
+    CommonSettingsServer::commonSettingsServer.mainDatapackCode = "[main]";
+    CommonSettingsServer::commonSettingsServer.subDatapackCode = "[sub]";
 }
 
 bool Api_protocol_2::getIsLogged() const
@@ -2049,24 +2121,24 @@ bool Api_protocol_2::getCaracterSelected() const
     return character_selected;
 }
 
-LogicialGroup * Api_protocol_2::addLogicalGroup(const std::string &path,const std::string &xml,const std::string &language)
+LogicialGroup* Api_protocol_2::addLogicalGroup(const std::string& path,const std::string& xml,const std::string& language)
 {
     std::string nameString;
 
     tinyxml2::XMLDocument domDocument;
-    const auto loadOkay = domDocument.Parse((Api_protocol_2::text_balise_root_start+xml+Api_protocol_2::text_balise_root_stop).c_str());
-    if(loadOkay!=0)
+    const auto loadOkay = domDocument.Parse((Api_protocol_2::text_balise_root_start + xml + Api_protocol_2::text_balise_root_stop).c_str());
+    if (loadOkay != 0)
     {
-        std::cerr << "Api_protocol_2::addLogicalGroup(): "+tinyxml2errordoc(&domDocument) << std::endl;
+        std::cerr << "Api_protocol_2::addLogicalGroup(): " + tinyxml2errordoc(&domDocument) << std::endl;
         return NULL;
     }
     else
     {
-        const tinyxml2::XMLElement *root = domDocument.RootElement();
+        const tinyxml2::XMLElement* root = domDocument.RootElement();
         //load the name
         {
-            bool name_found=false;
-            const tinyxml2::XMLElement * name = root->FirstChildElement("name");
+            bool name_found = false;
+            const tinyxml2::XMLElement* name = root->FirstChildElement("name");
             if(!language.empty() && language!="en")
                 while(name!=NULL)
                 {
@@ -2342,7 +2414,7 @@ void Api_protocol_2::connectTheExternalSocketInternal()
                 }
                 #endif
             }
-            else if(certFile.open(QIODevice::ReadOnly))
+            else if(certFile.open(DataStream::ReadOnly))
             {
                 if(socket->sslSocket->peerCertificate().publicKey().toPem()!=certFile.readAll())
                 {
@@ -2396,7 +2468,7 @@ void Api_protocol_2::saveCert(const std::string &file)
         certFile.remove();
     else
     {
-        if(certFile.open(QIODevice::WriteOnly))
+        if(certFile.open(DataStream::WriteOnly))
         {
             qDebug() << "Register the certificate into" << certFile.fileName();
             qDebug() << socket->sslSocket->peerCertificate().issuerInfo(QSslCertificate::Organization);
@@ -2585,7 +2657,7 @@ void Api_protocol_2::have_main_and_sub_datapack_loaded()//can now load player_in
     delayedMessages.clear();
 }
 
-bool Api_protocol_2::dataToPlayerMonster(QDataStream &in,PlayerMonster &monster)
+bool Api_protocol_2::dataToPlayerMonster(DataStream &in,PlayerMonster &monster)
 {
     quint32 sub_index;
     PlayerBuff buff;
@@ -2939,7 +3011,7 @@ void Api_protocol_2::haveTheDatapack()
     BaseWindow::haveDatapack = true;
 
     BaseWindow::settings.setValue("DatapackHashBase-" + QString::fromStdString(BaseWindow::client->datapackPathBase()),
-                      QByteArray(
+                      ByteArray(
                                  CommonSettingsCommon::commonSettingsCommon.datapackHashBase.data(),
                                   static_cast<int>(CommonSettingsCommon::commonSettingsCommon.datapackHashBase.size())
                                 )
@@ -2963,13 +3035,13 @@ void Api_protocol_2::haveTheDatapackMainSub()
 
     BaseWindow::haveDatapackMainSub=true;
     BaseWindow::settings.setValue("DatapackHashMain-"+QString::fromStdString(BaseWindow::client->datapackPathMain()),
-                      QByteArray(
+                      ByteArray(
                           CommonSettingsServer::commonSettingsServer.datapackHashServerMain.data(),
                           static_cast<int>(CommonSettingsServer::commonSettingsServer.datapackHashServerMain.size())
                                   )
                       );
     BaseWindow::settings.setValue("DatapackHashSub-"+QString::fromStdString(BaseWindow::client->datapackPathSub()),
-                      QByteArray(
+                      ByteArray(
                           CommonSettingsServer::commonSettingsServer.datapackHashServerSub.data(),
                           static_cast<int>(CommonSettingsServer::commonSettingsServer.datapackHashServerSub.size())
                                   )
