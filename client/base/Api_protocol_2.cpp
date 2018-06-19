@@ -349,12 +349,12 @@ bool Api_protocol_2::tryLogin(const std::string& login, const std::string& pass)
     }
 
     std::string outputData;
-    char digestHexaTemp[64];
+    char digestHexaTemp[SHA224_DIGEST_LENGTH];
     #ifdef CATCHCHALLENGER_EXTRA_CHECK
         std::string tempDoubleHash;
     #endif
     {
-        char digest[64];
+        char digest[SHA224_DIGEST_LENGTH];
         std::string string = login + "RtR3bm9Z1DFMfAC3";
         SHA224 hashLogin(string.c_str());
         hashLogin.execute();
@@ -363,7 +363,7 @@ bool Api_protocol_2::tryLogin(const std::string& login, const std::string& pass)
         outputData += loginHash;
 
         #ifdef CATCHCHALLENGER_EXTRA_CHECK
-        char digestTemp[64];
+        char digestTemp[SHA224_DIGEST_LENGTH];
         {
             SHA224 hashLogin2(loginHash.c_str());
             hashLogin2.execute();
@@ -374,10 +374,10 @@ bool Api_protocol_2::tryLogin(const std::string& login, const std::string& pass)
         }
         #endif
     }
-    char digestpass[64];
-    char digestpassHexa[64];
-    char digest[64];
-    char digestHexa[64];
+    char digestpass[SHA224_DIGEST_LENGTH];
+    char digestpassHexa[SHA224_DIGEST_LENGTH];
+    char digest[SHA224_DIGEST_LENGTH];
+    char digestHexa[SHA224_DIGEST_LENGTH];
     std::string string = pass + std::string("AwjDvPIzfJPTTgHs") + login;
     SHA224 hashPass(string.c_str());
     hashPass.execute();
@@ -435,7 +435,7 @@ bool Api_protocol_2::tryCreateAccount()
      * '''Prevent login leak in case of MiM attack re-ask the password''' (Trafic modification, replace the server return code OK by ACCOUNT CREATION)
      * Do some DDOS protection because it offload the hashing */
     std::string outputData;
-    char digestlogin[64];
+    char digestlogin[SHA224_DIGEST_LENGTH];
     SHA224 hashLogin(loginHash.c_str());
     hashLogin.execute();
     hashLogin.getDigest(digestlogin);
@@ -458,12 +458,13 @@ void Api_protocol_2::send_player_move(const uint8_t& moved_unit, const Direction
         hurgeBufferMove[2] = direction;
         const int& infd = socket->sslSocket->socketDescriptor();
         if (infd != -1) {
-            ::write(infd,hurgeBufferMove,3);
+            ::write(infd, hurgeBufferMove, 3);
         } else {
             internalSendRawSmallPacket(hurgeBufferMove,3);
         }
         return;
     #endif
+
     if (!is_logged)
     {
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
@@ -532,14 +533,14 @@ void Api_protocol_2::send_player_move_internal(const uint8_t& moved_unit, const 
         abort();
     }
     //std::vector<unsigned char> outputData;
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(moved_unit) + sizeof(directionInt));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << moved_unit;
     out << directionInt;
 
-    packOutcommingData(0x02, outputData.constData(), outputData.size());
+    packOutcommingData(0x02, out.constData(), out.size());
 }
 
 void Api_protocol_2::send_player_direction(const Direction& the_direction)
@@ -575,10 +576,10 @@ void Api_protocol_2::sendChatText(const Chat_type& chatType, const std::string& 
         return;
     }
 
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(chatType) + text.size() + 1);
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)chatType;
     {
         const std::string& tempText = text;
@@ -587,15 +588,16 @@ void Api_protocol_2::sendChatText(const Chat_type& chatType, const std::string& 
             std::cerr << "text in Utf8 too big, line: " << __FILE__ << ": " << __LINE__ << std::endl;
             return;
         }
-        out << (uint8_t)tempText.size();
-        outputData += ByteArray(tempText.data(), tempText.size());
+        //out << (uint8_t)tempText.size();
+        out << text;
+        //outputData += ByteArray(tempText.data(), tempText.size());
         //TODO: need to route to the ConnectSocket
         //out.device()->seek(out.device()->pos() + tempText.size());
     }
-    packOutcommingData(0x03, outputData.constData(), outputData.size());
+    packOutcommingData(0x03, out.constData(), out.size());
 }
 
-void Api_protocol_2::sendPM(const std::string& text,const std::string& pseudo)
+void Api_protocol_2::sendPM(const std::string& text, const std::string& pseudo)
 {
     if (!is_logged)
     {
@@ -611,10 +613,10 @@ void Api_protocol_2::sendPM(const std::string& text,const std::string& pseudo)
         return;
     }
 
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);//TODO: needs to be pointer of outputData
+    //ByteArray outputData;
+    DataStream out(sizeof(Chat_type_pm) + text.size() + 1 + pseudo.size() + 1);//TODO: needs to be pointer of outputData
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)Chat_type_pm;
     {
         const std::string& tempText = text;
@@ -623,8 +625,9 @@ void Api_protocol_2::sendPM(const std::string& text,const std::string& pseudo)
             std::cerr << "text in Utf8 too big, line: " << __FILE__ << ": " << __LINE__ << std::endl;
             return;
         }
-        out << (uint8_t)tempText.size();
-        outputData += ByteArray(tempText.data(), tempText.size());
+        //out << (uint8_t)tempText.size();
+        //outputData += ByteArray(tempText.data(), tempText.size());
+        out << text;
         //TODO: rotute to connectSocket
         //out.device()->seek(out.device()->pos()+tempText.size());
     }
@@ -635,12 +638,13 @@ void Api_protocol_2::sendPM(const std::string& text,const std::string& pseudo)
             std::cerr << "text in Utf8 too big, line: " << __FILE__ << ": " << __LINE__ << std::endl;
             return;
         }
-        out << (uint8_t)tempText.size();
-        outputData += ByteArray(tempText.data(), tempText.size());
+        //out << (uint8_t)tempText.size();
+        //outputData += ByteArray(tempText.data(), tempText.size());
+        out << pseudo;
         //TODO: rotute to connectSocket
         //out.device()->seek(out.device()->pos()+tempText.size());
     }
-    packOutcommingData(0x03, outputData.constData(), outputData.size());
+    packOutcommingData(0x03, out.constData(), out.size());
 }
 
 bool Api_protocol_2::teleportDone()
@@ -666,6 +670,7 @@ bool Api_protocol_2::teleportDone()
     last_step = 0;
     postReplyData(teleportQueryInformation.queryId, NULL, 0);
     teleportList.erase(teleportList.cbegin());
+
     return true;
 }
 
@@ -690,10 +695,10 @@ bool Api_protocol_2::addCharacter(const uint8_t& charactersGroupIndex, const uin
         //newError(std::string("Internal problem"),"skin provided: "+std::to_string(skinId)+" is not into profile "+std::to_string(profileIndex)+" forced skin list");
         return false;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(charactersGroupIndex) + sizeof(profileIndex) + pseudo.size() + 1 + sizeof(monsterGroupId) + sizeof(skinId));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)charactersGroupIndex;
     out << (uint8_t)profileIndex;
     {
@@ -703,14 +708,15 @@ bool Api_protocol_2::addCharacter(const uint8_t& charactersGroupIndex, const uin
             std::cerr << "rawPseudo too big or not compatible with utf8" << std::endl;
             return false;
         }
-        outputData += ByteArray(rawPseudo.data(), rawPseudo.size());
+        out << rawPseudo;
+        //outputData += ByteArray(rawPseudo.data(), rawPseudo.size());
         //TODO: route
         //out.device()->seek(out.device()->size());
     }
     out << (uint8_t)monsterGroupId;
     out << (uint8_t)skinId;
 
-    is_logged = packOutcommingQuery(0xAA, queryNumber(), outputData.constData(), outputData.size());
+    is_logged = packOutcommingQuery(0xAA, queryNumber(), out.constData(), out.size());
 
     return true;
 }
@@ -722,13 +728,13 @@ bool Api_protocol_2::removeCharacter(const uint8_t& charactersGroupIndex,const u
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return false;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);//needs the address
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(charactersGroupIndex) + sizeof(characterId));//needs the address
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)charactersGroupIndex;
     out << characterId;
-    is_logged = packOutcommingQuery(0xAB, queryNumber(), outputData.constData(), outputData.size());
+    is_logged = packOutcommingQuery(0xAB, queryNumber(), out.constData(), out.size());
     return true;
 }
 
@@ -776,16 +782,17 @@ bool Api_protocol_2::selectCharacter(const uint8_t& charactersGroupIndex, const 
     }
 
     character_select_send = true;
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);//needs address
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(charactersGroupIndex) + sizeof(serverUniqueKey) + sizeof(characterId));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)charactersGroupIndex;
     out << (uint32_t)serverUniqueKey;
     out << characterId;
-    is_logged = packOutcommingQuery(0xAC, queryNumber(), outputData.constData(), outputData.size());
+    is_logged = packOutcommingQuery(0xAC, queryNumber(), out.constData(), out.size());
     this->selectedServerIndex = serverIndex;
     std::cerr << "this: " << this << ", socket: " << socket << ", select char: " << characterId << ", charactersGroupIndex: " << (uint32_t)charactersGroupIndex << ", serverUniqueKey: " << serverUniqueKey << ", line: " << __FILE__ << ": " << __LINE__ << std::endl;
+
     return true;
 }
 
@@ -806,12 +813,14 @@ void Api_protocol_2::useSeed(const uint8_t& plant_id)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    outputData[0] = plant_id;
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(plant_id));
+    //outputData[0] = plant_id;
+    out << plant_id;
     if (CommonSettingsServer::commonSettingsServer.plantOnlyVisibleByPlayer == false) {
-        packOutcommingQuery(0x83, queryNumber(), outputData.constData(), outputData.size());
+        packOutcommingQuery(0x83, queryNumber(), out.constData(), out.size());
     } else {
-        packOutcommingData(0x19, outputData.constData(), outputData.size());
+        packOutcommingData(0x19, out.constData(), out.size());
     }
 }
 
@@ -827,13 +836,14 @@ void Api_protocol_2::monsterMoveUp(const uint8_t& number)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly); // needs address
+    //ByteArray outputData;
+    //DataStream out(outputData, DataStream::WriteOnly); // needs address
+    DataStreamSerializer out(1 + sizeof(number));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
     out << number;
-    packOutcommingData(0x0D, outputData.constData(), outputData.size());
+    packOutcommingData(0x0D, out.constData(), out.size());
 }
 
 void Api_protocol_2::confirmEvolutionByPosition(const uint8_t& monterPosition)
@@ -848,12 +858,12 @@ void Api_protocol_2::confirmEvolutionByPosition(const uint8_t& monterPosition)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(monterPosition));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)monterPosition;
-    packOutcommingData(0x0F, outputData.constData(), outputData.size());
+    packOutcommingData(0x0F, out.constData(), out.size());
 }
 
 void Api_protocol_2::monsterMoveDown(const uint8_t& number)
@@ -869,13 +879,13 @@ void Api_protocol_2::monsterMoveDown(const uint8_t& number)
         return;
     }
     std::cerr << "confirm evolution of monster position: " << std::to_string(number) << ", line: " << __FILE__ << ": " << __LINE__ << std::endl;
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);//needs address
+    //ByteArray outputData;
+    DataStreamSerializer out(1 + sizeof(number));//needs address
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
     out << number;
-    packOutcommingData(0x0D, outputData.constData(), outputData.size());
+    packOutcommingData(0x0D, out.constData(), out.size());
 }
 
 //inventory
@@ -891,13 +901,13 @@ void Api_protocol_2::destroyObject(const uint16_t& object, const uint32_t& quant
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);//nees address
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(object) + sizeof(quantity));//nees address
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << object;
     out << quantity;
-    packOutcommingData(0x13, outputData.constData(), outputData.size());
+    packOutcommingData(0x13, out.constData(), out.size());
 }
 
 bool Api_protocol_2::useObject(const uint16_t &object)
@@ -912,12 +922,12 @@ bool Api_protocol_2::useObject(const uint16_t &object)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return false;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(object));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << object;
-    packOutcommingQuery(0x86, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x86, queryNumber(), out.constData(), out.size());
     lastObjectUsed.push_back(object);
 
     return true;
@@ -936,13 +946,14 @@ bool Api_protocol_2::useObjectOnMonsterByPosition(const uint16_t &object,const u
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return false;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly); // need address
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(object) + sizeof(monsterPosition)); // need address
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << object;
     out << monsterPosition;
-    packOutcommingData(0x10, outputData.constData(), outputData.size());
+    packOutcommingData(0x10, out.constData(), out.size());
+
     return true;
 }
 
@@ -960,10 +971,14 @@ void Api_protocol_2::wareHouseStore(const int64_t& cash, const std::vector<std::
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(cash)
+                             + sizeof(uint16_t) + (items.size() * (sizeof(uint16_t) + sizeof(int32_t)))
+                             + sizeof(uint32_t) + (withdrawMonsters.size() * (sizeof(int32_t)))
+                             + sizeof(uint32_t) + (depositeMonsters.size() * (sizeof(int32_t)))
+                             );
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint64_t)cash;//TODO:  needs to overload on int64
     out << (uint16_t)items.size();
 
@@ -990,7 +1005,7 @@ void Api_protocol_2::wareHouseStore(const int64_t& cash, const std::vector<std::
         index++;
     }
 
-    packOutcommingData(0x17, outputData.constData(), outputData.size());
+    packOutcommingData(0x17, out.constData(), out.size());
 }
 
 void Api_protocol_2::takeAnObjectOnMap()
@@ -1011,12 +1026,12 @@ void Api_protocol_2::getShopList(const uint16_t& shopId)/// \see CommonMap, std:
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(shopId));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)shopId;
-    packOutcommingQuery(0x87, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x87, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::buyObject(const uint16_t& shopId, const uint16_t& objectId, const uint32_t& quantity, const uint32_t& price)/// \see CommonMap, std::unordered_map<std::pair<uint8_t,uint8_t>,std::vector<uint16_t>, pairhash> shops;
@@ -1031,15 +1046,15 @@ void Api_protocol_2::buyObject(const uint16_t& shopId, const uint16_t& objectId,
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(shopId) + sizeof(objectId) + sizeof(quantity) + sizeof(price));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)shopId;
     out << (uint16_t)objectId;
     out << (uint32_t)quantity;
     out << (uint32_t)price;
-    packOutcommingQuery(0x88, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x88, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::sellObject(const uint16_t& shopId, const uint16_t& objectId, const uint32_t& quantity, const uint32_t& price)/// \see CommonMap, std::unordered_map<std::pair<uint8_t,uint8_t>,std::vector<uint16_t>, pairhash> shops;
@@ -1054,15 +1069,15 @@ void Api_protocol_2::sellObject(const uint16_t& shopId, const uint16_t& objectId
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(shopId) + sizeof(objectId) + sizeof(quantity) + sizeof(price));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)shopId;
     out << (uint16_t)objectId;
     out << (uint32_t)quantity;
     out << (uint32_t)price;
-    packOutcommingQuery(0x89, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x89, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::getFactoryList(const uint16_t& factoryId)
@@ -1077,12 +1092,12 @@ void Api_protocol_2::getFactoryList(const uint16_t& factoryId)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);//needs addresss
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(factoryId));//needs addresss
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)factoryId;
-    packOutcommingQuery(0x8A, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x8A, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::buyFactoryProduct(const uint16_t& factoryId,const uint16_t& objectId,const uint32_t& quantity,const uint32_t& price)
@@ -1097,15 +1112,15 @@ void Api_protocol_2::buyFactoryProduct(const uint16_t& factoryId,const uint16_t&
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(&outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(factoryId) + sizeof(objectId) + sizeof(quantity) + sizeof(price));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)factoryId;
     out << (uint16_t)objectId;
     out << (uint32_t)quantity;
     out << (uint32_t)price;
-    packOutcommingQuery(0x8B, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x8B, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::sellFactoryResource(const uint16_t& factoryId,const uint16_t& objectId,const uint32_t& quantity,const uint32_t& price)
@@ -1120,15 +1135,15 @@ void Api_protocol_2::sellFactoryResource(const uint16_t& factoryId,const uint16_
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(&outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(factoryId) + sizeof(objectId) + sizeof(quantity) + sizeof(price));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)factoryId;
     out << (uint16_t)objectId;
     out << (uint32_t)quantity;
     out << (uint32_t)price;
-    packOutcommingQuery(0x8C, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x8C, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::tryEscape()
@@ -1183,12 +1198,12 @@ void Api_protocol_2::requestFight(const uint16_t& fightId)
         std::cerr << "player_informations.bot_already_beaten[" + std::to_string(fightId) + "], line: " << __FILE__ << ": " << __LINE__ << std::endl;
         abort();
     }
-    ByteArray outputData;
-    DataStream out(&outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(fightId));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)fightId;
-    packOutcommingData(0x0C, outputData.constData(), outputData.size());
+    packOutcommingData(0x0C, out.constData(), out.size());
 }
 
 void Api_protocol_2::changeOfMonsterInFightByPosition(const uint8_t& monsterPosition)
@@ -1203,12 +1218,12 @@ void Api_protocol_2::changeOfMonsterInFightByPosition(const uint8_t& monsterPosi
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);//needs an address to byteArray
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(monsterPosition));//needs an address to byteArray
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)monsterPosition;
-    packOutcommingData(0x0E, outputData.constData(), outputData.size());
+    packOutcommingData(0x0E, out.constData(), out.size());
 }
 
 void Api_protocol_2::useSkill(const uint16_t& skill)
@@ -1223,12 +1238,12 @@ void Api_protocol_2::useSkill(const uint16_t& skill)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(skill));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)skill;
-    packOutcommingData(0x11, outputData.constData(), outputData.size());
+    packOutcommingData(0x11, out.constData(), out.size());
 }
 
 void Api_protocol_2::learnSkillByPosition(const uint8_t& monsterPosition, const uint16_t& skill)
@@ -1243,13 +1258,13 @@ void Api_protocol_2::learnSkillByPosition(const uint8_t& monsterPosition, const 
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(s);
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)monsterPosition;
     out << (uint16_t)skill;
-    packOutcommingData(0x09, outputData.constData(), outputData.size());
+    packOutcommingData(0x09, out.constData(), out.size());
 }
 
 void Api_protocol_2::startQuest(const uint16_t& questId)
@@ -1264,12 +1279,12 @@ void Api_protocol_2::startQuest(const uint16_t& questId)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(questId));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)questId;
-    packOutcommingData(0x1B, outputData.constData(), outputData.size());
+    packOutcommingData(0x1B, out.constData(), out.size());
 }
 
 void Api_protocol_2::finishQuest(const uint16_t& questId)
@@ -1284,12 +1299,12 @@ void Api_protocol_2::finishQuest(const uint16_t& questId)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(questId));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)questId;
-    packOutcommingData(0x1C, outputData.constData(), outputData.size());
+    packOutcommingData(0x1C, out.constData(), out.size());
 }
 
 void Api_protocol_2::cancelQuest(const uint16_t& questId)
@@ -1304,12 +1319,12 @@ void Api_protocol_2::cancelQuest(const uint16_t& questId)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(questId));
+    //out.setVersion(QDataStream::Qt_4_4);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)questId;
-    packOutcommingData(0x1D, outputData.constData(), outputData.size());
+    packOutcommingData(0x1D, out.constData(), out.size());
 }
 
 void Api_protocol_2::nextQuestStep(const uint16_t& questId)
@@ -1324,12 +1339,12 @@ void Api_protocol_2::nextQuestStep(const uint16_t& questId)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStream out(sizeof(questId));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(QDataStream::LittleEndian);
+    //out.setByteOrder(QDataStream::LittleEndian);
     out << (uint16_t)questId;
-    packOutcommingData(0x1E, outputData.constData(), outputData.size());
+    packOutcommingData(0x1E, out.constData(), out.size());
 }
 
 void Api_protocol_2::createClan(const std::string& name)
@@ -1344,10 +1359,10 @@ void Api_protocol_2::createClan(const std::string& name)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1 + name.size() + 1);
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
     {
         const std::string& rawText = toUTF8WithHeader(name);
@@ -1356,17 +1371,19 @@ void Api_protocol_2::createClan(const std::string& name)
             std::cerr << "rawText too big or not compatible with utf8" << std::endl;
             return;
         }
-        outputData += ByteArray(rawText.data(),rawText.size());
+        //outputData += ByteArray(rawText.data(),rawText.size());
+        out << rawText;
         //TODO:  to connectSocket
         //out.device()->seek(out.device()->size());
     }
-    packOutcommingQuery(0x92, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x92, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::leaveClan()
 {
     if (!is_logged)
     {
+
         std::cerr << "is not logged, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
@@ -1375,12 +1392,12 @@ void Api_protocol_2::leaveClan()
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1);
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
-    packOutcommingQuery(0x92, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x92, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::dissolveClan()
@@ -1395,12 +1412,12 @@ void Api_protocol_2::dissolveClan()
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1);
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x03;
-    packOutcommingQuery(0x92, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x92, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::inviteClan(const std::string& pseudo)
@@ -1415,10 +1432,10 @@ void Api_protocol_2::inviteClan(const std::string& pseudo)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1 + pseudo.size() + 1);
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x04;
     {
         const std::string& rawText = toUTF8WithHeader(pseudo);
@@ -1427,10 +1444,11 @@ void Api_protocol_2::inviteClan(const std::string& pseudo)
             std::cerr << "rawText too big or not compatible with utf8" << std::endl;
             return;
         }
-        outputData += ByteArray(rawText.data(),rawText.size());
+        //outputData += ByteArray(rawText.data(),rawText.size());
+        out <<rawText;
         //out.device()->seek(out.device()->size());
     }
-    packOutcommingQuery(0x92, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x92, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::ejectClan(const std::string& pseudo)
@@ -1445,10 +1463,10 @@ void Api_protocol_2::ejectClan(const std::string& pseudo)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1 + pseudo.size() + 1);
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x05;
     {
         const std::string& rawText = toUTF8WithHeader(pseudo);
@@ -1457,10 +1475,11 @@ void Api_protocol_2::ejectClan(const std::string& pseudo)
             std::cerr << "rawText too big or not compatible with utf8" << std::endl;
             return;
         }
-        outputData += ByteArray(rawText.data(), rawText.size());
+        //outputData += ByteArray(rawText.data(), rawText.size());
+        out << rawText;
         //out.device()->seek(out.device()->size());
     }
-    packOutcommingQuery(0x92, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x92, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::inviteAccept(const bool& accept)
@@ -1475,16 +1494,16 @@ void Api_protocol_2::inviteAccept(const bool& accept)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1);
     //out.setVersion(DataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
-    if(accept) {
+    //out.setByteOrder(DataStream::LittleEndian);
+    if (accept) {
         out << (uint8_t)0x01;
     } else {
         out << (uint8_t)0x02;
     }
-    packOutcommingData(0x04, outputData.constData(), outputData.size());
+    packOutcommingData(0x04, out.constData(), out.size());
 }
 
 void Api_protocol_2::waitingForCityCapture(const bool& cancel)
@@ -1499,16 +1518,16 @@ void Api_protocol_2::waitingForCityCapture(const bool& cancel)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1);
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     if (!cancel) {
         out << (uint8_t)0x00;
     } else {
         out << (uint8_t)0x01;
     }
-    packOutcommingData(0x1F, outputData.constData(), outputData.size());
+    packOutcommingData(0x1F, out.constData(), out.size());
 }
 
 //market
@@ -1539,14 +1558,14 @@ void Api_protocol_2::buyMarketObject(const uint32_t& marketObjectId, const uint3
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1 + sizeof(marketObjectId) + sizeof(quantity));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
     out << marketObjectId;
     out << quantity;
-    packOutcommingQuery(0x8E, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x8E, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::buyMarketMonster(const uint32_t& monsterMarketId)
@@ -1561,13 +1580,13 @@ void Api_protocol_2::buyMarketMonster(const uint32_t& monsterMarketId)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1 + sizeof(monsterMarketId));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
     out << monsterMarketId;
-    packOutcommingQuery(0x8E, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x8E, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::putMarketObject(const uint16_t& objectId, const uint32_t& quantity, const uint64_t& price)
@@ -1582,15 +1601,15 @@ void Api_protocol_2::putMarketObject(const uint16_t& objectId, const uint32_t& q
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1 + sizeof(objectId) + sizeof(quantity) + sizeof(price));
     //out.setVersion(QDataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
     out << (quint16)objectId;
     out << (quint32)quantity;
     out << (quint64)price;
-    packOutcommingQuery(0x8F, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x8F, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::putMarketMonsterByPosition(const uint8_t& monsterPosition,const uint64_t& price)
@@ -1605,14 +1624,14 @@ void Api_protocol_2::putMarketMonsterByPosition(const uint8_t& monsterPosition,c
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1 + sizeof(monsterPosition) + sizeof(price));
     //out.setVersion(DataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
     out << (uint8_t)monsterPosition;
     out << (quint64)price;
-    packOutcommingQuery(0x8F, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x8F, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::recoverMarketCash()
@@ -1630,7 +1649,7 @@ void Api_protocol_2::recoverMarketCash()
     packOutcommingQuery(0x90, squeryNumber(), NULL, 0);
 }
 
-void Api_protocol_2::withdrawMarketObject(const uint16_t& objectPosition,const uint32_t& quantity)
+void Api_protocol_2::withdrawMarketObject(const uint16_t& objectPosition, const uint32_t& quantity)
 {
     if (!is_logged)
     {
@@ -1642,14 +1661,14 @@ void Api_protocol_2::withdrawMarketObject(const uint16_t& objectPosition,const u
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1 + sizeof(objectPosition) + sizeof(quantity));
     //out.setVersion(DataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
     out << objectPosition;
     out << quantity;
-    packOutcommingQuery(0x91, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x91, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::withdrawMarketMonster(const uint32_t& monsterMarketId)
@@ -1664,13 +1683,13 @@ void Api_protocol_2::withdrawMarketMonster(const uint32_t& monsterMarketId)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStream out(1 + sizeof(monsterMarketId));
     //out.setVersion(DataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
     out << monsterMarketId;
-    packOutcommingQuery(0x91, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x91, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::collectMaturePlant()
@@ -1705,12 +1724,12 @@ void Api_protocol_2::useRecipe(const uint16_t& recipeId)
         std::cerr << "character not selected, line: " << __FILE__ << ": " << __LINE__ << std::endl;
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(sizeof(recipeId));
     //out.setVersion(DataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint16_t)recipeId;
-    packOutcommingQuery(0x85, queryNumber(), outputData.constData(), outputData.size());
+    packOutcommingQuery(0x85, queryNumber(), out.constData(), out.size());
 }
 
 void Api_protocol_2::addRecipe(const uint16_t& recipeId)
@@ -1740,13 +1759,13 @@ void Api_protocol_2::battleRefused()
         newError(std::string("Internal problem"), std::string("no battle request to refuse"));
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1);
     //out.setVersion(DataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
 
-    postReplyData(battleRequestId.front(), outputData.data(), outputData.size());
+    postReplyData(battleRequestId.front(), out.data(), out.size());
     battleRequestId.erase(battleRequestId.cbegin());
 }
 
@@ -1767,12 +1786,12 @@ void Api_protocol_2::battleAccepted()
         newError(std::string("Internal problem"),std::string("no battle request to accept"));
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1);
     //out.setVersion(DataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
-    postReplyData(battleRequestId.front(), outputData.data(), outputData.size());
+    postReplyData(battleRequestId.front(), out.data(), out.size());
     battleRequestId.erase(battleRequestId.cbegin());
 }
 
@@ -1794,12 +1813,12 @@ void Api_protocol_2::tradeRefused()
         newError(std::string("Internal problem"),std::string("no trade request to refuse"));
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1);
     //out.setVersion(DataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
-    postReplyData(tradeRequestId.front(), outputData.data(), outputData.size());
+    postReplyData(tradeRequestId.front(), out.data(), out.size());
     tradeRequestId.erase(tradeRequestId.cbegin());
 }
 
@@ -1820,12 +1839,12 @@ void Api_protocol_2::tradeAccepted()
         newError(std::string("Internal problem"),std::string("no trade request to accept"));
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1);
     //out.setVersion(DataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
-    postReplyData(tradeRequestId.front(), outputData.constData(), outputData.size());
+    postReplyData(tradeRequestId.front(), out.constData(), out.size());
     tradeRequestId.erase(tradeRequestId.cbegin());
     isInTrade = true;
 }
@@ -1844,7 +1863,7 @@ void Api_protocol_2::tradeCanceled()
     }
     if (!isInTrade)
     {
-        newError(std::string("Internal problem"),std::string("in not in trade"));
+        //newError(std::string("Internal problem"),std::string("in not in trade"));
         return;
     }
     isInTrade = false;
@@ -1893,13 +1912,13 @@ void Api_protocol_2::addTradeCash(const uint64_t& cash)
         newError(std::string("Internal problem"),std::string("no in trade to send cash"));
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1 + sizeof(cash));
     //out.setVersion(DataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x01;
     out << (quint64)cash;
-    packOutcommingData(0x14, outputData.data(), outputData.size());
+    packOutcommingData(0x14, out.data(), out.size());
 }
 
 void Api_protocol_2::addObject(const uint16_t& item, const uint32_t& quantity)
@@ -1924,17 +1943,17 @@ void Api_protocol_2::addObject(const uint16_t& item, const uint32_t& quantity)
         newError(std::string("Internal problem"),std::string("no in trade to send object"));
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1 + sizeof(item) + sizeof(quantity));
     //out.setVersion(DataStream::Qt_4_4);
     out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
     out << item;
     out << quantity;
-    packOutcommingData(0x14, outputData.constData(), outputData.size());
+    packOutcommingData(0x14, out.constData(), out.size());
 }
 
-void Api_protocol_2::addMonsterByPosition(const uint8_t & monsterPosition)
+void Api_protocol_2::addMonsterByPosition(const uint8_t& monsterPosition)
 {
     if (!is_logged)
     {
@@ -1951,13 +1970,13 @@ void Api_protocol_2::addMonsterByPosition(const uint8_t & monsterPosition)
         newError(std::string("Internal problem"),std::string("no in trade to send monster"));
         return;
     }
-    ByteArray outputData;
-    DataStream out(outputData, DataStream::WriteOnly);
+    //ByteArray outputData;
+    DataStreamSerializer out(1 + sizeof(monsterPosition));
     //out.setVersion(DataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x03;
     out << monsterPosition;
-    packOutcommingData(0x14, outputData.constData(), outputData.size());
+    packOutcommingData(0x14, out.constData(), out.size());
 }
 
 Api_protocol_2::StageConnexion Api_protocol_2::stage() const
@@ -1968,13 +1987,13 @@ Api_protocol_2::StageConnexion Api_protocol_2::stage() const
 //to reset all
 void Api_protocol_2::resetAll()
 {
-    if (stageConnexion==StageConnexion::Stage2) {
+    if (stageConnexion == StageConnexion::Stage2) {
         qDebug() << "Api_protocol_2::resetAll() Suspect internal bug";
     }
     //status for the query
     token.clear();
     message("Api_protocol_2::resetAll(): stageConnexion=CatchChallenger::Api_protocol_2::StageConnexion::Stage1 set at "+std::string(__FILE__)+":"+std::to_string(__LINE__));
-    stageConnexion=StageConnexion::Stage1;
+    stageConnexion = StageConnexion::Stage1;
     if (socket == NULL || socket->fakeSocket == NULL) {
         haveFirstHeader = false;
     } else {
@@ -2121,7 +2140,7 @@ bool Api_protocol_2::getCaracterSelected() const
     return character_selected;
 }
 
-LogicialGroup* Api_protocol_2::addLogicalGroup(const std::string& path,const std::string& xml,const std::string& language)
+LogicialGroup* Api_protocol_2::addLogicalGroup(const std::string& path, const std::string& xml, const std::string& language)
 {
     std::string nameString;
 
@@ -2139,63 +2158,67 @@ LogicialGroup* Api_protocol_2::addLogicalGroup(const std::string& path,const std
         {
             bool name_found = false;
             const tinyxml2::XMLElement* name = root->FirstChildElement("name");
-            if(!language.empty() && language!="en")
-                while(name!=NULL)
+            if (!language.empty() && language!="en") {
+                while(name != NULL)
                 {
-                    if(name->Attribute("lang")!=NULL && name->Attribute("lang")==language && name->GetText()!=NULL)
+                    if(name->Attribute("lang") != NULL && name->Attribute("lang") == language && name->GetText() != NULL)
                     {
-                        nameString=name->GetText();
-                        name_found=true;
+                        nameString = name->GetText();
+                        name_found = true;
                         break;
                     }
                     name = name->NextSiblingElement("name");
                 }
-            if(!name_found)
+            }
+            if (!name_found)
             {
                 name = root->FirstChildElement("name");
-                while(name!=NULL)
+                while (name != NULL)
                 {
-                    if(name->Attribute("lang")==NULL || strcmp(name->Attribute("lang"),"en")==0)
-                        if(name->GetText()!=NULL)
+                    if (name->Attribute("lang") == NULL || strcmp(name->Attribute("lang"), "en") == 0)
+                        if(name->GetText() != NULL)
                         {
-                            nameString=name->GetText();
-                            name_found=true;
+                            nameString = name->GetText();
+                            name_found = true;
                             break;
                         }
                     name = name->NextSiblingElement("name");
                 }
             }
-            if(!name_found)
+            if (!name_found)
             {
                 //normal case, the group can be without any name
             }
         }
     }
-    LogicialGroup *logicialGroupCursor=&this->logicialGroup;
-    std::vector<std::string> pathSplited=stringsplit(path,'/');
-    while(!pathSplited.empty())
+    LogicialGroup* logicialGroupCursor = &this->logicialGroup;
+    std::vector<std::string> pathSplited=stringsplit(path, '/');
+    while (!pathSplited.empty())
     {
         const std::string &node=pathSplited.front();
-        if(logicialGroupCursor->logicialGroupList.find(node)==logicialGroupCursor->logicialGroupList.cend())
-            logicialGroupCursor->logicialGroupList[node]=new LogicialGroup;
-        logicialGroupCursor=logicialGroupCursor->logicialGroupList[node];
+        if (logicialGroupCursor->logicialGroupList.find(node) == logicialGroupCursor->logicialGroupList.cend()) {
+            logicialGroupCursor->logicialGroupList[node] = new LogicialGroup;
+        }
+        logicialGroupCursor = logicialGroupCursor->logicialGroupList[node];
         pathSplited.erase(pathSplited.cbegin());
     }
-    if(!nameString.empty())
-        logicialGroupCursor->name=nameString;
+    if (!nameString.empty()) {
+        logicialGroupCursor->name = nameString;
+    }
+
     return logicialGroupCursor;
 }
 
-ServerFromPoolForDisplay * Api_protocol_2::addLogicalServer(const ServerFromPoolForDisplayTemp &server, const std::string &language)
+ServerFromPoolForDisplay* Api_protocol_2::addLogicalServer(const ServerFromPoolForDisplayTemp& server, const std::string& language)
 {
     std::string nameString;
     std::string descriptionString;
 
     tinyxml2::XMLDocument domDocument;
-    const auto loadOkay = domDocument.Parse((Api_protocol_2::text_balise_root_start+server.xml+Api_protocol_2::text_balise_root_stop).c_str());
-    if(loadOkay!=0)
+    const auto loadOkay = domDocument.Parse((Api_protocol_2::text_balise_root_start+server.xml + Api_protocol_2::text_balise_root_stop).c_str());
+    if (loadOkay != 0)
     {
-        std::cerr << "Api_protocol_2::addLogicalServer(): "+tinyxml2errordoc(&domDocument) << std::endl;
+        std::cerr << "Api_protocol_2::addLogicalServer(): " + tinyxml2errordoc(&domDocument) << std::endl;
         return NULL;
     }
     else
@@ -2204,35 +2227,37 @@ ServerFromPoolForDisplay * Api_protocol_2::addLogicalServer(const ServerFromPool
 
         //load the name
         {
-            bool name_found=false;
-            const tinyxml2::XMLElement *name = root->FirstChildElement("name");
-            if(!language.empty() && language!="en")
-                while(name!=NULL)
+            bool name_found = false;
+            const tinyxml2::XMLElement* name = root->FirstChildElement("name");
+            if (!language.empty() && language != "en") {
+                while(name != NULL)
                 {
-                    if(name->Attribute("lang")!=NULL && name->Attribute("lang")==language && name->GetText()!=NULL)
+                    if (name->Attribute("lang") != NULL && name->Attribute("lang") == language && name->GetText() != NULL)
                     {
-                        nameString=name->GetText();
-                        name_found=true;
+                        nameString = name->GetText();
+                        name_found = true;
                         break;
                     }
                     name = name->NextSiblingElement("name");
                 }
-            if(!name_found)
+            }
+            if (!name_found)
             {
                 name = root->FirstChildElement("name");
                 while(name!=NULL)
                 {
-                    if(name->Attribute("lang")==NULL || strcmp(name->Attribute("lang"),"en")==0)
-                        if(name->GetText()!=NULL)
+                    if (name->Attribute("lang") == NULL || strcmp(name->Attribute("lang"), "en") == 0) {
+                        if (name->GetText() != NULL)
                         {
-                            nameString=name->GetText();
-                            name_found=true;
+                            nameString = name->GetText();
+                            name_found = true;
                             break;
                         }
+                    }
                     name = name->NextSiblingElement("name");
                 }
             }
-            if(!name_found)
+            if (!name_found)
             {
                 //normal case, the group can be without any name
             }
@@ -2240,65 +2265,72 @@ ServerFromPoolForDisplay * Api_protocol_2::addLogicalServer(const ServerFromPool
 
         //load the description
         {
-            bool description_found=false;
-            const tinyxml2::XMLElement *description = root->FirstChildElement("description");
-            if(!language.empty() && language!="en")
-                while(description!=NULL)
+            bool description_found = false;
+            const tinyxml2::XMLElement* description = root->FirstChildElement("description");
+            if (!language.empty() && language != "en") {
+                while (description != NULL)
                 {
-                    if(description->Attribute("lang")!=NULL && description->Attribute("lang")==language && description->GetText()!=NULL)
+                    if(description->Attribute("lang") != NULL && description->Attribute("lang") == language && description->GetText() != NULL)
                     {
-                        descriptionString=description->GetText();
-                        description_found=true;
+                        descriptionString = description->GetText();
+                        description_found = true;
                         break;
                     }
                     description = description->NextSiblingElement("description");
                 }
-            if(!description_found)
+            }
+            if (!description_found)
             {
                 description = root->FirstChildElement("description");
-                while(description!=NULL)
+                while (description != NULL)
                 {
-                    if(description->Attribute("lang")!=NULL || strcmp(description->Attribute("lang"),"en")==0)
-                        if(description->GetText()!=NULL)
+                    if (description->Attribute("lang") != NULL || strcmp(description->Attribute("lang"), "en") == 0) {
+                        if (description->GetText() != NULL)
                         {
-                            descriptionString=description->GetText();
-                            description_found=true;
+                            descriptionString = description->GetText();
+                            description_found = true;
                             break;
                         }
+                    }
                     description = description->NextSiblingElement("description");
                 }
             }
-            if(!description_found)
+            if (!description_found)
             {
                 //normal case, the group can be without any description
             }
         }
     }
 
-    LogicialGroup * logicialGroupCursor;
-    if(server.logicalGroupIndex>=logicialGroupIndexList.size())
+    LogicialGroup* logicialGroupCursor;
+    if (server.logicalGroupIndex >= logicialGroupIndexList.size())
     {
-        qDebug() << (QString("out of range for addLogicalGroup: %1, server.logicalGroupIndex %2 <= logicialGroupIndexList.size() %3 (defaulting to root folder)")
-                     .arg(QString::fromStdString(server.xml))
-                     .arg(server.logicalGroupIndex)
-                     .arg(logicialGroupIndexList.size())
-                     );
-        logicialGroupCursor=&logicialGroup;
+        Logger::instance().log(Logger::Debug, sprintf("out of range for addLogicalGroup: %s, server.logicalGroupIndex %d <= logicialGroupIndexList.size() %d (defaulting to root folder)"
+                                                      , "server.xml"
+                                                      , server.logicalGroupIndex
+                                                      , logicialGroupIndexList.size());
+//        qDebug() << (QString("out of range for addLogicalGroup: %1, server.logicalGroupIndex %2 <= logicialGroupIndexList.size() %3 (defaulting to root folder)")
+//                     .arg(QString::fromStdString(server.xml))
+//                     .arg(server.logicalGroupIndex)
+//                     .arg(logicialGroupIndexList.size())
+//                     );
+        logicialGroupCursor = &logicialGroup;
     }
-    else
+    else {
         logicialGroupCursor=logicialGroupIndexList.at(server.logicalGroupIndex);
+    }
 
     ServerFromPoolForDisplay newServer;
-    newServer.charactersGroupIndex=server.charactersGroupIndex;
-    newServer.currentPlayer=server.currentPlayer;
-    newServer.description=descriptionString;
-    newServer.host=server.host;
-    newServer.maxPlayer=server.maxPlayer;
-    newServer.name=nameString;
-    newServer.port=server.port;
-    newServer.uniqueKey=server.uniqueKey;
-    newServer.lastConnect=0;
-    newServer.playedTime=0;
+    newServer.charactersGroupIndex = server.charactersGroupIndex;
+    newServer.currentPlayer = server.currentPlayer;
+    newServer.description = descriptionString;
+    newServer.host = server.host;
+    newServer.maxPlayer = server.maxPlayer;
+    newServer.name = nameString;
+    newServer.port = server.port;
+    newServer.uniqueKey = server.uniqueKey;
+    newServer.lastConnect = 0;
+    newServer.playedTime = 0;
 
     logicialGroupCursor->servers.push_back(newServer);
     return &logicialGroupCursor->servers.back();
@@ -2311,43 +2343,48 @@ LogicialGroup Api_protocol_2::getLogicialGroup() const
 
 void Api_protocol_2::readForFirstHeader()
 {
-    if(haveFirstHeader)
-        return;
-    if(socket->sslSocket==NULL)
-    {
-        newError(std::string("Internal problem"),std::string("Api_protocol_2::readForFirstHeader() socket->sslSocket==NULL"));
+    if (haveFirstHeader) {
         return;
     }
-    if(stageConnexion!=StageConnexion::Stage1 && stageConnexion!=StageConnexion::Stage2 && stageConnexion!=StageConnexion::Stage3)
+    if (socket->sslSocket == NULL)
     {
-        newError(std::string("Internal problem"),std::string("Api_protocol_2::readForFirstHeader() stageConnexion!=StageConnexion::Stage1 && stageConnexion!=StageConnexion::Stage2"));
+        newError(std::string("Internal problem"), std::string("Api_protocol_2::readForFirstHeader() socket->sslSocket==NULL"));
         return;
     }
-    if(stageConnexion==StageConnexion::Stage2)
+    if (stageConnexion!=StageConnexion::Stage1 && stageConnexion!=StageConnexion::Stage2 && stageConnexion!=StageConnexion::Stage3)
     {
-        message("stageConnexion=CatchChallenger::Api_protocol_2::StageConnexion::Stage3 set at "+std::string(__FILE__)+":"+std::to_string(__LINE__));
+        newError(std::string("Internal problem"), std::string("Api_protocol_2::readForFirstHeader() stageConnexion!=StageConnexion::Stage1 && stageConnexion!=StageConnexion::Stage2"));
+        return;
+    }
+    if (stageConnexion==StageConnexion::Stage2)
+    {
+        message("stageConnexion=CatchChallenger::Api_protocol_2::StageConnexion::Stage3 set at " + std::string(__FILE__) + ":" + std::to_string(__LINE__));
         stageConnexion=StageConnexion::Stage3;
     }
     {
-        if(socket->sslSocket->mode()!=QSslSocket::UnencryptedMode)
+        if (socket->sslSocket->mode() != QSslSocket::UnencryptedMode)
         {
-            newError(std::string("Internal problem"),std::string("socket->sslSocket->mode()!=QSslSocket::UnencryptedMode into Api_protocol_2::readForFirstHeader()"));
+            newError(std::string("Internal problem"), std::string("socket->sslSocket->mode()!=QSslSocket::UnencryptedMode into Api_protocol_2::readForFirstHeader()"));
             return;
         }
         uint8_t value;
-        if(socket->sslSocket->read((char*)&value,sizeof(value))==sizeof(value))
+        if (socket->sslSocket->read((char*)&value, sizeof(value)) == sizeof(value))
         {
-            haveFirstHeader=true;
-            if(value==0x01)
+            haveFirstHeader = true;
+            if (value == 0x01)
             {
                 socket->sslSocket->setPeerVerifyMode(QSslSocket::VerifyNone);
                 socket->sslSocket->ignoreSslErrors();
                 socket->sslSocket->startClientEncryption();
-                if(!QObject::connect(socket->sslSocket,&QSslSocket::encrypted,this,&Api_protocol_2::sslHandcheckIsFinished))
+                //TODO: abstract function
+                if (!QObject::connect(socket->sslSocket, &QSslSocket::encrypted, this, &Api_protocol_2::sslHandcheckIsFinished)) {
                     abort();
+                }
+                //TODO
             }
-            else
+            else {
                 connectTheExternalSocketInternal();
+            }
         }
     }
 }
@@ -2359,12 +2396,12 @@ void Api_protocol_2::sslHandcheckIsFinished()
 
 void Api_protocol_2::connectTheExternalSocketInternal()
 {
-    if(socket->sslSocket==NULL)
+    if (socket->sslSocket == NULL)
     {
         newError(std::string("Internal problem"),std::string("Api_protocol_2::connectTheExternalSocket() socket->sslSocket==NULL"));
         return;
     }
-    if(socket->peerName().isEmpty() || socket->sslSocket->state()!=QSslSocket::SocketState::ConnectedState)
+    if (socket->peerName().isEmpty() || socket->sslSocket->state() != QSslSocket::SocketState::ConnectedState)
     {
         newError(std::string("Internal problem"),std::string("Api_protocol_2::connectTheExternalSocket() socket->sslSocket->peerAddress()==QHostAddress::Null: ")+
                  socket->peerName().toStdString()+"-"+std::to_string(socket->peerPort())+

@@ -17,8 +17,7 @@
 #include <QSslKey>
 
 
-#include "../../general/base/protocol/util/DataStream.h"
-#include "../../general/base/protocol/util/ByteArray.h"
+#include "../../general/base/protocol/util/DataStreamSerializer.h"
 #include "../../general/base/protocol/util/sha224.h"
 
 #include "../../general/base/tinyXML2/tinyxml2.h"
