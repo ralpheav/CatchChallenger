@@ -39,16 +39,19 @@
 #include "../../general/base/protocol/FacilityLibGeneral.h"
 #include "../../general/base/protocol/general/GeneralType.h"
 #include "../../general/base/protocol/log/logger.h"
+#include "../../general/base/protocol/config/Settings.h"
 
 namespace CatchChallenger
 {
     class Api_protocol_2 : public ProtocolParsingInputOutput, public MoveOnTheMap
     {
+            Settings setting;
         public:
             static bool internalVersionDisplayed;
 
         public:
-            explicit Api_protocol_2(ConnectedSocket* socket, bool tolerantMode = false);
+            //setting.setAppPath(QCoreApplication::applicationDirPath().toStdString()).setDatapackDir("/datapack");
+            explicit Api_protocol_2(ConnectedSocket* socket, bool tolerantMode = false, Settings setting);
             ~Api_protocol_2();
 
             bool disconnectClient();

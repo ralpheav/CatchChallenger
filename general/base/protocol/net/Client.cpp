@@ -1,6 +1,6 @@
 #include "Client.h"
 
-Client::Client() : Socket() {
+Client::Client() : TCPSocket() {
 }
 
 int Client::create(const std::string& host, uint32_t port) {

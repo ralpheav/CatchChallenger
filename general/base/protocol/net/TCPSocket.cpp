@@ -1,6 +1,6 @@
-#include "Socket.h"
+#include "TCPSocket.h"
 
-Socket::Socket() {
+TCPSocket::TCPSocket() {
     socket_file_descriptor = socket(AF_INET, SOCK_STREAM, 0);
     if (!haveSocket())
     {
@@ -9,15 +9,15 @@ Socket::Socket() {
     }
 }
 
-Socket::Socket(int file_descriptor) {
+TCPSocket::TCPSocket(int file_descriptor) {
     socket_file_descriptor = file_descriptor;
 }
 
-bool Socket::haveSocket() const {
+bool TCPSocket::haveSocket() const {
     return socket_file_descriptor > 0;
 }
 
-int Socket::read() {
+int TCPSocket::read() {
     if (!haveSocket()) {
         std::cerr << "no socket" << std::endl;
     }
@@ -27,7 +27,7 @@ int Socket::read() {
     return result;
 }
 
-int Socket::send(const std::string& message) {
+int TCPSocket::send(const std::string& message) {
     if (!haveSocket()) {
         std::cerr << "no socket" << std::endl;
     }
@@ -37,6 +37,6 @@ int Socket::send(const std::string& message) {
     return result;
 }
 
-std::string Socket::getBuffer() {
+std::string TCPSocket::getBuffer() {
     return buffer;
 }

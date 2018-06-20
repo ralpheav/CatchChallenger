@@ -40,8 +40,9 @@ std::string Api_protocol_2::text_en                = "en";
 std::string Api_protocol_2::text_lang              = "lang";
 std::string Api_protocol_2::text_slash             = "/";
 
-Api_protocol_2::Api_protocol_2(ConnectedSocket* socket, bool tolerantMode) :
+Api_protocol_2::Api_protocol_2(ConnectedSocket* socket, bool tolerantMode, Settings setting) :
     ProtocolParsingInputOutput(socket, PacketModeTransmission_Client),
+    setting(setting),
     tolerantMode(tolerantMode)
 {
     datapackStatus = DatapackStatus::Base;
@@ -1988,11 +1989,12 @@ Api_protocol_2::StageConnexion Api_protocol_2::stage() const
 void Api_protocol_2::resetAll()
 {
     if (stageConnexion == StageConnexion::Stage2) {
-        qDebug() << "Api_protocol_2::resetAll() Suspect internal bug";
+        Logger::instance().log(Logger::Debug, "Api_protocol_2::resetAll() Suspect internal bug");
+        //qDebug() << "Api_protocol_2::resetAll() Suspect internal bug";
     }
     //status for the query
     token.clear();
-    message("Api_protocol_2::resetAll(): stageConnexion=CatchChallenger::Api_protocol_2::StageConnexion::Stage1 set at "+std::string(__FILE__)+":"+std::to_string(__LINE__));
+    message("Api_protocol_2::resetAll(): stageConnexion=CatchChallenger::Api_protocol_2::StageConnexion::Stage1 set at " + std::string(__FILE__) + ":" + std::to_string(__LINE__));
     stageConnexion = StageConnexion::Stage1;
     if (socket == NULL || socket->fakeSocket == NULL) {
         haveFirstHeader = false;
@@ -2044,27 +2046,28 @@ void Api_protocol_2::resetAll()
     tradeRequestId.clear();
     isInBattle = false;
     battleRequestId.clear();
-    mDatapackBase = QCoreApplication::applicationDirPath().toStdString() + "/datapack/";
+    mDatapackBase = setting.getAppPath() + setting.getDatapackDir();
     mDatapackMain = mDatapackBase + "map/main/[main]/";
     mDatapackSub = mDatapackMain + "sub/[sub]/";
     CommonSettingsServer::commonSettingsServer.mainDatapackCode = "[main]";
     CommonSettingsServer::commonSettingsServer.subDatapackCode = "[sub]";
-    if(player_informations.recipes != NULL)
+
+    if (player_informations.recipes != NULL)
     {
         delete player_informations.recipes;
         player_informations.recipes = NULL;
     }
-    if(player_informations.encyclopedia_monster != NULL)
+    if (player_informations.encyclopedia_monster != NULL)
     {
         delete player_informations.encyclopedia_monster;
         player_informations.encyclopedia_monster = NULL;
     }
-    if(player_informations.encyclopedia_item != NULL)
+    if (player_informations.encyclopedia_item != NULL)
     {
         delete player_informations.encyclopedia_item;
         player_informations.encyclopedia_item = NULL;
     }
-    if(player_informations.bot_already_beaten != NULL)
+    if (player_informations.bot_already_beaten != NULL)
     {
         delete player_informations.bot_already_beaten;
         player_informations.bot_already_beaten = NULL;
@@ -2195,7 +2198,7 @@ LogicialGroup* Api_protocol_2::addLogicalGroup(const std::string& path, const st
     std::vector<std::string> pathSplited=stringsplit(path, '/');
     while (!pathSplited.empty())
     {
-        const std::string &node=pathSplited.front();
+        const std::string& node = pathSplited.front();
         if (logicialGroupCursor->logicialGroupList.find(node) == logicialGroupCursor->logicialGroupList.cend()) {
             logicialGroupCursor->logicialGroupList[node] = new LogicialGroup;
         }
@@ -2213,9 +2216,9 @@ ServerFromPoolForDisplay* Api_protocol_2::addLogicalServer(const ServerFromPoolF
 {
     std::string nameString;
     std::string descriptionString;
-
     tinyxml2::XMLDocument domDocument;
-    const auto loadOkay = domDocument.Parse((Api_protocol_2::text_balise_root_start+server.xml + Api_protocol_2::text_balise_root_stop).c_str());
+
+    const auto loadOkay = domDocument.Parse((Api_protocol_2::text_balise_root_start + server.xml + Api_protocol_2::text_balise_root_stop).c_str());
     if (loadOkay != 0)
     {
         std::cerr << "Api_protocol_2::addLogicalServer(): " + tinyxml2errordoc(&domDocument) << std::endl;
@@ -2223,7 +2226,7 @@ ServerFromPoolForDisplay* Api_protocol_2::addLogicalServer(const ServerFromPoolF
     }
     else
     {
-        const tinyxml2::XMLElement *root = domDocument.RootElement();
+        const tinyxml2::XMLElement* root = domDocument.RootElement();
 
         //load the name
         {
@@ -2317,7 +2320,7 @@ ServerFromPoolForDisplay* Api_protocol_2::addLogicalServer(const ServerFromPoolF
         logicialGroupCursor = &logicialGroup;
     }
     else {
-        logicialGroupCursor=logicialGroupIndexList.at(server.logicalGroupIndex);
+        logicialGroupCursor = logicialGroupIndexList.at(server.logicalGroupIndex);
     }
 
     ServerFromPoolForDisplay newServer;
@@ -2333,6 +2336,7 @@ ServerFromPoolForDisplay* Api_protocol_2::addLogicalServer(const ServerFromPoolF
     newServer.playedTime = 0;
 
     logicialGroupCursor->servers.push_back(newServer);
+
     return &logicialGroupCursor->servers.back();
 }
 
@@ -2351,12 +2355,12 @@ void Api_protocol_2::readForFirstHeader()
         newError(std::string("Internal problem"), std::string("Api_protocol_2::readForFirstHeader() socket->sslSocket==NULL"));
         return;
     }
-    if (stageConnexion!=StageConnexion::Stage1 && stageConnexion!=StageConnexion::Stage2 && stageConnexion!=StageConnexion::Stage3)
+    if (stageConnexion != StageConnexion::Stage1 && stageConnexion != StageConnexion::Stage2 && stageConnexion != StageConnexion::Stage3)
     {
         newError(std::string("Internal problem"), std::string("Api_protocol_2::readForFirstHeader() stageConnexion!=StageConnexion::Stage1 && stageConnexion!=StageConnexion::Stage2"));
         return;
     }
-    if (stageConnexion==StageConnexion::Stage2)
+    if (stageConnexion == StageConnexion::Stage2)
     {
         message("stageConnexion=CatchChallenger::Api_protocol_2::StageConnexion::Stage3 set at " + std::string(__FILE__) + ":" + std::to_string(__LINE__));
         stageConnexion=StageConnexion::Stage3;

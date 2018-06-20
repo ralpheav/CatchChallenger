@@ -1,12 +1,12 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-#include "Socket.h"
+#include "TCPSocket.h"
 
 #define HOST "127.0.0.1"
 #define PORT 8080
 
-class Client : public Socket {
+class Client : public TCPSocket {
 
     private:
         struct sockaddr_in address;

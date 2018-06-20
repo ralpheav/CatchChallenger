@@ -1,6 +1,6 @@
 #include "Server.h"
 
-Server::Server() : Socket() {
+Server::Server() : TCPSocket() {
 }
 
 bool Server::create(const std::string& host, uint32_t port) {
@@ -38,7 +38,7 @@ int Server::listen() {
     return true;
 }
 
-Socket* Server::accept() {
+TCPSocket* Server::accept() {
     int addrlen = sizeof(address);
     int new_socket = ::accept(socket_file_descriptor, (struct sockaddr *)&address, (socklen_t*)&addrlen);
 
@@ -47,7 +47,7 @@ Socket* Server::accept() {
         std::cerr << "accept new conn error" << std::endl;
         return nullptr;
     }
-    client_socket = new Socket(new_socket);
+    client_socket = new TCPSocket(new_socket);
 
     return client_socket;
 }

@@ -10,10 +10,11 @@
 #include "../config/GeneralVariable.h"
 #include "../log/logger.h"
 #include "FakeServer.h"
+#include "ISocket.h"
 
 namespace CatchChallenger {
 
-    class FakeSocket
+    class FakeSocket : public ISocket
     {
         public:
             friend class FakeServer;

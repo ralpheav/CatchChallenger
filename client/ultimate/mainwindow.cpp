@@ -17,6 +17,7 @@
 #include "../../general/base/Version.h"
 #include "../base/PlatformMacro.h"
 #include "../base/ClientVariable.h"
+#include "../../general/base/protocol/config/Settings.h"
 
 #ifdef Q_CC_GNU
 //this next header is needed to change file time/date under gcc

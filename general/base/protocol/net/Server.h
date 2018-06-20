@@ -1,13 +1,13 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include "Socket.h"
+#include "TCPSocket.h"
 
 #define PORT 8080
 
-class Server : public Socket {
+class Server : public TCPSocket {
 
-    Socket* client_socket;
+    TCPSocket* client_socket;
     struct sockaddr_in address;
     int opt = 1;
 
@@ -16,7 +16,7 @@ public:
     bool create(const std::string& host, uint32_t port);
     bool bind();
     int listen();
-    Socket* accept();
+    TCPSocket* accept();
 };
 
 #endif
