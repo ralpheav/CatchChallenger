@@ -14,7 +14,7 @@ std::string HostAddress::Null      = "0.0.0.0";
 
 ConnectedSocket::ConnectedSocket(ISocket* socket) : pSocket(socket)
 {
-    pSocket->setSocketOption(QAbstractSocket::KeepAliveOption, 1);
+    pSocket->setSocketOption(SocketOption::KeepAliveOption, 1);
     purgeBuffer();
     //open(QIODevice::ReadWrite | QIODevice::Unbuffered);
 }
@@ -24,10 +24,10 @@ ConnectedSocket::~ConnectedSocket()
     pSocket->deleteLater();
 }
 
-std::list<QSslError> ConnectedSocket::sslErrors() const
-{
-    return pSocket->sslErrors();
-}
+//std::list<QSslError> ConnectedSocket::sslErrors() const
+//{
+//    return pSocket->sslErrors();
+//}
 
 void ConnectedSocket::purgeBuffer()
 {
@@ -56,7 +56,7 @@ void ConnectedSocket::abort()
 
 void ConnectedSocket::connectToHost(const std::string& hostName, uint16_t port)
 {
-    if (state() != ConnectedSocket::unconnected) {
+    if (state() != State::unconnected) {
         return;
     }
 
@@ -71,7 +71,7 @@ void ConnectedSocket::connectToHost(const std::string& hostName, uint16_t port)
 
 void ConnectedSocket::connectToHost(const HostAddress& address, uint16_t port)
 {
-    if (state() != ConnectedSocket::unconnected) {
+    if (state() != State::unconnected) {
         return;
     }
 
@@ -81,7 +81,7 @@ void ConnectedSocket::connectToHost(const HostAddress& address, uint16_t port)
 
 void ConnectedSocket::disconnectFromHost()
 {
-    if (state() != ConnectedSocket::unconnected) {
+    if (state() != State::unconnected) {
         return;
     }
 
@@ -119,36 +119,18 @@ bool ConnectedSocket::isValid() const
 void ConnectedSocket::setTcpCork(const bool& cork)
 {
     #ifdef __linux__
-        if (sslSocket != nullptr)
-        {
-            #if ! defined(EPOLLCATCHCHALLENGERSERVER) && ! defined (ONLYMAPRENDER)
-                const int* &infd;
-            #else
-                const int32_t &infd;
-            #endif
+        #if ! defined(EPOLLCATCHCHALLENGERSERVER) && ! defined (ONLYMAPRENDER)
+            const int* &infd;
+        #else
+            const int32_t& infd;
+        #endif
 
-            sslSocket->socketDescriptor();
-            if (infd != -1)
-            {
-                int state = cork;
-                if (setsockopt(static_cast<int>(infd), IPPROTO_TCP, TCP_CORK, &state, sizeof(state)) != 0)
-                    std::cerr << "Unable to apply tcp cork" << std::endl;
-            }
-        }
-        if (tcpSocket != nullptr)
+        pSocket->socketDescriptor();
+        if (infd != -1)
         {
-            #if ! defined(EPOLLCATCHCHALLENGERSERVER) && ! defined (ONLYMAPRENDER)
-                const qintptr &inf;
-            #else
-                const int32_t &infd;
-            #endif
-
-            tcpSocket->socketDescriptor();
-            if (infd != -1)
-            {
-                int state = cork;
-                if (setsockopt(static_cast<int>(infd), IPPROTO_TCP, TCP_CORK, &state, sizeof(state)) != 0)
-                    std::cerr << "Unable to apply tcp cork" << std::endl;
+            int state = cork;
+            if (setsockopt(static_cast<int>(infd), IPPROTO_TCP, TCP_CORK, &state, sizeof(state)) != 0) {
+                std::cerr << "Unable to apply tcp cork" << std::endl;
             }
         }
     #endif
@@ -184,7 +166,7 @@ HostAddress ConnectedSocket::peerAddress() const
         return pSocket->peerAddress();
     }
 
-    return QHostAddress::Null;
+    return HostAddress::Null;
 }
 
 std::string ConnectedSocket::peerName() const
@@ -214,7 +196,7 @@ int ConnectedSocket::state() const
         return pSocket->state();
     }
 
-    return ConnectedSocket::unconnected;
+    return State::unconnected;
 }
 
 bool ConnectedSocket::waitForConnected(int msecs)
@@ -270,7 +252,7 @@ void ConnectedSocket::close()
 int64_t ConnectedSocket::readData(char* data, int64_t maxSize)
 {
     if (pSocket != nullptr) {
-        return pSocket->read(data,maxSize);
+        return pSocket->read(data, maxSize);
     }
 
     return -1;

@@ -5,7 +5,7 @@ SSLSocket::SSLSocket() {
 }
 
 SSLSocket::~SSLSocket() {
-    if (state == 1) {
+    if (state == SocketState::ConnectedState) {
         // release connection state
         SSL_free(ssl);
     }
@@ -69,11 +69,11 @@ bool SSLSocket::connect() {
     SSL_set_fd(ssl, socket_descriptor);
 
     if (SSL_connect(ssl) == -1) {
-        state = 0;
+        state = SocketState::UnconnectedState;
 
         return false;
     }
-    state = 1;
+    state = SocketState::ConnectedState;
 
     return true;
 }
@@ -145,6 +145,129 @@ int SSLSocket::read() {
     buffer[bytes] = 0;
 
     return bytes;
+}
+
+void SSLSocket::setSocketOption(SocketOption option, int parameter) {
+    this->option = option;
+    //getsockopt() //SO_ERROR
+}
+
+bool SSLSocket::bytesAvailable() {
+    int bytes_available = 0;
+    ioctl(socket_descriptor, FIONREAD, &bytes_available);
+
+    return bytes_available;
+}
+
+bool SSLSocket::encryptedBytesAvailable() {
+    return this->getEncryptation() != null;
+}
+
+void SSLSocket::deleteLater() {
+    //TODO: delete
+}
+
+void SSLSocket::abort() {
+    shutdown(socket_descriptor, SHUT_RDWR);
+}
+
+int SSLSocket::connectToHost(const std::string& host, int port) {
+    this->openConnection(host.c_str(), port);
+
+    return this->connect();
+}
+
+void SSLSocket::disconnectFromHost() {
+    close(socket_descriptor);
+    SSL_CTX_free(ctx);
+}
+
+void SSLSocket::error() {
+    //TODO
+}
+
+void SSLSocket::flush() {
+    int mark = 0;
+    char waste[BUFSIZ];
+
+    tcflush(1, TCIOFLUSH);
+
+    while (true) {
+        if (ioctl(socket_descriptor, SIOCATMARK, &mark) < 0) {
+            return;
+        }
+        if (mark) {
+            return;
+        }
+        read(socket_descriptor, waste, sizeof(waste));
+    }
+}
+
+bool SSLSocket::isValid() {
+    return socket_descriptor > 0;
+}
+
+void SSLSocket::socketDescriptor() {
+    //TODO
+}
+
+std::string SSLSocket::localAddress() {
+    //TODO
+    //return address;
+}
+
+int SSLSocket::localPort() {
+    //TODO
+    //return port;
+}
+
+std::string SSLSocket::peerAddress() {
+    //TODO
+}
+
+std::string SSLSocket::peerName() {
+    //TODO
+}
+
+int SSLSocket::peerPort() {
+    //TODO
+}
+
+SocketState SSLSocket::state() {
+    return SocketState::UnconnectedState;
+}
+
+bool SSLSocket::waitForConnected(int msec) {
+    waitForConnectTime = msec;
+    return true;
+}
+
+bool SSLSocket::waitForDisconnected(int msec) {
+    waitForDisconnectedTime = msec;
+    return true;
+}
+
+bool SSLSocket::openMode() {
+    //TODO
+}
+
+std::string SSLSocket::errorString() {
+    //TODO
+}
+
+int SSLSocket::readData(char* message, size_t max) {
+    //TODO max
+    int result = this->read();
+    strcpy(message, buffer);
+
+    return result;
+}
+
+int SSLSocket::writeData(const char* message, size_t max) {
+    //TODO max
+    int result = this->send(message);
+
+    return result;
 }
 
 const char* SSLSocket::getBuffer() {

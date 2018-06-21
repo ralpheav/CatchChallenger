@@ -17,10 +17,6 @@
 
 namespace CatchChallenger {
 
-enum OpenMode {
-    unknown = 0
-};
-
 class ConnectedSocket
 {
     public:
@@ -56,16 +52,16 @@ class ConnectedSocket
     protected:
         bool isSequential() const;
         bool canReadLine() const;
-        std::list<QSslError> sslErrors() const;
+        //std::list<QSslError> sslErrors() const;
         //workaround because QSslSocket don't return correct value for i2p via proxy
         std::string hostName;
         uint16_t    port;
 
         virtual void	connected() = 0;
         virtual void	disconnected() = 0;
-        virtual void	error(int socketError) = 0;
-        virtual void	stateChanged(int socketState) = 0;
-        virtual void    sslErrors(const std::list<QSslError> &errors) = 0;
+        virtual void	error(SocketError socketError) = 0;
+        virtual void	stateChanged(SocketState socketState) = 0;
+        //virtual void    sslErrors(const std::list<QSslError> &errors) = 0;
         virtual void    destroyed() = 0;
         virtual void    readyRead() = 0;
         virtual void    stateChanged() = 0;

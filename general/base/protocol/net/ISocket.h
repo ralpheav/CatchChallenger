@@ -59,6 +59,10 @@ namespace CatchChallenger
         ReceiveBufferSizeSocketOption  //SO_RCVBUF
     };
 
+    enum OpenMode {
+        unknown = 0
+    };
+
     class ISocket
     {
         public:
