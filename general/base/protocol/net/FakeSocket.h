@@ -36,15 +36,10 @@ namespace CatchChallenger {
             int state() const;
             bool isValid() const;
 
-            enum {
-                unconnected = 0,
-                connected   = 1
-            } m_state;
-
             virtual void connected() = 0;
             virtual void disconnected() = 0;
-            virtual void error(QAbstractSocket::SocketError socketError) = 0;
-            virtual void stateChanged(QAbstractSocket::SocketState socketState) = 0;
+            virtual void error(SocketError socketError) = 0;
+            virtual void stateChanged(SocketState socketState) = 0;
             virtual void aboutToDelete() = 0;
             virtual void readyRead() = 0;
 
@@ -58,6 +53,7 @@ namespace CatchChallenger {
         private:
             std::vector<unsigned char> data;
             static std::mutex mutex;
+            SocketError error;
 
             uint64_t RX_size;
             void internal_writeData(std::vector<unsigned char> rawData);
@@ -65,6 +61,5 @@ namespace CatchChallenger {
     };
 }
 
-#endif // FAKESOCKET_H
-
-#endif
+#endif // CATCHCHALLENGER_FAKESOCKET_H
+#endif // ! defined(EPOLLCATCHCHALLENGERSERVER) && ! defined (ONLYMAPRENDER)

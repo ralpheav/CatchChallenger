@@ -7,6 +7,12 @@
 #include <unistd.h>
 #include <stdint.h>
 
+#ifdef __linux__
+    #include <netinet/tcp.h>
+    #include <netdb.h>
+#endif
+
+
 #include <iostream>
 #include <vector>
 #include <string>

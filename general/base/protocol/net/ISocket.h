@@ -7,6 +7,35 @@
 
 namespace CatchChallenger
 {
+    enum SslError {
+        NoError,
+        UnableToGetIssuerCertificate,
+        UnableToDecryptCertificateSignature,
+        UnableToDecodeIssuerPublicKey,
+        CertificateSignatureFailed,
+        CertificateNotYetValid,
+        CertificateExpired,
+        InvalidNotBeforeField,
+        InvalidNotAfterField,
+        SelfSignedCertificate,
+        SelfSignedCertificateInChain,
+        UnableToGetLocalIssuerCertificate,
+        UnableToVerifyFirstCertificate,
+        CertificateRevoked,
+        InvalidCaCertificate,
+        PathLengthExceeded,
+        InvalidPurpose,
+        CertificateUntrusted,
+        CertificateRejected,
+        SubjectIssuerMismatch, // hostname mismatch?
+        AuthorityIssuerSerialNumberMismatch,
+        NoPeerCertificate,
+        HostNameMismatch,
+        NoSslSupport,
+        CertificateBlacklisted,
+        UnspecifiedError = -1
+    };
+
     enum SocketError {
         ConnectionRefusedError,
         RemoteHostClosedError,
@@ -32,6 +61,19 @@ namespace CatchChallenger
         SslInvalidUserDataError,
         TemporaryError,
         UnknownSocketError = -1
+    };
+
+    enum SslMode {
+        UnencryptedMode,
+        SslClientMode,
+        SslServerMode
+    };
+
+    enum PeerVerifyMode {
+        VerifyNone,
+        QueryPeer,
+        VerifyPeer,
+        AutoVerifyPeer
     };
 
     enum SocketState {
@@ -65,6 +107,12 @@ namespace CatchChallenger
 
     class ISocket
     {
+        protected:
+            int port;
+            char host[15];
+
+            SocketState state;
+            SocketError error;
         public:
             virtual void setSocketOption(SocketOption option, int mode) = 0;
             virtual void abort() = 0;
@@ -76,9 +124,10 @@ namespace CatchChallenger
             virtual bool isValid() = 0;
             virtual uint64_t getRXSize() = 0;
             virtual uint64_t getTXSize() = 0;
-            virtual int error() const = 0;
-            virtual int state() const = 0;
+            virtual SocketError error() const = 0;
+            virtual SocketState state() const = 0;
             virtual bool isValid() const = 0;
+            virtual bool socketDescriptor() = 0;
 
             virtual void connected() = 0;
             virtual void disconnected() = 0;

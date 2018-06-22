@@ -163,16 +163,15 @@ bool SSLSocket::encryptedBytesAvailable() {
     return this->getEncryptation() != null;
 }
 
-void SSLSocket::deleteLater() {
-    //TODO: delete
-}
-
 void SSLSocket::abort() {
     shutdown(socket_descriptor, SHUT_RDWR);
 }
 
 int SSLSocket::connectToHost(const std::string& host, int port) {
     this->openConnection(host.c_str(), port);
+
+    strcpy(this->host, host.c_str());
+    this->port = port;
 
     return this->connect();
 }
@@ -182,8 +181,8 @@ void SSLSocket::disconnectFromHost() {
     SSL_CTX_free(ctx);
 }
 
-void SSLSocket::error() {
-    //TODO
+SocketError SSLSocket::error() {
+    return error;
 }
 
 void SSLSocket::flush() {
@@ -207,18 +206,16 @@ bool SSLSocket::isValid() {
     return socket_descriptor > 0;
 }
 
-void SSLSocket::socketDescriptor() {
-    //TODO
+bool SSLSocket::socketDescriptor() {
+    return socket_file_descriptor > 0;
 }
 
 std::string SSLSocket::localAddress() {
-    //TODO
-    //return address;
+    return host;
 }
 
 int SSLSocket::localPort() {
-    //TODO
-    //return port;
+    return port;
 }
 
 std::string SSLSocket::peerAddress() {
@@ -233,8 +230,28 @@ int SSLSocket::peerPort() {
     //TODO
 }
 
+SslMode SSLSocket::setMode(SslMode mode) {
+    this->mode = mode;
+}
+
+SslMode SSLSocket::mode() {
+    return mode;
+}
+
 SocketState SSLSocket::state() {
-    return SocketState::UnconnectedState;
+    return state;
+}
+
+void SSLSocket::setPeerVerifyMode(PeerVerifyMode mode) {
+    verifyMode = mode;
+}
+
+void SSLSocket::ignoreSslErrors() {
+    ignoreErrors = true;
+}
+
+void SSLSocket::startClientEncryption() {
+    SSL_library_init();
 }
 
 bool SSLSocket::waitForConnected(int msec) {
@@ -249,25 +266,33 @@ bool SSLSocket::waitForDisconnected(int msec) {
 
 bool SSLSocket::openMode() {
     //TODO
+    return true;
 }
 
 std::string SSLSocket::errorString() {
     //TODO
+    return string();
 }
 
 int SSLSocket::readData(char* message, size_t max) {
-    //TODO max
-    int result = this->read();
-    strcpy(message, buffer);
+    int bytes;
+
+    bytes = SSL_read(ssl, message, max);
+    message[max] = 0;
+
+    return bytes;
+}
+
+int SSLSocket::writeData(const char* message, size_t max) {
+
+    int result = SSL_write(ssl, message, max);
 
     return result;
 }
 
-int SSLSocket::writeData(const char* message, size_t max) {
-    //TODO max
-    int result = this->send(message);
-
-    return result;
+int SSLSocket::send(const char* message) {
+    // encrypt and send the message
+    return SSL_write(ssl, message, strlen(message));
 }
 
 const char* SSLSocket::getBuffer() {

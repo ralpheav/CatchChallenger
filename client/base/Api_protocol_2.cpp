@@ -1990,13 +1990,12 @@ void Api_protocol_2::resetAll()
 {
     if (stageConnexion == StageConnexion::Stage2) {
         Logger::instance().log(Logger::Debug, "Api_protocol_2::resetAll() Suspect internal bug");
-        //qDebug() << "Api_protocol_2::resetAll() Suspect internal bug";
     }
     //status for the query
     token.clear();
     message("Api_protocol_2::resetAll(): stageConnexion=CatchChallenger::Api_protocol_2::StageConnexion::Stage1 set at " + std::string(__FILE__) + ":" + std::to_string(__LINE__));
     stageConnexion = StageConnexion::Stage1;
-    if (socket == NULL || socket->fakeSocket == NULL) {
+    if (socket == NULL || socket->pSocket == NULL) {
         haveFirstHeader = false;
     } else {
         haveFirstHeader = true;
@@ -2122,11 +2121,12 @@ std::string Api_protocol_2::subDatapackCode() const
 
 void Api_protocol_2::setDatapackPath(const std::string& datapack_path)
 {
-    if (stringEndsWith(datapack_path,'/')) {
+    if (datapack_path.substr(datapack_path.size()-1, 1) == "/") {
         mDatapackBase = datapack_path;
     } else {
-        mDatapackBase = datapack_path+"/";
+        mDatapackBase = datapack_path + "/";
     }
+
     mDatapackMain = mDatapackBase + "map/main/[main]/";
     mDatapackSub = mDatapackMain + "sub/[sub]/";
     CommonSettingsServer::commonSettingsServer.mainDatapackCode = "[main]";
@@ -2195,7 +2195,7 @@ LogicialGroup* Api_protocol_2::addLogicalGroup(const std::string& path, const st
         }
     }
     LogicialGroup* logicialGroupCursor = &this->logicialGroup;
-    std::vector<std::string> pathSplited=stringsplit(path, '/');
+    std::vector<std::string> pathSplited = stringsplit(path, '/');
     while (!pathSplited.empty())
     {
         const std::string& node = pathSplited.front();
@@ -2312,11 +2312,6 @@ ServerFromPoolForDisplay* Api_protocol_2::addLogicalServer(const ServerFromPoolF
                                                       , "server.xml"
                                                       , server.logicalGroupIndex
                                                       , logicialGroupIndexList.size());
-//        qDebug() << (QString("out of range for addLogicalGroup: %1, server.logicalGroupIndex %2 <= logicialGroupIndexList.size() %3 (defaulting to root folder)")
-//                     .arg(QString::fromStdString(server.xml))
-//                     .arg(server.logicalGroupIndex)
-//                     .arg(logicialGroupIndexList.size())
-//                     );
         logicialGroupCursor = &logicialGroup;
     }
     else {
@@ -2325,15 +2320,15 @@ ServerFromPoolForDisplay* Api_protocol_2::addLogicalServer(const ServerFromPoolF
 
     ServerFromPoolForDisplay newServer;
     newServer.charactersGroupIndex = server.charactersGroupIndex;
-    newServer.currentPlayer = server.currentPlayer;
-    newServer.description = descriptionString;
-    newServer.host = server.host;
-    newServer.maxPlayer = server.maxPlayer;
-    newServer.name = nameString;
-    newServer.port = server.port;
-    newServer.uniqueKey = server.uniqueKey;
-    newServer.lastConnect = 0;
-    newServer.playedTime = 0;
+    newServer.currentPlayer        = server.currentPlayer;
+    newServer.description          = descriptionString;
+    newServer.host                 = server.host;
+    newServer.maxPlayer            = server.maxPlayer;
+    newServer.name                 = nameString;
+    newServer.port                 = server.port;
+    newServer.uniqueKey            = server.uniqueKey;
+    newServer.lastConnect          = 0;
+    newServer.playedTime           = 0;
 
     logicialGroupCursor->servers.push_back(newServer);
 
@@ -2344,13 +2339,13 @@ LogicialGroup Api_protocol_2::getLogicialGroup() const
 {
     return logicialGroup;
 }
-
+#include <QSslSocket>
 void Api_protocol_2::readForFirstHeader()
 {
     if (haveFirstHeader) {
         return;
     }
-    if (socket->sslSocket == NULL)
+    if (socket->pSocket == NULL)
     {
         newError(std::string("Internal problem"), std::string("Api_protocol_2::readForFirstHeader() socket->sslSocket==NULL"));
         return;
@@ -2366,22 +2361,22 @@ void Api_protocol_2::readForFirstHeader()
         stageConnexion=StageConnexion::Stage3;
     }
     {
-        if (socket->sslSocket->mode() != QSslSocket::UnencryptedMode)
+        if (socket->pSocket->mode() != SslMode::UnencryptedMode)
         {
             newError(std::string("Internal problem"), std::string("socket->sslSocket->mode()!=QSslSocket::UnencryptedMode into Api_protocol_2::readForFirstHeader()"));
             return;
         }
         uint8_t value;
-        if (socket->sslSocket->read((char*)&value, sizeof(value)) == sizeof(value))
+        if (socket->pSocket->readData((char*)&value, sizeof(value)) == sizeof(value))
         {
             haveFirstHeader = true;
             if (value == 0x01)
             {
-                socket->sslSocket->setPeerVerifyMode(QSslSocket::VerifyNone);
-                socket->sslSocket->ignoreSslErrors();
-                socket->sslSocket->startClientEncryption();
+                socket->pSocket->setPeerVerifyMode(PeerVerifyMode::VerifyNone);
+                socket->pSocket->ignoreSslErrors();
+                socket->pSocket->startClientEncryption();
                 //TODO: abstract function
-                if (!QObject::connect(socket->sslSocket, &QSslSocket::encrypted, this, &Api_protocol_2::sslHandcheckIsFinished)) {
+                if (!socket->connect(&QSslSocket::encrypted, &Api_protocol_2::sslHandcheckIsFinished)) {
                     abort();
                 }
                 //TODO
@@ -2400,75 +2395,78 @@ void Api_protocol_2::sslHandcheckIsFinished()
 
 void Api_protocol_2::connectTheExternalSocketInternal()
 {
-    if (socket->sslSocket == NULL)
+    if (socket->pSocket == NULL)
     {
-        newError(std::string("Internal problem"),std::string("Api_protocol_2::connectTheExternalSocket() socket->sslSocket==NULL"));
+        newError(std::string("Internal problem"), std::string("Api_protocol_2::connectTheExternalSocket() socket->sslSocket==NULL"));
         return;
     }
-    if (socket->peerName().isEmpty() || socket->sslSocket->state() != QSslSocket::SocketState::ConnectedState)
+    if (socket->peerName().isEmpty() || socket->pSocket->state() != SocketState::ConnectedState)
     {
-        newError(std::string("Internal problem"),std::string("Api_protocol_2::connectTheExternalSocket() socket->sslSocket->peerAddress()==QHostAddress::Null: ")+
-                 socket->peerName().toStdString()+"-"+std::to_string(socket->peerPort())+
-                 ", state: "+std::to_string(socket->sslSocket->state())
+        newError(std::string("Internal problem"),std::string("Api_protocol_2::connectTheExternalSocket() socket->sslSocket->peerAddress()==QHostAddress::Null: ") +
+                 socket->peerName().toStdString() + "-" + std::to_string(socket->peerPort()) +
+                 ", state: " + std::to_string(socket->pSocket->state())
                  );
         return;
     }
     //check the certificat
     {
         QDir datapackCert(QString("%1/cert/").arg(QStandardPaths::writableLocation(QStandardPaths::DataLocation)));
+
         datapackCert.mkpath(datapackCert.absolutePath());
+
         QFile certFile;
-        if(stageConnexion==StageConnexion::Stage1)
-            certFile.setFileName(datapackCert.absolutePath()+"/"+socket->peerName()+"-"+QString::number(socket->peerPort()));
-        else if(stageConnexion==StageConnexion::Stage3 || stageConnexion==StageConnexion::Stage4)
+
+        if (stageConnexion == StageConnexion::Stage1) {
+            certFile.setFileName(datapackCert.absolutePath() + "/" + socket->peerName() + "-" + QString::number(socket->peerPort()));
+        } else if (stageConnexion == StageConnexion::Stage3 || stageConnexion == StageConnexion::Stage4)
         {
-            if(selectedServerIndex==-1)
+            if (selectedServerIndex == -1)
             {
-                parseError("Internal error, file: "+std::string(__FILE__)+":"+std::to_string(__LINE__),std::string("Api_protocol_2::connectTheExternalSocket() selectedServerIndex==-1"));
+                parseError("Internal error, file: "+std::string(__FILE__) + ":" + std::to_string(__LINE__), std::string("Api_protocol_2::connectTheExternalSocket() selectedServerIndex==-1"));
                 return;
             }
-            const ServerFromPoolForDisplay &serverFromPoolForDisplay=serverOrdenedList.at(selectedServerIndex);
+            const ServerFromPoolForDisplay& serverFromPoolForDisplay = serverOrdenedList.at(selectedServerIndex);
             certFile.setFileName(
-                        datapackCert.absolutePath()+QString("/")+
-                                 QString::fromStdString(serverFromPoolForDisplay.host)+QString("-")+
+                        datapackCert.absolutePath() + QString("/") +
+                        QString::fromStdString(serverFromPoolForDisplay.host) + QString("-") +
                         QString::number(serverFromPoolForDisplay.port)
                         );
         }
         else
         {
-            parseError("Internal error, file: "+std::string(__FILE__)+":"+std::to_string(__LINE__),std::string("Api_protocol_2::connectTheExternalSocket() stageConnexion!=StageConnexion::Stage1/3"));
+            parseError("Internal error, file: " + std::string(__FILE__) + ":" + std::to_string(__LINE__), std::string("Api_protocol_2::connectTheExternalSocket() stageConnexion!=StageConnexion::Stage1/3"));
             return;
         }
-        if(certFile.exists())
+        if (certFile.exists())
         {
-            if(socket->sslSocket->mode()==QSslSocket::UnencryptedMode)
+            if (socket->pSocket->mode() == SslMode::UnencryptedMode)
             {
                 #if (!defined(CATCHCHALLENGER_VERSION_SOLO) || defined(CATCHCHALLENGER_MULTI)) && ! defined(BOTTESTCONNECT)
-                SslCert sslCert(NULL);
-                sslCert.exec();
-                if(sslCert.validated())
-                    saveCert(certFile.fileName().toStdString());
-                else
-                {
-                    socket->sslSocket->disconnectFromHost();
-                    return;
-                }
-                #endif
-            }
-            else if(certFile.open(DataStream::ReadOnly))
-            {
-                if(socket->sslSocket->peerCertificate().publicKey().toPem()!=certFile.readAll())
-                {
-                    #if (!defined(CATCHCHALLENGER_VERSION_SOLO) || defined(CATCHCHALLENGER_MULTI)) && ! defined(BOTTESTCONNECT)
                     SslCert sslCert(NULL);
                     sslCert.exec();
-                    if(sslCert.validated())
+                    if (sslCert.validated()) {
                         saveCert(certFile.fileName().toStdString());
-                    else
+                    } else
                     {
-                        socket->sslSocket->disconnectFromHost();
+                        socket->pSocket->disconnectFromHost();
                         return;
                     }
+                #endif
+            }
+            else if (certFile.open(DataStream::ReadOnly))
+            {
+                if (socket->pSocket->peerCertificate().publicKey().toPem() != certFile.readAll())
+                {
+                    #if (!defined(CATCHCHALLENGER_VERSION_SOLO) || defined(CATCHCHALLENGER_MULTI)) && ! defined(BOTTESTCONNECT)
+                        SslCert sslCert(NULL);
+                        sslCert.exec();
+                        if (sslCert.validated()) {
+                            saveCert(certFile.fileName().toStdString());
+                        } else
+                        {
+                            socket->pSocket->disconnectFromHost();
+                            return;
+                        }
                     #endif
                 }
                 certFile.close();
@@ -2476,219 +2474,234 @@ void Api_protocol_2::connectTheExternalSocketInternal()
         }
         else
         {
-            if(socket->sslSocket->mode()!=QSslSocket::UnencryptedMode)
+            if (socket->pSocket->mode() != SslMode::UnencryptedMode) {
                 saveCert(certFile.fileName().toStdString());
+            }
 
         }
     }
     //continue the normal procedure
-    if(stageConnexion==StageConnexion::Stage1)
+    if (stageConnexion == StageConnexion::Stage1) {
         connectedOnLoginServer();
-    if(stageConnexion==StageConnexion::Stage2 || stageConnexion==StageConnexion::Stage3)
+    }
+    if (stageConnexion == StageConnexion::Stage2 || stageConnexion == StageConnexion::Stage3)
     {
-        message("stageConnexion=CatchChallenger::Api_protocol_2::StageConnexion::Stage3 set at "+std::string(__FILE__)+":"+std::to_string(__LINE__));
-        stageConnexion=StageConnexion::Stage3;
+        message("stageConnexion=CatchChallenger::Api_protocol_2::StageConnexion::Stage3 set at " + std::string(__FILE__) + ":" + std::to_string(__LINE__));
+        stageConnexion = StageConnexion::Stage3;
         connectedOnGameServer();
     }
 
-    if(stageConnexion==StageConnexion::Stage1)
-        if(!QObject::connect(socket,&ConnectedSocket::readyRead,this,&Api_protocol_2::parseIncommingData,Qt::QueuedConnection))//put queued to don't have circular loop Client -> Server -> Client
+    if (stageConnexion == StageConnexion::Stage1) {
+        if (!pSocket->connect(&ConnectedSocket::readyRead, &Api_protocol_2::parseIncommingData, Qt::QueuedConnection)) {
+            //put queued to don't have circular loop Client -> Server -> Client
             abort();
+        }
+    }
     //need wait the sslHandcheck
     sendProtocol();
-    if(socket->bytesAvailable())
+    if (socket->bytesAvailable()) {
         parseIncommingData();
+    }
 }
 
-void Api_protocol_2::saveCert(const std::string &file)
+void Api_protocol_2::saveCert(const std::string& file)
 {
-    if(socket->sslSocket==NULL)
+    if (socket->pSocket == NULL) {
         return;
+    }
+
     QFile certFile(QString::fromStdString(file));
-    if(socket->sslSocket->mode()==QSslSocket::UnencryptedMode)
+
+    if (socket->pSocket->mode() == SslMode::UnencryptedMode) {
         certFile.remove();
-    else
+    } else
     {
-        if(certFile.open(DataStream::WriteOnly))
+        if (certFile.open(DataStream::WriteOnly))
         {
-            qDebug() << "Register the certificate into" << certFile.fileName();
-            qDebug() << socket->sslSocket->peerCertificate().issuerInfo(QSslCertificate::Organization);
-            qDebug() << socket->sslSocket->peerCertificate().issuerInfo(QSslCertificate::CommonName);
-            qDebug() << socket->sslSocket->peerCertificate().issuerInfo(QSslCertificate::LocalityName);
-            qDebug() << socket->sslSocket->peerCertificate().issuerInfo(QSslCertificate::OrganizationalUnitName);
-            qDebug() << socket->sslSocket->peerCertificate().issuerInfo(QSslCertificate::CountryName);
-            qDebug() << socket->sslSocket->peerCertificate().issuerInfo(QSslCertificate::StateOrProvinceName);
-            qDebug() << socket->sslSocket->peerCertificate().issuerInfo(QSslCertificate::EmailAddress);
-            certFile.write(socket->sslSocket->peerCertificate().publicKey().toPem());
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(certFile.fileName()));
+
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->pSocket->peerCertificate().issuerInfo(QSslCertificate::Organization)));
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->pSocket->peerCertificate().issuerInfo(QSslCertificate::CommonName)));
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->pSocket->peerCertificate().issuerInfo(QSslCertificate::LocalityName)));
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->pSocket->peerCertificate().issuerInfo(QSslCertificate::OrganizationalUnitName)));
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->pSocket->peerCertificate().issuerInfo(QSslCertificate::CountryName)));
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->pSocket->peerCertificate().issuerInfo(QSslCertificate::StateOrProvinceName)));
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->pSocket->peerCertificate().issuerInfo(QSslCertificate::EmailAddress)));
+
+            certFile.write(socket->pSocket->peerCertificate().publicKey().toPem());
             certFile.close();
         }
     }
 }
 
-bool Api_protocol_2::postReplyData(const uint8_t &queryNumber, const char * const data,const int &size)
+bool Api_protocol_2::postReplyData(const uint8_t& queryNumber, const char* const data, const int& size)
 {
-    const quint8 packetCode=inputQueryNumberToPacketCode[queryNumber];
+    const uint8_t packetCode = inputQueryNumberToPacketCode[queryNumber];
     removeFromQueryReceived(queryNumber);
-    const uint8_t &fixedSize=ProtocolParsingBase::packetFixedSize[packetCode+128];
-    if(fixedSize!=0xFE)
+    const uint8_t& fixedSize = ProtocolParsingBase::packetFixedSize[packetCode + 128];
+    if (fixedSize != 0xFE)
     {
-        if(fixedSize!=size)
+        if (fixedSize != size)
         {
-            std::cout << "postReplyData() Sended packet size: " << size << ": " << binarytoHexa(data,size)
+            std::cout << "postReplyData() Sended packet size: " << size << ": " << binarytoHexa(data, size)
                       << ", but the fixed packet size defined at: " << std::to_string((int)fixedSize) << std::endl;
             #ifdef CATCHCHALLENGER_EXTRA_CHECK
-            abort();
+                abort();
             #endif
             return false;
         }
         //fixed size
         //send the network message
-        uint32_t posOutput=0;
-        ProtocolParsingBase::tempBigBufferForOutput[posOutput]=0x01;
-        posOutput+=1;
-        ProtocolParsingBase::tempBigBufferForOutput[posOutput]=queryNumber;
-        posOutput+=1;
+        uint32_t posOutput = 0;
+        ProtocolParsingBase::tempBigBufferForOutput[posOutput] = 0x01;
+        posOutput += 1;
+        ProtocolParsingBase::tempBigBufferForOutput[posOutput] = queryNumber;
+        posOutput += 1;
 
-        memcpy(ProtocolParsingBase::tempBigBufferForOutput+1+1,data,size);
-        posOutput+=size;
+        memcpy(ProtocolParsingBase::tempBigBufferForOutput + 1 + 1, data, size);
+        posOutput += size;
 
-        return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput,posOutput);
+        return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput, posOutput);
     }
     else
     {
         //dynamic size
         //send the network message
-        uint32_t posOutput=0;
-        ProtocolParsingBase::tempBigBufferForOutput[posOutput]=0x01;
-        posOutput+=1;
-        ProtocolParsingBase::tempBigBufferForOutput[posOutput]=queryNumber;
-        posOutput+=1+4;
-        *reinterpret_cast<uint32_t *>(ProtocolParsingBase::tempBigBufferForOutput+1+1)=htole32(size);//set the dynamic size
+        uint32_t posOutput = 0;
+        ProtocolParsingBase::tempBigBufferForOutput[posOutput] = 0x01;
+        posOutput += 1;
+        ProtocolParsingBase::tempBigBufferForOutput[posOutput] = queryNumber;
+        posOutput += 1 + 4;
+        *reinterpret_cast<uint32_t*>(ProtocolParsingBase::tempBigBufferForOutput + 1 + 1) = htole32(size);//set the dynamic size
 
-        memcpy(ProtocolParsingBase::tempBigBufferForOutput+1+1+4,data,size);
-        posOutput+=size;
+        memcpy(ProtocolParsingBase::tempBigBufferForOutput + 1 + 1 + 4, data, size);
+        posOutput += size;
 
-        return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput,posOutput);
+        return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput, posOutput);
     }
 }
 
-bool Api_protocol_2::packOutcommingData(const uint8_t &packetCode,const char * const data,const int &size)
+bool Api_protocol_2::packOutcommingData(const uint8_t& packetCode, const char* const data, const int& size)
 {
-    const uint8_t &fixedSize=ProtocolParsingBase::packetFixedSize[packetCode];
-    if(fixedSize!=0xFE)
+    const uint8_t& fixedSize = ProtocolParsingBase::packetFixedSize[packetCode];
+    if (fixedSize != 0xFE)
     {
-        if(fixedSize!=size)
+        if (fixedSize != size)
         {
-            std::cout << "packOutcommingData(): Sended packet size: " << size << ": " << binarytoHexa(data,size)
+            std::cout << "packOutcommingData(): Sended packet size: " << size << ": " << binarytoHexa(data, size)
                       << ", but the fixed packet size defined at: " << std::to_string((int)fixedSize) << std::endl;
             #ifdef CATCHCHALLENGER_EXTRA_CHECK
-            abort();
+                abort();
             #endif
             return false;
         }
         //fixed size
         //send the network message
-        uint32_t posOutput=0;
-        ProtocolParsingBase::tempBigBufferForOutput[posOutput]=packetCode;
-        posOutput+=1;
+        uint32_t posOutput = 0;
+        ProtocolParsingBase::tempBigBufferForOutput[posOutput] = packetCode;
+        posOutput += 1;
 
-        memcpy(ProtocolParsingBase::tempBigBufferForOutput+1,data,size);
-        posOutput+=size;
+        memcpy(ProtocolParsingBase::tempBigBufferForOutput + 1, data, size);
+        posOutput += size;
 
-        return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput,posOutput);
+        return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput, posOutput);
     }
     else
     {
         //dynamic size
         //send the network message
-        uint32_t posOutput=0;
-        ProtocolParsingBase::tempBigBufferForOutput[posOutput]=packetCode;
-        posOutput+=1+4;
-        *reinterpret_cast<uint32_t *>(ProtocolParsingBase::tempBigBufferForOutput+1)=htole32(size);//set the dynamic size
+        uint32_t posOutput = 0;
+        ProtocolParsingBase::tempBigBufferForOutput[posOutput] = packetCode;
+        posOutput += 1 + 4;
+        *reinterpret_cast<uint32_t*>(ProtocolParsingBase::tempBigBufferForOutput + 1) = htole32(size);//set the dynamic size
 
-        memcpy(ProtocolParsingBase::tempBigBufferForOutput+1+4,data,size);
-        posOutput+=size;
+        memcpy(ProtocolParsingBase::tempBigBufferForOutput + 1 + 4, data, size);
+        posOutput += size;
 
-        return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput,posOutput);
+        return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput, posOutput);
     }
 }
 
 
-bool Api_protocol_2::packOutcommingQuery(const uint8_t &packetCode,const uint8_t &queryNumber,const char * const data,const int &size)
+bool Api_protocol_2::packOutcommingQuery(const uint8_t& packetCode, const uint8_t& queryNumber, const char* const data, const int& size)
 {
     registerOutputQuery(queryNumber,packetCode);
-    const uint8_t &fixedSize=ProtocolParsingBase::packetFixedSize[packetCode];
-    if(fixedSize!=0xFE)
+    const uint8_t& fixedSize = ProtocolParsingBase::packetFixedSize[packetCode];
+    if (fixedSize != 0xFE)
     {
-        if(fixedSize!=size)
+        if (fixedSize != size)
         {
-            std::cout << "packOutcommingQuery(): Sended packet size: " << size << ": " << binarytoHexa(data,size)
+            std::cout << "packOutcommingQuery(): Sended packet size: " << size << ": " << binarytoHexa(data, size)
                       << ", but the fixed packet size defined at: " << std::to_string((int)fixedSize) << std::endl;
             #ifdef CATCHCHALLENGER_EXTRA_CHECK
-            abort();
+                abort();
             #endif
             return false;
         }
         //fixed size
         //send the network message
-        uint32_t posOutput=0;
-        ProtocolParsingBase::tempBigBufferForOutput[posOutput]=packetCode;
-        posOutput+=1;
-        ProtocolParsingBase::tempBigBufferForOutput[posOutput]=queryNumber;
-        posOutput+=1;
+        uint32_t posOutput = 0;
+        ProtocolParsingBase::tempBigBufferForOutput[posOutput] = packetCode;
+        posOutput += 1;
+        ProtocolParsingBase::tempBigBufferForOutput[posOutput] = queryNumber;
+        posOutput += 1;
 
-        memcpy(ProtocolParsingBase::tempBigBufferForOutput+1+1,data,size);
-        posOutput+=size;
+        memcpy(ProtocolParsingBase::tempBigBufferForOutput + 1 + 1, data, size);
+        posOutput += size;
 
-        return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput,posOutput);
+        return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput, posOutput);
     }
     else
     {
         //dynamic size
         //send the network message
-        uint32_t posOutput=0;
-        ProtocolParsingBase::tempBigBufferForOutput[posOutput]=packetCode;
-        posOutput+=1;
-        ProtocolParsingBase::tempBigBufferForOutput[posOutput]=queryNumber;
-        posOutput+=1+4;
-        *reinterpret_cast<uint32_t *>(ProtocolParsingBase::tempBigBufferForOutput+1+1)=htole32(size);//set the dynamic size
+        uint32_t posOutput = 0;
+        ProtocolParsingBase::tempBigBufferForOutput[posOutput] = packetCode;
+        posOutput += 1;
+        ProtocolParsingBase::tempBigBufferForOutput[posOutput] = queryNumber;
+        posOutput += 1 + 4;
+        *reinterpret_cast<uint32_t*>(ProtocolParsingBase::tempBigBufferForOutput + 1 + 1) = htole32(size);//set the dynamic size
 
-        memcpy(ProtocolParsingBase::tempBigBufferForOutput+1+1+4,data,size);
-        posOutput+=size;
+        memcpy(ProtocolParsingBase::tempBigBufferForOutput + 1 + 1 + 4, data, size);
+        posOutput += size;
 
-        return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput,posOutput);
+        return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput, posOutput);
     }
 }
 
-std::string Api_protocol_2::toUTF8WithHeader(const std::string &text)
+std::string Api_protocol_2::toUTF8WithHeader(const std::string& text)
 {
-    if(text.empty())
+    if (text.empty()) {
         return std::string();
-    if(text.size()>254)
+    }
+    if (text.size() > 254) {
         return std::string();
+    }
     std::string data;
     data.resize(1);
-    data+=text;
-    data[0]=static_cast<uint8_t>(text.size());
+    data += text;
+    data[0] = static_cast<uint8_t>(text.size());
+
     return data;
 }
 
 void Api_protocol_2::have_main_and_sub_datapack_loaded()//can now load player_informations
 {
-    if(!delayedLogin.data.empty())
+    if (!delayedLogin.data.empty())
     {
-        bool returnCode=parseCharacterBlockCharacter(delayedLogin.packetCode,delayedLogin.queryNumber,delayedLogin.data);
+        bool returnCode=parseCharacterBlockCharacter(delayedLogin.packetCode, delayedLogin.queryNumber, delayedLogin.data);
         delayedLogin.data.clear();
-        delayedLogin.packetCode=0;
-        delayedLogin.queryNumber=0;
-        if(!returnCode)
+        delayedLogin.packetCode = 0;
+        delayedLogin.queryNumber = 0;
+        if (!returnCode) {
             return;
+        }
     }
-    unsigned int index=0;
-    while(index<delayedMessages.size())
+    unsigned int index = 0;
+    while (index < delayedMessages.size())
     {
-        const DelayedMessage &delayedMessageTemp=delayedMessages.at(index);
-        if(!parseMessage(delayedMessageTemp.packetCode,delayedMessageTemp.data))
+        const DelayedMessage& delayedMessageTemp = delayedMessages.at(index);
+        if (!parseMessage(delayedMessageTemp.packetCode, delayedMessageTemp.data))
         {
             delayedMessages.clear();
             return;
@@ -2698,112 +2711,107 @@ void Api_protocol_2::have_main_and_sub_datapack_loaded()//can now load player_in
     delayedMessages.clear();
 }
 
-bool Api_protocol_2::dataToPlayerMonster(DataStream &in,PlayerMonster &monster)
+bool Api_protocol_2::dataToPlayerMonster(DataStream& in, PlayerMonster& monster)
 {
     quint32 sub_index;
     PlayerBuff buff;
     PlayerMonster::PlayerSkill skill;
-    /*if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint32_t))
-    {
-        parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster id bd, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
-        return false;
-    }
-    in >> monster.id;*/
-    if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint16_t))
+
+    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint16_t))
     {
         parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster id, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
         return false;
     }
     in >> monster.monster;
-    if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint8_t))
+    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
     {
         parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster level, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
         return false;
     }
     in >> monster.level;
-    if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint32_t))
+    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint32_t))
     {
         parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster remaining_xp, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
         return false;
     }
     in >> monster.remaining_xp;
-    if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint32_t))
+    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint32_t))
     {
         parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster hp, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
         return false;
     }
     in >> monster.hp;
-    if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint32_t))
+    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint32_t))
     {
         parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster sp, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
         return false;
     }
     in >> monster.sp;
-    if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint16_t))
+    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint16_t))
     {
         parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster captured_with, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
         return false;
     }
     in >> monster.catched_with;
-    if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint8_t))
+    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
     {
         parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster captured_with, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
         return false;
     }
-    quint8 gender;
+    uint8_t gender;
     in >> gender;
     switch(gender)
     {
         case 0x01:
         case 0x02:
         case 0x03:
-            monster.gender=(Gender)gender;
+            monster.gender = (Gender)gender;
         break;
         default:
-            parseError("Procotol wrong or corrupted",std::string("gender code wrong: ")+std::to_string(gender)+", line: "+std::string(__FILE__)+":"+std::to_string(__LINE__));
+            parseError("Procotol wrong or corrupted", std::string("gender code wrong: ")+std::to_string(gender)+", line: "+std::string(__FILE__)+":"+std::to_string(__LINE__));
             return false;
         break;
     }
-    if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint32_t))
+    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint32_t))
     {
         parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster egg_step, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
         return false;
     }
     in >> monster.egg_step;
-    if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint8_t))
+    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
     {
         parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster character_origin, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
         return false;
     }
     {
-        quint8 character_origin;
+        uint8_t character_origin;
         in >> character_origin;
-        monster.character_origin=character_origin;
+        monster.character_origin = character_origin;
     }
 
-    if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint8_t))
+    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
     {
         parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster size of list of the buff monsters, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
         return false;
     }
     uint8_t sub_size8;
     in >> sub_size8;
-    sub_index=0;
-    while(sub_index<sub_size8)
+    sub_index = 0;
+    while(sub_index < sub_size8)
     {
-        if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint8_t))
+        if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
         {
             parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster buff, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
             return false;
         }
         in >> buff.buff;
-        if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint8_t))
+        if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
         {
             parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster buff level, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
             return false;
         }
         in >> buff.level;
-        if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint8_t))
+        if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
         {
             parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster buff level, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
             return false;
@@ -2813,29 +2821,29 @@ bool Api_protocol_2::dataToPlayerMonster(DataStream &in,PlayerMonster &monster)
         sub_index++;
     }
 
-    if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint16_t))
+    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint16_t))
     {
         parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster size of list of the skill monsters, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
         return false;
     }
     uint16_t sub_size16;
     in >> sub_size16;
-    sub_index=0;
-    while(sub_index<sub_size16)
+    sub_index = 0;
+    while (sub_index < sub_size16)
     {
-        if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint16_t))
+        if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint16_t))
         {
             parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster skill, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
             return false;
         }
         in >> skill.skill;
-        if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint8_t))
+        if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
         {
             parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster skill level, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
             return false;
         }
         in >> skill.level;
-        if(in.device()->pos()<0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos())<(int)sizeof(uint8_t))
+        if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
         {
             parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster skill level, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
             return false;
@@ -2844,48 +2852,49 @@ bool Api_protocol_2::dataToPlayerMonster(DataStream &in,PlayerMonster &monster)
         monster.skills.push_back(skill);
         sub_index++;
     }
+
     return true;
 }
 
 bool Api_protocol_2::setMapNumber(const unsigned int number_of_map)
 {
-    if(number_of_map==0)
+    if (number_of_map == 0)
     {
         std::cerr << "to reset this number use resetAll()" << std::endl;
         return false;
     }
     std::cout << "number of map: " << std::to_string(number_of_map) << std::endl;
-    this->number_of_map=number_of_map;
+    this->number_of_map = number_of_map;
     return true;
 }
 
-void Api_protocol_2::newError(const std::string &error,const std::string &detailedError)
+void Api_protocol_2::newError(const std::string& error,const std::string& detailedError)
 {
     emit QtnewError(error,detailedError);
 }
 
-void Api_protocol_2::message(const std::string &message)
+void Api_protocol_2::message(const std::string& message)
 {
     emit Qtmessage(message);
 }
 
-void Api_protocol_2::lastReplyTime(const uint32_t &time)
+void Api_protocol_2::lastReplyTime(const uint32_t& time)
 {
     emit QtlastReplyTime(time);
 }
 
 //protocol/connection info
-void Api_protocol_2::disconnected(const std::string &reason)
+void Api_protocol_2::disconnected(const std::string& reason)
 {
     emit Qtdisconnected(reason);
 }
 
-void Api_protocol_2::notLogged(const std::string &reason)
+void Api_protocol_2::notLogged(const std::string& reason)
 {
     emit QtnotLogged(reason);
 }
 
-void Api_protocol_2::logged(const std::vector<std::vector<CharacterEntry> > &characterEntryList)
+void Api_protocol_2::logged(const std::vector<std::vector<CharacterEntry>>& characterEntryList)
 {
     emit Qtlogged(characterEntryList);
 }
@@ -2910,126 +2919,144 @@ void Api_protocol_2::haveDatapackMainSubCode()
 {
     emit QthaveDatapackMainSubCode();
 }
-void Api_protocol_2::gatewayCacheUpdate(const uint8_t gateway,const uint8_t progression)
+
+void Api_protocol_2::gatewayCacheUpdate(const uint8_t gateway, const uint8_t progression)
 {
     emit QtgatewayCacheUpdate(gateway,progression);
 }
 
 //general info
-void Api_protocol_2::number_of_player(const uint16_t &number,const uint16_t &max_players)
+void Api_protocol_2::number_of_player(const uint16_t& number, const uint16_t& max_players)
 {
     emit Qtnumber_of_player(number,max_players);
 }
-void Api_protocol_2::random_seeds(const std::string &data)
+
+void Api_protocol_2::random_seeds(const std::string& data)
 {
     emit Qtrandom_seeds(data);
 }
 
 //character
-void Api_protocol_2::newCharacterId(const uint8_t &returnCode,const uint32_t &characterId)
+void Api_protocol_2::newCharacterId(const uint8_t& returnCode,const uint32_t& characterId)
 {
     emit QtnewCharacterId(returnCode,characterId);
 }
+
 void Api_protocol_2::haveCharacter()
 {
     emit QthaveCharacter();
 }
 //events
-void Api_protocol_2::setEvents(const std::vector<std::pair<uint8_t,uint8_t> > &events)
+void Api_protocol_2::setEvents(const std::vector<std::pair<uint8_t, uint8_t>>& events)
 {
     emit QtsetEvents(events);
 }
-void Api_protocol_2::newEvent(const uint8_t &event,const uint8_t &event_value)
+
+void Api_protocol_2::newEvent(const uint8_t& event, const uint8_t& event_value)
 {
-    emit QtnewEvent(event,event_value);
+    emit QtnewEvent(event, event_value);
 }
 
 //map move
-void Api_protocol_2::insert_player(const CatchChallenger::Player_public_informations &player,const uint32_t &mapId,const uint8_t &x,const uint8_t &y,const CatchChallenger::Direction &direction)
+void Api_protocol_2::insert_player(const CatchChallenger::Player_public_informations& player, const uint32_t& mapId, const uint8_t& x, const uint8_t& y, const CatchChallenger::Direction& direction)
 {
-    emit Qtinsert_player(player,mapId,x,y,direction);
+    emit Qtinsert_player(player, mapId, x, y, direction);
 }
-void Api_protocol_2::move_player(const uint16_t &id,const std::vector<std::pair<uint8_t,CatchChallenger::Direction> > &movement)
+
+void Api_protocol_2::move_player(const uint16_t& id, const std::vector<std::pair<uint8_t, CatchChallenger::Direction>>& movement)
 {
-    emit Qtmove_player(id,movement);
+    emit Qtmove_player(id, movement);
 }
-void Api_protocol_2::remove_player(const uint16_t &id)
+
+void Api_protocol_2::remove_player(const uint16_t& id)
 {
     emit Qtremove_player(id);
 }
-void Api_protocol_2::reinsert_player(const uint16_t &id,const uint8_t &x,const uint8_t &y,const CatchChallenger::Direction &direction)
+
+void Api_protocol_2::reinsert_player(const uint16_t& id, const uint8_t& x, const uint8_t& y, const CatchChallenger::Direction& direction)
 {
     emit Qtreinsert_player(id,x,y,direction);
 }
-void Api_protocol_2::full_reinsert_player(const uint16_t &id,const uint32_t &mapId,const uint8_t &x,const uint8_t y,const CatchChallenger::Direction &direction)
+
+void Api_protocol_2::full_reinsert_player(const uint16_t &id,const uint32_t& mapId, const uint8_t& x,const uint8_t y, const CatchChallenger::Direction& direction)
 {
     emit Qtfull_reinsert_player(id,mapId,x,y,direction);
 }
+
 void Api_protocol_2::dropAllPlayerOnTheMap()
 {
     emit QtdropAllPlayerOnTheMap();
 }
-void Api_protocol_2::teleportTo(const uint32_t &mapId,const uint8_t &x,const uint8_t &y,const CatchChallenger::Direction &direction)
+
+void Api_protocol_2::teleportTo(const uint32_t& mapId,const uint8_t& x, const uint8_t& y, const CatchChallenger::Direction& direction)
 {
     emit QtteleportTo(mapId,x,y,direction);
 }
 
 //plant
-void Api_protocol_2::insert_plant(const uint32_t &mapId,const uint8_t &x,const uint8_t &y,const uint8_t &plant_id,const uint16_t &seconds_to_mature)
+void Api_protocol_2::insert_plant(const uint32_t& mapId,const uint8_t& x,const uint8_t& y, const uint8_t& plant_id, const uint16_t& seconds_to_mature)
 {
     emit Qtinsert_plant(mapId,x,y,plant_id,seconds_to_mature);
 }
-void Api_protocol_2::remove_plant(const uint32_t &mapId,const uint8_t &x,const uint8_t &y)
+
+void Api_protocol_2::remove_plant(const uint32_t& mapId, const uint8_t& x,const uint8_t& y)
 {
     emit Qtremove_plant(mapId,x,y);
 }
-void Api_protocol_2::seed_planted(const bool &ok)
+
+void Api_protocol_2::seed_planted(const bool& ok)
 {
     emit Qtseed_planted(ok);
 }
-void Api_protocol_2::plant_collected(const CatchChallenger::Plant_collect &stat)
+
+void Api_protocol_2::plant_collected(const CatchChallenger::Plant_collect& stat)
 {
     emit Qtplant_collected(stat);
 }
 //crafting
-void Api_protocol_2::recipeUsed(const RecipeUsage &recipeUsage)
+void Api_protocol_2::recipeUsed(const RecipeUsage& recipeUsage)
 {
     emit QtrecipeUsed(recipeUsage);
 }
 //inventory
-void Api_protocol_2::objectUsed(const ObjectUsage &objectUsage)
+void Api_protocol_2::objectUsed(const ObjectUsage& objectUsage)
 {
     emit QtobjectUsed(objectUsage);
 }
-void Api_protocol_2::monsterCatch(const bool &success)
+
+void Api_protocol_2::monsterCatch(const bool& success)
 {
     emit QtmonsterCatch(success);
 }
 
 //chat
-void Api_protocol_2::new_chat_text(const CatchChallenger::Chat_type &chat_type,const std::string &text,const std::string &pseudo,const CatchChallenger::Player_type &player_type)
+void Api_protocol_2::new_chat_text(const CatchChallenger::Chat_type& chat_type, const std::string& text, const std::string& pseudo, const CatchChallenger::Player_type& player_type)
 {
     emit Qtnew_chat_text(chat_type,text,pseudo,player_type);
 }
-void Api_protocol_2::new_system_text(const CatchChallenger::Chat_type &chat_type,const std::string &text)
+
+void Api_protocol_2::new_system_text(const CatchChallenger::Chat_type& chat_type, const std::string& text)
 {
     emit Qtnew_system_text(chat_type,text);
 }
 
 //player info
-void Api_protocol_2::have_current_player_info(const CatchChallenger::Player_private_and_public_informations &informations)
+void Api_protocol_2::have_current_player_info(const CatchChallenger::Player_private_and_public_informations& informations)
 {
     emit Qthave_current_player_info(informations);
 }
-void Api_protocol_2::have_inventory(const std::unordered_map<uint16_t,uint32_t> &items,const std::unordered_map<uint16_t,uint32_t> &warehouse_items)
+
+void Api_protocol_2::have_inventory(const std::unordered_map<uint16_t, uint32_t>& items, const std::unordered_map<uint16_t, uint32_t>& warehouse_items)
 {
     emit Qthave_inventory(items,warehouse_items);
 }
-void Api_protocol_2::add_to_inventory(const std::unordered_map<uint16_t,uint32_t> &items)
+
+void Api_protocol_2::add_to_inventory(const std::unordered_map<uint16_t, uint32_t>& items)
 {
     emit Qtadd_to_inventory(items);
 }
-void Api_protocol_2::remove_to_inventory(const std::unordered_map<uint16_t,uint32_t> &items)
+
+void Api_protocol_2::remove_to_inventory(const std::unordered_map<uint16_t, uint32_t>& items)
 {
     emit Qtremove_to_inventory(items);
 }
@@ -3037,44 +3064,31 @@ void Api_protocol_2::remove_to_inventory(const std::unordered_map<uint16_t,uint3
 //datapack
 void Api_protocol_2::haveTheDatapack()
 {
-    //emit QthaveTheDatapack();
-
-    //if (BaseWindow::client==NULL)
-    //    return;
-
-    //#ifdef DEBUG_BASEWINDOWS
-        //qDebug() << "BaseWindow::haveTheDatapack()";
-    //#endif
-
-    if(BaseWindow::haveDatapack)
+    if (BaseWindow::haveDatapack) {
         return;
+    }
 
     BaseWindow::haveDatapack = true;
 
     BaseWindow::settings.setValue("DatapackHashBase-" + QString::fromStdString(BaseWindow::client->datapackPathBase()),
                       ByteArray(
                                  CommonSettingsCommon::commonSettingsCommon.datapackHashBase.data(),
-                                  static_cast<int>(CommonSettingsCommon::commonSettingsCommon.datapackHashBase.size())
+                                 static_cast<int>(CommonSettingsCommon::commonSettingsCommon.datapackHashBase.size())
                                 )
                       );
 
-    //if(BaseWindow::client != NULL)
-        this->parseDatapack(client->datapackPathBase());
+
+    this->parseDatapack(client->datapackPathBase());
 
 }
 
 void Api_protocol_2::haveTheDatapackMainSub()
 {
-    //emit QthaveTheDatapackMainSub();
-
-    //#ifdef DEBUG_BASEWINDOWS
-        //qDebug() << "BaseWindow::haveTheDatapackMainSub()";
-    //#endif
-
-    if(BaseWindow::haveDatapackMainSub)
+    if (BaseWindow::haveDatapackMainSub) {
         return;
+    }
 
-    BaseWindow::haveDatapackMainSub=true;
+    BaseWindow::haveDatapackMainSub = true;
     BaseWindow::settings.setValue("DatapackHashMain-"+QString::fromStdString(BaseWindow::client->datapackPathMain()),
                       ByteArray(
                           CommonSettingsServer::commonSettingsServer.datapackHashServerMain.data(),
@@ -3088,39 +3102,38 @@ void Api_protocol_2::haveTheDatapackMainSub()
                                   )
                       );
 
-    //if(BaseWindow::client != NULL)
-        this->parseDatapackMainSub(BaseWindow::client->mainDatapackCode(), BaseWindow::client->subDatapackCode());
+    this->parseDatapackMainSub(BaseWindow::client->mainDatapackCode(), BaseWindow::client->subDatapackCode());
 
 }
 
-void Api_protocol_2::parseDatapack(const std::string &datapackPath)
+void Api_protocol_2::parseDatapack(const std::string& datapackPath)
 {
-    if(inProgress)//mutable?
+    if (inProgress)//mutable?
     {
-        //qDebug() << QStringLiteral("already in progress");
+        Logger::instance().log(Logger::Debug, "already in progress");
         return;
     }
 
-    inProgress=true;
+    inProgress = true;
 
     if(!CommonSettingsCommon::commonSettingsCommon.httpDatapackMirrorBase.empty())//static
     {
-        const std::vector<char> &hash = CatchChallenger::DatapackChecksum::doChecksumBase(datapackPath);
+        const std::vector<char>& hash = CatchChallenger::DatapackChecksum::doChecksumBase(datapackPath);
         if (hash.empty())
         {
             std::cerr << "DatapackClientLoader::parseDatapack(): hash is empty" << std::endl;
             this->datapackChecksumError();
-            inProgress=false;
+            inProgress = false;
             return;
         }
 
-        if(CommonSettingsCommon::commonSettingsCommon.datapackHashBase!=hash)
+        if(CommonSettingsCommon::commonSettingsCommon.datapackHashBase != hash)
         {
             /*qDebug() << QStringLiteral("DatapackClientLoader::parseDatapack() CommonSettingsCommon::commonSettingsCommon.datapackHashBase!=hash.result(): %1!=%2")
                         .arg(QString::fromStdString(binarytoHexa(CommonSettingsCommon::commonSettingsCommon.datapackHashBase)))
                         .arg(QString::fromStdString(binarytoHexa(hash)));*/
             this->datapackChecksumError();
-            inProgress=false;
+            inProgress = false;
             return;
         }
     }
@@ -3128,14 +3141,15 @@ void Api_protocol_2::parseDatapack(const std::string &datapackPath)
     this->datapackPath = datapackPath;
     DatapackClientLoader::text_DATAPACK_BASE_PATH_MAPMAIN = DATAPACK_BASE_PATH_MAPMAIN + "na/";
 
-    DatapackClientLoader::text_DATAPACK_BASE_PATH_MAPSUB=std::string(DATAPACK_BASE_PATH_MAPSUB1)+"na/"+std::string(DATAPACK_BASE_PATH_MAPSUB2)+"nabis/";
+    DatapackClientLoader::text_DATAPACK_BASE_PATH_MAPSUB = std::string(DATAPACK_BASE_PATH_MAPSUB1) + "na/" + std::string(DATAPACK_BASE_PATH_MAPSUB2) + "nabis/";
 
-    if(mDefaultInventoryImage==NULL)
-        mDefaultInventoryImage=new QPixmap(QStringLiteral(":/images/inventory/unknown-object.png"));
+    if (mDefaultInventoryImage == NULL) {
+        mDefaultInventoryImage = new QPixmap(QStringLiteral(":/images/inventory/unknown-object.png"));
+    }
 
     #ifndef BOTTESTCONNECT
         CatchChallenger::CommonDatapack::commonDatapack.parseDatapack(datapackPath);
-        language=LanguagesSelect::languagesSelect->getCurrentLanguages();
+        language = LanguagesSelect::languagesSelect->getCurrentLanguages();
         parseVisualCategory();
         parseTypesExtra();
         parseItemsExtra();
@@ -3147,74 +3161,75 @@ void Api_protocol_2::parseDatapack(const std::string &datapackPath)
         parseAudioAmbiance();
         parseReputationExtra();
     #endif
-    inProgress=false;
+    inProgress = false;
     this->datapackParsed();
 }
 
-void DatapackClientLoader::parseDatapackMainSub(const std::string &mainDatapackCode, const std::string &subDatapackCode)
+void DatapackClientLoader::parseDatapackMainSub(const std::string& mainDatapackCode, const std::string& subDatapackCode)
 {
-    DatapackClientLoader::text_DATAPACK_BASE_PATH_MAPMAIN=DATAPACK_BASE_PATH_MAPMAIN+mainDatapackCode+"/";
-    DatapackClientLoader::text_DATAPACK_BASE_PATH_MAPSUB=DATAPACK_BASE_PATH_MAPSUB1+mainDatapackCode+DATAPACK_BASE_PATH_MAPSUB2+subDatapackCode+"/";
+    DatapackClientLoader::text_DATAPACK_BASE_PATH_MAPMAIN = DATAPACK_BASE_PATH_MAPMAIN + mainDatapackCode + "/";
+    DatapackClientLoader::text_DATAPACK_BASE_PATH_MAPSUB = DATAPACK_BASE_PATH_MAPSUB1 + mainDatapackCode + DATAPACK_BASE_PATH_MAPSUB2+subDatapackCode + "/";
 
-    if(inProgress)
+    if (inProgress)
     {
-        //qDebug() << QStringLiteral("already in progress");
+        Logger::instance().log(Logger::Debug, "already in progress");
         return;
     }
-    inProgress=true;
-    this->mainDatapackCode=mainDatapackCode;
-    this->subDatapackCode=subDatapackCode;
+    inProgress = true;
+    this->mainDatapackCode = mainDatapackCode;
+    this->subDatapackCode = subDatapackCode;
 
-    if(!CommonSettingsServer::commonSettingsServer.httpDatapackMirrorServer.empty())
+    if (!CommonSettingsServer::commonSettingsServer.httpDatapackMirrorServer.empty())
     {
         {
-            const std::vector<char> &hash=CatchChallenger::DatapackChecksum::doChecksumMain((datapackPath+DatapackClientLoader::text_DATAPACK_BASE_PATH_MAPMAIN));
-            if(hash.empty())
+            const std::vector<char>& hash = CatchChallenger::DatapackChecksum::doChecksumMain((datapackPath+DatapackClientLoader::text_DATAPACK_BASE_PATH_MAPMAIN));
+            if (hash.empty())
             {
                 std::cerr << "DatapackClientLoader::parseDatapackMainSub(): hash is empty" << std::endl;
                 this->datapackChecksumError();
-                inProgress=false;
+                inProgress = false;
                 return;
             }
 
-            if(CommonSettingsServer::commonSettingsServer.datapackHashServerMain!=hash)
+            if (CommonSettingsServer::commonSettingsServer.datapackHashServerMain != hash)
             {
                 //qDebug() << QStringLiteral("DatapackClientLoader::parseDatapack() Main CommonSettingsServer::commonSettingsServer.datapackHashServerMain!=hash.result(): %1!=%2")
                 //            .arg(QString::fromStdString(binarytoHexa(CommonSettingsServer::commonSettingsServer.datapackHashServerMain)))
                 //            .arg(QString::fromStdString(binarytoHexa(hash)));
                 this->datapackChecksumError();
-                inProgress=false;
+                inProgress = false;
                 return;
             }
         }
-        if(!CommonSettingsServer::commonSettingsServer.subDatapackCode.empty())
+        if (!CommonSettingsServer::commonSettingsServer.subDatapackCode.empty())
         {
-            const std::vector<char> &hash=CatchChallenger::DatapackChecksum::doChecksumSub(
-                        (datapackPath+DatapackClientLoader::text_DATAPACK_BASE_PATH_MAPSUB));
-            if(hash.empty())
+            const std::vector<char>& hash = CatchChallenger::DatapackChecksum::doChecksumSub(
+                        (datapackPath + DatapackClientLoader::text_DATAPACK_BASE_PATH_MAPSUB));
+            if (hash.empty())
             {
                 std::cerr << "DatapackClientLoader::parseDatapackSub(): hash is empty" << std::endl;
                 this->datapackChecksumError();
-                inProgress=false;
+                inProgress = false;
                 return;
             }
 
-            if(CommonSettingsServer::commonSettingsServer.datapackHashServerSub!=hash)
+            if (CommonSettingsServer::commonSettingsServer.datapackHashServerSub != hash)
             {
                 //qDebug() << QStringLiteral("DatapackClientLoader::parseDatapack() Sub CommonSettingsServer::commonSettingsServer.datapackHashServerSub!=hash.result(): %1!=%2")
                 //            .arg(QString::fromStdString(binarytoHexa(CommonSettingsServer::commonSettingsServer.datapackHashServerSub)))
                 //            .arg(QString::fromStdString(binarytoHexa(hash)));
                 this->datapackChecksumError();
-                inProgress=false;
+                inProgress = false;
                 return;
             }
         }
     }
-    if(mDefaultInventoryImage==NULL)
-        mDefaultInventoryImage=new QPixmap(QStringLiteral(":/images/inventory/unknown-object.png"));
+    if (mDefaultInventoryImage == NULL) {
+        mDefaultInventoryImage = new QPixmap(QStringLiteral(":/images/inventory/unknown-object.png"));
+    }
 
     CatchChallenger::CommonDatapackServerSpec::commonDatapackServerSpec.parseDatapack(
-                datapackPath,mainDatapackCode,subDatapackCode);
+                datapackPath, mainDatapackCode, subDatapackCode);
 
     parseMaps();
     parseQuestsLink();
@@ -3224,7 +3239,7 @@ void DatapackClientLoader::parseDatapackMainSub(const std::string &mainDatapackC
     parseZoneExtra();
     parseTileset();
 
-    inProgress=false;
+    inProgress = false;
 
     this->datapackParsedMainSub();
 }
@@ -3238,9 +3253,9 @@ void /*BaseWindow::*/Api_protocol_2::datapackChecksumError()
     datapackIsParsed=false;
 
     //reset all the cached hash
-    settings.remove("DatapackHashBase-"+QString::fromStdString(client->datapackPathBase()));
-    settings.remove("DatapackHashMain-"+QString::fromStdString(client->datapackPathMain()));
-    settings.remove("DatapackHashSub-"+QString::fromStdString(client->datapackPathSub()));
+    settings.remove("DatapackHashBase-" + std::string(client->datapackPathBase()));
+    settings.remove("DatapackHashMain-" + std::string(client->datapackPathMain()));
+    settings.remove("DatapackHashSub-" + std::string(client->datapackPathSub()));
 
     this->newError(tr("Datapack on mirror is corrupted").toStdString(),
                   "The checksum sended by the server is not the same than have on the mirror");
@@ -3251,39 +3266,41 @@ void /*BaseWindow*/Api_protocol_2::datapackParsed()
     #ifdef DEBUG_BASEWINDOWS
         //qDebug() << "BaseWindow::datapackParsed()";
     #endif
-    datapackIsParsed=true;
+    datapackIsParsed = true;
     updateConnectingStatus();
     loadSettingsWithDatapack();
     {
-        if(QFile(QString::fromStdString(client->datapackPathBase())+QStringLiteral("/images/interface/fight/labelBottom.png")).exists())
+        if (QFile(QString::fromStdString(client->datapackPathBase())+QStringLiteral("/images/interface/fight/labelBottom.png")).exists()) {
             ui->frameFightBottom->setStyleSheet(QStringLiteral("#frameFightBottom{background-image: url('")+QString::fromStdString(client->datapackPathBase())+QStringLiteral("/images/interface/fight/labelBottom.png');padding:6px 6px 6px 14px;}"));
-        else
+        } else {
             ui->frameFightBottom->setStyleSheet(QStringLiteral("#frameFightBottom{background-image: url(:/images/interface/fight/labelBottom.png);padding:6px 6px 6px 14px;}"));
-        if(QFile(QString::fromStdString(client->datapackPathBase())+QStringLiteral("/images/interface/fight/labelTop.png")).exists())
+        }
+        if (QFile(QString::fromStdString(client->datapackPathBase())+QStringLiteral("/images/interface/fight/labelTop.png")).exists()) {
             ui->frameFightTop->setStyleSheet(QStringLiteral("#frameFightTop{background-image: url('")+QString::fromStdString(client->datapackPathBase())+QStringLiteral("/images/interface/fight/labelTop.png');padding:6px 14px 6px 6px;}"));
-        else
+        } else {
             ui->frameFightTop->setStyleSheet(QStringLiteral("#frameFightTop{background-image: url(:/images/interface/fight/labelTop.png);padding:6px 14px 6px 6px;}"));
+        }
     }
     //updatePlayerImage();
 }
 
 void /*BaseWindow*/Api_protocol_2::datapackParsedMainSub()
 {
-    if(client==NULL)
+    if (client == NULL) {
         return;
-    if(mapController==NULL)
+    }
+    if (mapController == NULL) {
         return;
-    //#ifdef DEBUG_BASEWINDOWS
-        //qDebug() << "BaseWindow::datapackParsedMainSub()";
-    //#endif
+    }
 
-    mainSubDatapackIsParsed=true;
+    mainSubDatapackIsParsed = true;
 
     //always after monster load on CatchChallenger::ClientFightEngine::fightEngine
-    mapController->setDatapackPath(client->datapackPathBase(),client->mainDatapackCode());
+    mapController->setDatapackPath(client->datapackPathBase(), client->mainDatapackCode());
 
-    if(!client->setMapNumber(DatapackClientLoader::datapackLoader.mapToId.size()))
-        this->newError(tr("Internal error").toStdString(),"No map loaded to call client->setMapNumber()");
+    if (!client->setMapNumber(DatapackClientLoader::datapackLoader.mapToId.size())) {
+        this->newError(tr("Internal error").toStdString(), "No map loaded to call cli*ent->setMapNumber()");
+    }
 
     this->have_main_and_sub_datapack_loaded();
 
@@ -3294,24 +3311,24 @@ void /*BaseWindow*/Api_protocol_2::datapackParsedMainSub()
 
 void /*BaseWindow*/Api_protocol_2::updateConnectingStatus()
 {
-    if(BaseWindow::isLogged && BaseWindow::datapackIsParsed)
+    if (BaseWindow::isLogged && BaseWindow::datapackIsParsed)
     {
-        const std::vector<ServerFromPoolForDisplay> &serverOrdenedList=BaseWindow::client->getServerOrdenedList();
-        if(BaseWindow::serverSelected==-1)
+        const std::vector<ServerFromPoolForDisplay> &serverOrdenedList = BaseWindow::client->getServerOrdenedList();
+        if (BaseWindow::serverSelected == -1)
         {
-            if(ui->stackedWidget->currentWidget()!=ui->page_serverList)
+            if (ui->stackedWidget->currentWidget() != ui->page_serverList)
             {
-                if(multiplayer)
+                if (multiplayer)
                 {
                     ui->stackedWidget->setCurrentWidget(ui->page_serverList);
                     ui->serverList->header()->setSectionResizeMode(QHeaderView::Fixed);
-                    ui->serverList->header()->resizeSection(0,680);
+                    ui->serverList->header()->resizeSection(0, 680);
                     updateServerList();
                 }
                 else
                 {
-                    serverSelected=0;
-                    if(serverSelected<0 || serverSelected>=(int)serverOrdenedList.size())
+                    serverSelected = 0;
+                    if (serverSelected < 0 || serverSelected >= (int)serverOrdenedList.size())
                     {
                         error("BaseWindow::updateConnectingStatus(): serverSelected=selectedItem->data(99,99).toUInt() corrupted value");
                         return;
@@ -3321,28 +3338,32 @@ void /*BaseWindow*/Api_protocol_2::updateConnectingStatus()
                 return;
             }
         }
-        else if(!haveCharacterPosition && !haveCharacterInformation && !client->character_select_is_send() &&
-                (unsigned int)serverSelected<serverOrdenedList.size())
+        else if (!haveCharacterPosition
+                && !haveCharacterInformation
+                && !client->character_select_is_send()
+                && (unsigned int)serverSelected<serverOrdenedList.size())
         {
-            if(ui->stackedWidget->currentWidget()!=ui->page_character)
+            if (ui->stackedWidget->currentWidget() != ui->page_character)
             {
-                if(multiplayer)
+                if (multiplayer) {
                     ui->stackedWidget->setCurrentWidget(ui->page_character);
-                const uint8_t &charactersGroupIndex=serverOrdenedList.at(serverSelected).charactersGroupIndex;
-                const std::vector<CharacterEntry> &characterEntryList=characterListForSelection.at(charactersGroupIndex);
-                ui->character_add->setEnabled(characterEntryList.size()<CommonSettingsCommon::commonSettingsCommon.max_character);
-                ui->character_remove->setEnabled(characterEntryList.size()>CommonSettingsCommon::commonSettingsCommon.min_character);
-                if(characterEntryList.empty())
+                }
+                const uint8_t& charactersGroupIndex = serverOrdenedList.at(serverSelected).charactersGroupIndex;
+                const std::vector<CharacterEntry>& characterEntryList = characterListForSelection.at(charactersGroupIndex);
+                ui->character_add->setEnabled(characterEntryList.size() < CommonSettingsCommon::commonSettingsCommon.max_character);
+                ui->character_remove->setEnabled(characterEntryList.size() > CommonSettingsCommon::commonSettingsCommon.min_character);
+                if (characterEntryList.empty())
                 {
-                    if(CommonSettingsCommon::commonSettingsCommon.max_character==0)
+                    if (CommonSettingsCommon::commonSettingsCommon.max_character == 0) {
                         emit message("Can't create character but the list is empty");
+                    }
                 }
                 updateCharacterList();
-                if((characterListForSelection.empty() ||
-                    characterListForSelection.at(charactersGroupIndex).empty()) &&
-                        CommonSettingsCommon::commonSettingsCommon.max_character>0)
+                if ((characterListForSelection.empty() ||
+                     characterListForSelection.at(charactersGroupIndex).empty()) &&
+                     CommonSettingsCommon::commonSettingsCommon.max_character > 0)
                 {
-                    if(CommonSettingsCommon::commonSettingsCommon.min_character>0)
+                    if (CommonSettingsCommon::commonSettingsCommon.min_character > 0)
                     {
                         ui->frameLoading->setStyleSheet("#frameLoading {border-image: url(:/images/empty.png);border-width: 0px;}");
                         ui->stackedWidget->setCurrentWidget(ui->page_init);
@@ -3351,18 +3372,20 @@ void /*BaseWindow*/Api_protocol_2::updateConnectingStatus()
                     on_character_add_clicked();
                     return;
                 }
-                if(characterListForSelection.size()==1 && CommonSettingsCommon::commonSettingsCommon.min_character>=characterListForSelection.size() &&
-                        CommonSettingsCommon::commonSettingsCommon.max_character<=characterListForSelection.size())
+                if (characterListForSelection.size() == 1
+                        && CommonSettingsCommon::commonSettingsCommon.min_character >= characterListForSelection.size()
+                        && CommonSettingsCommon::commonSettingsCommon.max_character<=characterListForSelection.size())
                 {
-                    if(characterListForSelection.at(charactersGroupIndex).size()==1)
+                    if (characterListForSelection.at(charactersGroupIndex).size() == 1)
                     {
-                        characterSelected=true;
+                        characterSelected = true;
                         ui->characterEntryList->item(ui->characterEntryList->count()-1)->setSelected(true);
                         on_character_select_clicked();
                         return;
                     }
-                    else
+                    else {
                         emit message("BaseWindow::updateConnectingStatus(): characterListForSelection.at(charactersGroupIndex).size()!=1, bug");
+                    }
                 }
                 return;
             }
@@ -3370,59 +3393,65 @@ void /*BaseWindow*/Api_protocol_2::updateConnectingStatus()
     }
 
     QStringList waitedData;
-    if((haveCharacterPosition && haveCharacterInformation) && !mainSubDatapackIsParsed)
+    if ((haveCharacterPosition && haveCharacterInformation) && !mainSubDatapackIsParsed) {
         waitedData << tr("Loading of the specific datapack part");
-    if(haveDatapack && (!haveInventory || !haveCharacterPosition || !haveCharacterInformation))
+    }
+    if (haveDatapack && (!haveInventory || !haveCharacterPosition || !haveCharacterInformation))
     {
-        if(!haveCharacterPosition || !haveCharacterInformation)
+        if (!haveCharacterPosition || !haveCharacterInformation) {
             waitedData << tr("Loading of the player informations");
-        else
+        } else {
             waitedData << tr("Loading of the inventory");
+        }
     }
-    if(!haveDatapack)
+    if (!haveDatapack)
     {
-        if(!protocolIsGood)
+        if (!protocolIsGood) {
             waitedData << tr("Try send the protocol...");
-        else if(!isLogged)
+        } else if(!isLogged)
         {
-            if(datapackGatewayProgression.empty())
+            if(datapackGatewayProgression.empty()) {
                 waitedData << tr("Try login...");
-            else if(datapackGatewayProgression.size()<2)
+            } else if(datapackGatewayProgression.size() < 2) {
                 waitedData << tr("Updating the gateway cache...");
-            else
+            } else {
                 waitedData << tr("Updating the %1 gateways cache...").arg(datapackGatewayProgression.size());
+            }
         }
         else
         {
-            if(datapackFileSize==0)
+            if (datapackFileSize == 0) {
                 waitedData << tr("Loading of the datapack");
-            else if(datapackFileSize<0)
-                waitedData << tr("Loaded datapack size: %1KB").arg((datapackDownloadedSize+progressingDatapackFileSize)/1000);//when the http server don't send the size
-            else if((datapackDownloadedSize+progressingDatapackFileSize)>=(uint32_t)datapackFileSize)
+            } else if(datapackFileSize < 0) {
+                waitedData << tr("Loaded datapack size: %1KB").arg((datapackDownloadedSize+progressingDatapackFileSize) / 1000);//when the http server don't send the size
+            } else if((datapackDownloadedSize + progressingDatapackFileSize) >= (uint32_t)datapackFileSize) {
                 waitedData << tr("Loaded datapack file: 100%");
-            else
-                waitedData << tr("Loaded datapack file: %1%").arg(((datapackDownloadedSize+progressingDatapackFileSize)*100)/datapackFileSize);
+            } else {
+                waitedData << tr("Loaded datapack file: %1%").arg(((datapackDownloadedSize+progressingDatapackFileSize) * 100) / datapackFileSize);
+            }
         }
     }
-    else if(!datapackIsParsed)
+    else if (!datapackIsParsed) {
         waitedData << tr("Opening the datapack");
+    }
     if(waitedData.isEmpty())
     {
-        Player_private_and_public_informations &playerInformations=client->get_player_informations();
-        if(playerInformations.bot_already_beaten==NULL)
+        Player_private_and_public_informations& playerInformations = client->get_player_informations();
+        if(playerInformations.bot_already_beaten == NULL)
         {
             std::cerr << "void BaseWindow::updateConnectingStatus(): waitedData.isEmpty(), playerInformations.bot_already_beaten==NULL" << std::endl;
             abort();
         }
         mapController->setBotsAlreadyBeaten(playerInformations.bot_already_beaten);
-        mapController->setInformations(&playerInformations.items,&playerInformations.quests,&events,&playerInformations.itemOnMap,&playerInformations.plantOnMap);
+        mapController->setInformations(&playerInformations.items, &playerInformations.quests, &events, &playerInformations.itemOnMap, &playerInformations.plantOnMap);
         client->unloadSelection();
         load_inventory();
         load_plant_inventory();
         load_crafting_inventory();
         updateDisplayedQuests();
-        if(!check_senddata())
+        if (!check_senddata()) {
             return;
+        }
         load_monsters();
         show_reputation();
         load_event();
@@ -3439,12 +3468,12 @@ void /*BaseWindow*/Api_protocol_2::updateConnectingStatus()
 void /*BaseWindow*/Api_protocol_2::have_main_and_sub_datapack_loaded()
 {
     BaseWindow::client->have_main_and_sub_datapack_loaded();
-    if(!BaseWindow::client->getCaracterSelected())
+    if (!BaseWindow::client->getCaracterSelected())
     {
         error("BaseWindow::have_main_and_sub_datapack_loaded(): don't have player info, need to code this delay part");
         return;
     }
-    const Player_private_and_public_informations &informations=BaseWindow::client->get_player_informations();
+    const Player_private_and_public_informations& informations = BaseWindow::client->get_player_informations();
 
     //always after monster load on CatchChallenger::ClientFightEngine::fightEngine
     mapController->have_current_player_info(informations);
@@ -3461,106 +3490,106 @@ void /*BaseWindow*/Api_protocol_2::have_main_and_sub_datapack_loaded()
 
 void /*MapController*/Api_protocol_2::datapackParsedMainSub()
 {
-    if(mHaveTheDatapack)
+    if (mHaveTheDatapack) {
         return;
+    }
     MapControllerMP::datapackParsedMainSub();
-    unsigned int index=0;
-    while(index<delayedPlantInsert.size())
+    unsigned int index = 0;
+    while (index<delayedPlantInsert.size())
     {
-        insert_plant(delayedPlantInsert.at(index).mapId,delayedPlantInsert.at(index).x,delayedPlantInsert.at(index).y,delayedPlantInsert.at(index).plant_id,delayedPlantInsert.at(index).seconds_to_mature);
+        insert_plant(delayedPlantInsert.at(index).mapId, delayedPlantInsert.at(index).x, delayedPlantInsert.at(index).y, delayedPlantInsert.at(index).plant_id, delayedPlantInsert.at(index).seconds_to_mature);
         index++;
     }
     delayedPlantInsert.clear();
 }
 
 
-
 //base
-void Api_protocol_2::newFileBase(const std::string &fileName,const std::string &data)
+void Api_protocol_2::newFileBase(const std::string& fileName, const std::string& data)
 {
     emit QtnewFileBase(fileName,data);
 }
-void Api_protocol_2::newHttpFileBase(const std::string &url,const std::string &fileName)
+void Api_protocol_2::newHttpFileBase(const std::string& url, const std::string& fileName)
 {
     emit QtnewHttpFileBase(url,fileName);
 }
-void Api_protocol_2::removeFileBase(const std::string &fileName)
+void Api_protocol_2::removeFileBase(const std::string& fileName)
 {
     emit QtremoveFileBase(fileName);
 }
-void Api_protocol_2::datapackSizeBase(const uint32_t &datapckFileNumber,const uint32_t &datapckFileSize)
+void Api_protocol_2::datapackSizeBase(const uint32_t& datapckFileNumber, const uint32_t& datapckFileSize)
 {
     emit QtdatapackSizeBase(datapckFileNumber,datapckFileSize);
 }
 //main
-void Api_protocol_2::newFileMain(const std::string &fileName,const std::string &data)
+void Api_protocol_2::newFileMain(const std::string& fileName, const std::string& data)
 {
     emit QtnewFileMain(fileName,data);
 }
-void Api_protocol_2::newHttpFileMain(const std::string &url,const std::string &fileName)
+void Api_protocol_2::newHttpFileMain(const std::string& url, const std::string& fileName)
 {
     emit QtnewHttpFileMain(url,fileName);
 }
-void Api_protocol_2::removeFileMain(const std::string &fileName)
+void Api_protocol_2::removeFileMain(const std::string& fileName)
 {
     emit QtremoveFileMain(fileName);
 }
-void Api_protocol_2::datapackSizeMain(const uint32_t &datapckFileNumber,const uint32_t &datapckFileSize)
+void Api_protocol_2::datapackSizeMain(const uint32_t& datapckFileNumber, const uint32_t& datapckFileSize)
 {
     emit QtdatapackSizeMain(datapckFileNumber,datapckFileSize);
 }
 //sub
-void Api_protocol_2::newFileSub(const std::string &fileName,const std::string &data)
+void Api_protocol_2::newFileSub(const std::string& fileName, const std::string& data)
 {
     emit QtnewFileSub(fileName,data);
 }
-void Api_protocol_2::newHttpFileSub(const std::string &url,const std::string &fileName)
+void Api_protocol_2::newHttpFileSub(const std::string& url, const std::string& fileName)
 {
     emit QtnewHttpFileSub(url,fileName);
 }
-void Api_protocol_2::removeFileSub(const std::string &fileName)
+void Api_protocol_2::removeFileSub(const std::string& fileName)
 {
     emit QtremoveFileSub(fileName);
 }
-void Api_protocol_2::datapackSizeSub(const uint32_t &datapckFileNumber,const uint32_t &datapckFileSize)
+void Api_protocol_2::datapackSizeSub(const uint32_t& datapckFileNumber,const uint32_t& datapckFileSize)
 {
     emit QtdatapackSizeSub(datapckFileNumber,datapckFileSize);
 }
 
 //shop
-void Api_protocol_2::haveShopList(const std::vector<ItemToSellOrBuy> &items)
+void Api_protocol_2::haveShopList(const std::vector<ItemToSellOrBuy>& items)
 {
     emit QthaveShopList(items);
 }
-void Api_protocol_2::haveBuyObject(const BuyStat &stat,const uint32_t &newPrice)
+void Api_protocol_2::haveBuyObject(const BuyStat& stat, const uint32_t& newPrice)
 {
     emit QthaveBuyObject(stat,newPrice);
 }
-void Api_protocol_2::haveSellObject(const SoldStat &stat,const uint32_t &newPrice)
+void Api_protocol_2::haveSellObject(const SoldStat& stat, const uint32_t& newPrice)
 {
     emit QthaveSellObject(stat,newPrice);
 }
 
 //factory
-void Api_protocol_2::haveFactoryList(const uint32_t &remainingProductionTime,const std::vector<ItemToSellOrBuy> &resources,const std::vector<ItemToSellOrBuy> &products)
+void Api_protocol_2::haveFactoryList(const uint32_t& remainingProductionTime, const std::vector<ItemToSellOrBuy>& resources, const std::vector<ItemToSellOrBuy>& products)
 {
     emit QthaveFactoryList(remainingProductionTime,resources,products);
 }
-void Api_protocol_2::haveBuyFactoryObject(const BuyStat &stat,const uint32_t &newPrice)
+void Api_protocol_2::haveBuyFactoryObject(const BuyStat& stat, const uint32_t& newPrice)
 {
     emit QthaveBuyFactoryObject(stat,newPrice);
 }
-void Api_protocol_2::haveSellFactoryObject(const SoldStat &stat,const uint32_t &newPrice)
+void Api_protocol_2::haveSellFactoryObject(const SoldStat& stat, const uint32_t& newPrice)
 {
     emit QthaveSellFactoryObject(stat,newPrice);
 }
 
 //trade
-void Api_protocol_2::tradeRequested(const std::string &pseudo,const uint8_t &skinInt)
+void Api_protocol_2::tradeRequested(const std::string& pseudo, const uint8_t& skinInt)
 {
     emit QttradeRequested(pseudo,skinInt);
 }
-void Api_protocol_2::tradeAcceptedByOther(const std::string &pseudo,const uint8_t &skinInt)
+void Api_protocol_2::tradeAcceptedByOther(const std::string& pseudo, const uint8_t& skinInt)
 {
     emit QttradeAcceptedByOther(pseudo,skinInt);
 }
@@ -3576,25 +3605,25 @@ void Api_protocol_2::tradeValidatedByTheServer()
 {
     emit QttradeValidatedByTheServer();
 }
-void Api_protocol_2::tradeAddTradeCash(const uint64_t &cash)
+void Api_protocol_2::tradeAddTradeCash(const uint64_t& cash)
 {
     emit QttradeAddTradeCash(cash);
 }
-void Api_protocol_2::tradeAddTradeObject(const uint32_t &item,const uint32_t &quantity)
+void Api_protocol_2::tradeAddTradeObject(const uint32_t& item, const uint32_t& quantity)
 {
     emit QttradeAddTradeObject(item,quantity);
 }
-void Api_protocol_2::tradeAddTradeMonster(const CatchChallenger::PlayerMonster &monster)
+void Api_protocol_2::tradeAddTradeMonster(const CatchChallenger::PlayerMonster& monster)
 {
     emit QttradeAddTradeMonster(monster);
 }
 
 //battle
-void Api_protocol_2::battleRequested(const std::string &pseudo,const uint8_t &skinInt)
+void Api_protocol_2::battleRequested(const std::string& pseudo,const uint8_t& skinInt)
 {
     emit QtbattleRequested(pseudo,skinInt);
 }
-void Api_protocol_2::battleAcceptedByOther(const std::string &pseudo,const uint8_t &skinId,const std::vector<uint8_t> &stat,const uint8_t &monsterPlace,const PublicPlayerMonster &publicPlayerMonster)
+void Api_protocol_2::battleAcceptedByOther(const std::string& pseudo, const uint8_t& skinId, const std::vector<uint8_t>& stat, const uint8_t& monsterPlace, const PublicPlayerMonster& publicPlayerMonster)
 {
     emit QtbattleAcceptedByOther(pseudo,skinId,stat,monsterPlace,publicPlayerMonster);
 }
@@ -3602,13 +3631,13 @@ void Api_protocol_2::battleCanceledByOther()
 {
     emit QtbattleCanceledByOther();
 }
-void Api_protocol_2::sendBattleReturn(const std::vector<Skill::AttackReturn> &attackReturn)
+void Api_protocol_2::sendBattleReturn(const std::vector<Skill::AttackReturn>& attackReturn)
 {
     emit QtsendBattleReturn(attackReturn);
 }
 
 //clan
-void Api_protocol_2::clanActionSuccess(const uint32_t &clanId)
+void Api_protocol_2::clanActionSuccess(const uint32_t& clanId)
 {
     emit QtclanActionSuccess(clanId);
 }
@@ -3620,15 +3649,15 @@ void Api_protocol_2::clanDissolved()
 {
     emit QtclanDissolved();
 }
-void Api_protocol_2::clanInformations(const std::string &name)
+void Api_protocol_2::clanInformations(const std::string& name)
 {
     emit QtclanInformations(name);
 }
-void Api_protocol_2::clanInvite(const uint32_t &clanId,const std::string &name)
+void Api_protocol_2::clanInvite(const uint32_t& clanId, const std::string& name)
 {
     emit QtclanInvite(clanId,name);
 }
-void Api_protocol_2::cityCapture(const uint32_t &remainingTime,const uint8_t &type)
+void Api_protocol_2::cityCapture(const uint32_t& remainingTime, const uint8_t& type)
 {
     emit QtcityCapture(remainingTime,type);
 }
@@ -3638,7 +3667,7 @@ void Api_protocol_2::captureCityYourAreNotLeader()
 {
     emit QtcaptureCityYourAreNotLeader();
 }
-void Api_protocol_2::captureCityYourLeaderHaveStartInOtherCity(const std::string &zone)
+void Api_protocol_2::captureCityYourLeaderHaveStartInOtherCity(const std::string& zone)
 {
     emit QtcaptureCityYourLeaderHaveStartInOtherCity(zone);
 }
@@ -3646,15 +3675,15 @@ void Api_protocol_2::captureCityPreviousNotFinished()
 {
     emit QtcaptureCityPreviousNotFinished();
 }
-void Api_protocol_2::captureCityStartBattle(const uint16_t &player_count,const uint16_t &clan_count)
+void Api_protocol_2::captureCityStartBattle(const uint16_t& player_count, const uint16_t& clan_count)
 {
     emit QtcaptureCityStartBattle(player_count,clan_count);
 }
-void Api_protocol_2::captureCityStartBotFight(const uint16_t &player_count,const uint16_t &clan_count,const uint32_t &fightId)
+void Api_protocol_2::captureCityStartBotFight(const uint16_t& player_count, const uint16_t& clan_count, const uint32_t& fightId)
 {
     emit QtcaptureCityStartBotFight(player_count,clan_count,fightId);
 }
-void Api_protocol_2::captureCityDelayedStart(const uint16_t &player_count,const uint16_t &clan_count)
+void Api_protocol_2::captureCityDelayedStart(const uint16_t& player_count, const uint16_t& clan_count)
 {
     emit QtcaptureCityDelayedStart(player_count,clan_count);
 }
@@ -3664,23 +3693,23 @@ void Api_protocol_2::captureCityWin()
 }
 
 //market
-void Api_protocol_2::marketList(const uint64_t &price,const std::vector<MarketObject> &marketObjectList,const std::vector<MarketMonster> &marketMonsterList,const std::vector<MarketObject> &marketOwnObjectList,const std::vector<MarketMonster> &marketOwnMonsterList)
+void Api_protocol_2::marketList(const uint64_t& price, const std::vector<MarketObject>& marketObjectList, const std::vector<MarketMonster>& marketMonsterList, const std::vector<MarketObject>& marketOwnObjectList, const std::vector<MarketMonster>& marketOwnMonsterList)
 {
     emit QtmarketList(price,marketObjectList,marketMonsterList,marketOwnObjectList,marketOwnMonsterList);
 }
-void Api_protocol_2::marketBuy(const bool &success)
+void Api_protocol_2::marketBuy(const bool& success)
 {
     emit QtmarketBuy(success);
 }
-void Api_protocol_2::marketBuyMonster(const PlayerMonster &playerMonster)
+void Api_protocol_2::marketBuyMonster(const PlayerMonster& playerMonster)
 {
     emit QtmarketBuyMonster(playerMonster);
 }
-void Api_protocol_2::marketPut(const bool &success)
+void Api_protocol_2::marketPut(const bool& success)
 {
     emit QtmarketPut(success);
 }
-void Api_protocol_2::marketGetCash(const uint64_t &cash)
+void Api_protocol_2::marketGetCash(const uint64_t& cash)
 {
     emit QtmarketGetCash(cash);
 }
@@ -3688,11 +3717,11 @@ void Api_protocol_2::marketWithdrawCanceled()
 {
     emit QtmarketWithdrawCanceled();
 }
-void Api_protocol_2::marketWithdrawObject(const uint32_t &objectId,const uint32_t &quantity)
+void Api_protocol_2::marketWithdrawObject(const uint32_t& objectId, const uint32_t& quantity)
 {
     emit QtmarketWithdrawObject(objectId,quantity);
 }
-void Api_protocol_2::marketWithdrawMonster(const PlayerMonster &playerMonster)
+void Api_protocol_2::marketWithdrawMonster(const PlayerMonster& playerMonster)
 {
     emit QtmarketWithdrawMonster(playerMonster);
 }

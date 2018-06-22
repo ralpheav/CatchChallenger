@@ -8,6 +8,7 @@
 #include <string>
 
 #include "config/GeneralVariable.h"
+
 #ifdef EPOLLCATCHCHALLENGERSERVER
     #ifdef SERVERSSL
         #include "../../server/epoll/EpollSslClient.h"
@@ -15,7 +16,7 @@
         #include "../../server/epoll/EpollClient.h"
     #endif
 #else
-#include "net/ConnectedSocket.h"
+    #include "net/ConnectedSocket.h"
 #endif
 
 #define CATCHCHALLENGER_COMMONBUFFERSIZE 4096

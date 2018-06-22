@@ -17,7 +17,7 @@ FakeSocket::~FakeSocket()
         FakeSocket *tempOtherSocket = theOtherSocket;
         theOtherSocket = nullptr;
         tempOtherSocket->theOtherSocket = nullptr;
-        tempOtherSocket->m_state = FakeSocket::unconnected;;
+        tempOtherSocket->state = SocketState::unconnected;;
         tempOtherSocket->disconnected();
     }
 
@@ -49,7 +49,7 @@ void FakeSocket::disconnectFromHost()
         lock_guard<mutex> guard(FakeSocket::mutex);
         data.clear();
     }
-    m_state = FakeSocket::unconnected;
+    state = SocketState::unconnected;
 
     disconnected();
 }
@@ -69,7 +69,7 @@ void FakeSocket::disconnectFromFakeServer()
         lock_guard<mutex> guard(FakeSocket::mutex);
         data.clear();
     }
-    m_state = FakeSocket::unconnected;
+    state = SocketState::unconnected;
 
     disconnected();
 }
@@ -84,7 +84,7 @@ void FakeSocket::connectToHost()
     }
 
     FakeServer::server.addPendingConnection(this);
-    m_state = FakeSocket::connected;
+    state = SocketState::connected;
 
     connected();
 }
@@ -139,16 +139,25 @@ uint64_t FakeSocket::getTXSize()
     return theOtherSocket->getRXSize();
 }
 
+void error(SocketError socketError) {
+    error = socketError;
+}
+
+void stateChanged(SocketState socketState) {
+    state = socketState;
+}
+
+
 int FakeSocket::error() const {
-    return 0;
+    return error;
 }
 
 int FakeSocket::state() const
 {
     if (theOtherSocket == NULL) {
-        return FakeSocket::connected;
+        return SocketState::connected;
     }
-    return FakeSocket::unconnected;
+    return SocketState::unconnected;
 }
 
 int64_t FakeSocket::readData(char* rawData, int64_t maxSize)
@@ -157,7 +166,7 @@ int64_t FakeSocket::readData(char* rawData, int64_t maxSize)
 
     std::vector<unsigned char> extractedData;
     std::vector<unsigned char>::iterator it;
-    for(int index=0, it = this->data.begin(); it != this->data.end() && index < maxSize; it++, index++) {
+    for(int index = 0, it = this->data.begin(); it != this->data.end() && index < maxSize; it++, index++) {
         extractedData.push_back(it->first);
     }
 
@@ -222,4 +231,4 @@ bool FakeSocket::canReadLine () const
     return false;
 }
 
-#endif
+#endif // #if ! defined(EPOLLCATCHCHALLENGERSERVER) && ! defined (ONLYMAPRENDER)

@@ -2,6 +2,7 @@
 
 TCPSocket::TCPSocket() {
     socket_file_descriptor = socket(AF_INET, SOCK_STREAM, 0);
+
     if (!haveSocket())
     {
         std::cerr << "socket failed" << std::endl;
@@ -53,10 +54,6 @@ bool TCPSocket::encryptedBytesAvailable() {
     return false;
 }
 
-void TCPSocket::deleteLater() {
-    //TODO: delete
-}
-
 void TCPSocket::abort() {
     shutdown(socket_file_descriptor, SHUT_RDWR);
 }
@@ -72,6 +69,9 @@ int TCPSocket::connectToHost(const std::string& host, int port) {
         return 0;
     }
 
+    strcpy(this->host, host.c_str());
+    this->port = port;
+
     return ::connect(socket_file_descriptor, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 }
 
@@ -79,8 +79,8 @@ void TCPSocket::disconnectFromHost() {
     close(socket_file_descriptor);
 }
 
-void TCPSocket::error() {
-    //TODO
+SocketError TCPSocket::error() {
+    return error;
 }
 
 void TCPSocket::flush() {
@@ -104,34 +104,32 @@ bool TCPSocket::isValid() {
     return socket_file_descriptor > 0;
 }
 
-void TCPSocket::socketDescriptor() {
-    //TODO
+bool TCPSocket::socketDescriptor() {
+    return socket_file_descriptor > 0;
 }
 
 std::string TCPSocket::localAddress() {
-    //TODO
-    //return address;
+    return host;
 }
 
 int TCPSocket::localPort() {
-    //TODO
-    //return port;
+    return port;
 }
 
 std::string TCPSocket::peerAddress() {
-    //TODO
+    //TODO connected peer
 }
 
 std::string TCPSocket::peerName() {
-    //TODO
+    //TODO connected name
 }
 
 int TCPSocket::peerPort() {
-    //TODO
+    //TODO connected port
 }
 
 SocketState TCPSocket::state() {
-    return SocketState::UnconnectedState;
+    return state;
 }
 
 bool TCPSocket::waitForConnected(int msec) {
@@ -153,16 +151,24 @@ std::string TCPSocket::errorString() {
 }
 
 int TCPSocket::readData(char* message, size_t max) {
-    //TODO max
-    int result = this->read();
-    strcpy(message, buffer);
+
+    if (!haveSocket()) {
+        std::cerr << "No socket opened" << std::endl;
+    }
+
+    int result = ::read(socket_file_descriptor, message, max);
+    message[max] = 0;
 
     return result;
 }
 
 int TCPSocket::writeData(const char* message, size_t max) {
-    //TODO max
-    int result = this->send(message);
+
+    if (!haveSocket()) {
+        std::cerr << "no socket" << std::endl;
+    }
+
+    int result = ::send(socket_file_descriptor, message, max, 0);
 
     return result;
 }

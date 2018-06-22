@@ -15,6 +15,7 @@
 #include <QDateTime>
 #include <QStandardPaths>
 #include <QSslKey>
+#include <QSslSocket>
 
 
 #include "../../general/base/protocol/util/DataStreamSerializer.h"
@@ -23,7 +24,7 @@
 #include "../../general/base/tinyXML2/tinyxml2.h"
 #include "../../general/base/tinyXML2/customtinyxml2.h"
 
-#include "ClientStructures.h"
+#include "ClientStructures2.h"
 #include "../../general/base/protocol/general/GeneralStructures.h"
 #include "../../general/base/protocol/general/GeneralVariable.h"
 

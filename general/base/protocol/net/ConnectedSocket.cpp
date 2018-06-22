@@ -2,11 +2,6 @@
 
 #include "ConnectedSocket.h"
 
-#ifdef __linux__
-    #include <netinet/tcp.h>
-    #include <netdb.h>
-#endif
-
 using namespace CatchChallenger;
 
 std::string HostAddress::localhost = "127.0.0.1";
@@ -252,7 +247,7 @@ void ConnectedSocket::close()
 int64_t ConnectedSocket::readData(char* data, int64_t maxSize)
 {
     if (pSocket != nullptr) {
-        return pSocket->read(data, maxSize);
+        return pSocket->readData(data, maxSize);
     }
 
     return -1;
@@ -261,7 +256,7 @@ int64_t ConnectedSocket::readData(char* data, int64_t maxSize)
 int64_t ConnectedSocket::writeData(const char* data, int64_t maxSize)
 {
     if (pSocket != nullptr) {
-        return pSocket->write(data, maxSize);
+        return pSocket->writeData(data, maxSize);
     }
 
     return -1;

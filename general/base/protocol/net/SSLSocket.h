@@ -23,12 +23,13 @@ namespace CatchChallenger
     {
         int waitForDisconnectedTime;
         int waitForConnectTime;
+        PeerVerifyMode verifyMode;
+        bool ignoreErrors;
 
         char buffer[1024]; //TODO, set maxsize
         SSL_CTX *ctx;
         SSL *ssl;
 
-        SocketState state;
         int socket_descriptor;
         struct hostent *host;
         struct sockaddr_in addr;
@@ -51,23 +52,26 @@ namespace CatchChallenger
         void setSocketOption(SocketOption option,int parameter);
         bool bytesAvailable();
         bool encryptedBytesAvailable();
-        void deleteLater();
         void abort();
         void connectToHost(const std::string& host, int port);
         void disconnectFromHost();
-        void error();
+        SocketError error();
         void flush();
         bool isValid();
-        void socketDescriptor();
+        bool socketDescriptor();
         std::string localAddress();
         int localPort();
         std::string peerAddress();
         std::string peerName();
         int peerPort();
         SocketState state();
+        void ignoreSslErrors();
+        void startClientEncryption();
         bool waitForConnected(int msec);
         bool waitForDisconnected(int msec);
         bool openMode();
+        SslMode mode();
+        void setPeerVerifyMode(PeerVerifyMode mode);
         std::string errorString();
         int readData(char* message, size_t max);
         int writeData(const char* message, size_t max);

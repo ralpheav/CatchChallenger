@@ -40,14 +40,13 @@ namespace CatchChallenger
             void setSocketOption(SocketOption option,int parameter);
             bool bytesAvailable();
             bool encryptedBytesAvailable();
-            void deleteLater();
             void abort();
             void connectToHost(const std::string& host, int port);
             void disconnectFromHost();
-            void error();
+            SocketError error();
             void flush();
             bool isValid();
-            void socketDescriptor();
+            bool socketDescriptor();
             std::string localAddress();
             int localPort();
             std::string peerAddress();
