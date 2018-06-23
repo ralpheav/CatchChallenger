@@ -1,5 +1,5 @@
-#ifndef FILE_H
-#define FILE_H
+#ifndef CATCHCHALLENGER_DIR_H
+#define CATCHCHALLENGER_DIR_H
 
 #include <iostream>
 #include <sys/stat.h>
@@ -12,7 +12,7 @@ namespace CatchChallenger
     class Dir
     {
         private:
-            std::string path;
+            std::string m_path;
 
         public:
 
@@ -20,7 +20,7 @@ namespace CatchChallenger
             }
 
             Dir(const std::string& path) {
-                this->path = path;
+                this->m_path = path;
             }
 
             void mkpath(const std::string& path) {
@@ -31,14 +31,15 @@ namespace CatchChallenger
             }
 
             std::string path() {
-                return path;
+                return m_path;
             }
 
             std::string absolutePath() {
-                std::string apath = realpath(__FILE, NULL);
+
+                std::string apath = realpath(__FILE__, NULL);
                 return apath;
             }
-    }
+    };
 }
 
-#endif // FILE_H
+#endif // CATCHCHALLENGER_DIR_H

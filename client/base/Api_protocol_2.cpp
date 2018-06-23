@@ -2428,7 +2428,7 @@ void Api_protocol_2::connectTheExternalSocketInternal()
                             std::string("/") +
                             socket->peerName() +
                             std::string("-") +
-                            std::string(itoa(socket->peerPort()))
+                            std::string(std::to_string(socket->peerPort()))
                         );
         } else if (stageConnexion == StageConnexion::Stage3 || stageConnexion == StageConnexion::Stage4)
         {
@@ -2443,7 +2443,7 @@ void Api_protocol_2::connectTheExternalSocketInternal()
                         std::string("/") +
                         std::string(serverFromPoolForDisplay.host) +
                         std::string("-") +
-                        std::string(itoa(serverFromPoolForDisplay.port))
+                        std::string(std::to_string(serverFromPoolForDisplay.port))
                         );
         }
         else
@@ -2880,7 +2880,7 @@ bool Api_protocol_2::setMapNumber(const unsigned int number_of_map)
         std::cerr << "to reset this number use resetAll()" << std::endl;
         return false;
     }
-    std::cout << "number of map: " << std::string(itoa(number_of_map)) << std::endl;
+    std::cout << "number of map: " << std::string(std::to_string(number_of_map)) << std::endl;
     this->number_of_map = number_of_map;
 
     return true;
@@ -3288,15 +3288,15 @@ void /*BaseWindow*/Api_protocol_2::datapackParsed()
     updateConnectingStatus();
     loadSettingsWithDatapack();
     {
-        if (QFile(QString::fromStdString(client->datapackPathBase())+QStringLiteral("/images/interface/fight/labelBottom.png")).exists()) {
-            ui->frameFightBottom->setStyleSheet(QStringLiteral("#frameFightBottom{background-image: url('")+QString::fromStdString(client->datapackPathBase())+QStringLiteral("/images/interface/fight/labelBottom.png');padding:6px 6px 6px 14px;}"));
+        if (File(std::string(client->datapackPathBase()) + std::string("/images/interface/fight/labelBottom.png")).exists()) {
+            ui->frameFightBottom->setStyleSheet(std::string("#frameFightBottom{background-image: url('") + std::string(client->datapackPathBase()) + std::string("/images/interface/fight/labelBottom.png');padding:6px 6px 6px 14px;}"));
         } else {
-            ui->frameFightBottom->setStyleSheet(QStringLiteral("#frameFightBottom{background-image: url(:/images/interface/fight/labelBottom.png);padding:6px 6px 6px 14px;}"));
+            ui->frameFightBottom->setStyleSheet(std::string("#frameFightBottom{background-image: url(:/images/interface/fight/labelBottom.png);padding:6px 6px 6px 14px;}"));
         }
-        if (QFile(QString::fromStdString(client->datapackPathBase())+QStringLiteral("/images/interface/fight/labelTop.png")).exists()) {
-            ui->frameFightTop->setStyleSheet(QStringLiteral("#frameFightTop{background-image: url('")+QString::fromStdString(client->datapackPathBase())+QStringLiteral("/images/interface/fight/labelTop.png');padding:6px 14px 6px 6px;}"));
+        if (File(std::string(client->datapackPathBase()) + std::string("/images/interface/fight/labelTop.png")).exists()) {
+            ui->frameFightTop->setStyleSheet(std::string("#frameFightTop{background-image: url('") + std::string(client->datapackPathBase()) + std::string("/images/interface/fight/labelTop.png');padding:6px 14px 6px 6px;}"));
         } else {
-            ui->frameFightTop->setStyleSheet(QStringLiteral("#frameFightTop{background-image: url(:/images/interface/fight/labelTop.png);padding:6px 14px 6px 6px;}"));
+            ui->frameFightTop->setStyleSheet(std::string("#frameFightTop{background-image: url(:/images/interface/fight/labelTop.png);padding:6px 14px 6px 6px;}"));
         }
     }
     //updatePlayerImage();
@@ -3331,7 +3331,7 @@ void /*BaseWindow*/Api_protocol_2::updateConnectingStatus()
 {
     if (BaseWindow::isLogged && BaseWindow::datapackIsParsed)
     {
-        const std::vector<ServerFromPoolForDisplay> &serverOrdenedList = BaseWindow::client->getServerOrdenedList();
+        const std::vector<ServerFromPoolForDisplay>& serverOrdenedList = BaseWindow::client->getServerOrdenedList();
         if (BaseWindow::serverSelected == -1)
         {
             if (ui->stackedWidget->currentWidget() != ui->page_serverList)
@@ -3385,7 +3385,7 @@ void /*BaseWindow*/Api_protocol_2::updateConnectingStatus()
                     {
                         ui->frameLoading->setStyleSheet("#frameLoading {border-image: url(:/images/empty.png);border-width: 0px;}");
                         ui->stackedWidget->setCurrentWidget(ui->page_init);
-                        ui->label_connecting_status->setText(QString());
+                        ui->label_connecting_status->setText(std::string());
                     }
                     on_character_add_clicked();
                     return;
@@ -3410,52 +3410,52 @@ void /*BaseWindow*/Api_protocol_2::updateConnectingStatus()
         }
     }
 
-    QStringList waitedData;
+    std::list<std::string> waitedData;
     if ((haveCharacterPosition && haveCharacterInformation) && !mainSubDatapackIsParsed) {
-        waitedData << tr("Loading of the specific datapack part");
+        waitedData.push_back("Loading of the specific datapack part");
     }
     if (haveDatapack && (!haveInventory || !haveCharacterPosition || !haveCharacterInformation))
     {
         if (!haveCharacterPosition || !haveCharacterInformation) {
-            waitedData << tr("Loading of the player informations");
+            waitedData.push_back("Loading of the player informations");
         } else {
-            waitedData << tr("Loading of the inventory");
+            waitedData.push_back("Loading of the inventory");
         }
     }
     if (!haveDatapack)
     {
         if (!protocolIsGood) {
-            waitedData << tr("Try send the protocol...");
+            waitedData.push_back("Try send the protocol...");
         } else if(!isLogged)
         {
             if(datapackGatewayProgression.empty()) {
-                waitedData << tr("Try login...");
+                waitedData.push_back("Try login...");
             } else if(datapackGatewayProgression.size() < 2) {
-                waitedData << tr("Updating the gateway cache...");
+                waitedData.push_back("Updating the gateway cache...");
             } else {
-                waitedData << tr("Updating the %1 gateways cache...").arg(datapackGatewayProgression.size());
+                waitedData.push_back(sprintf("Updating the %d gateways cache...", datapackGatewayProgression.size()));
             }
         }
         else
         {
             if (datapackFileSize == 0) {
-                waitedData << tr("Loading of the datapack");
+                waitedData.push_back("Loading of the datapack");
             } else if(datapackFileSize < 0) {
-                waitedData << tr("Loaded datapack size: %1KB").arg((datapackDownloadedSize+progressingDatapackFileSize) / 1000);//when the http server don't send the size
+                waitedData.push_back(sprintf("Loaded datapack size: %dKB",((datapackDownloadedSize+progressingDatapackFileSize) / 1000));//when the http server don't send the size
             } else if((datapackDownloadedSize + progressingDatapackFileSize) >= (uint32_t)datapackFileSize) {
-                waitedData << tr("Loaded datapack file: 100%");
+                waitedData.push_back("Loaded datapack file: 100%");
             } else {
-                waitedData << tr("Loaded datapack file: %1%").arg(((datapackDownloadedSize+progressingDatapackFileSize) * 100) / datapackFileSize);
+                waitedData.push_back(sprintf("Loaded datapack file: %d%",(((datapackDownloadedSize+progressingDatapackFileSize) * 100) / datapackFileSize));
             }
         }
     }
     else if (!datapackIsParsed) {
-        waitedData << tr("Opening the datapack");
+        waitedData.push_back("Opening the datapack");
     }
-    if(waitedData.isEmpty())
+    if (waitedData.size())
     {
         Player_private_and_public_informations& playerInformations = client->get_player_informations();
-        if(playerInformations.bot_already_beaten == NULL)
+        if (playerInformations.bot_already_beaten == NULL)
         {
             std::cerr << "void BaseWindow::updateConnectingStatus(): waitedData.isEmpty(), playerInformations.bot_already_beaten==NULL" << std::endl;
             abort();
@@ -3474,12 +3474,12 @@ void /*BaseWindow*/Api_protocol_2::updateConnectingStatus()
         show_reputation();
         load_event();
         emit gameIsLoaded();
-        this->setWindowTitle(QStringLiteral("CatchChallenger - %1").arg(QString::fromStdString(client->getPseudo())));
+        this->setWindowTitle(sprintf("CatchChallenger - %d",std::string(client->getPseudo()).c_str()));
         ui->stackedWidget->setCurrentWidget(ui->page_map);
-        showTip(tr("Welcome <b><i>%1</i></b> on <i>CatchChallenger</i>").arg(QString::fromStdString(client->getPseudo())).toStdString());
+        showTip(sprintf("Welcome <b><i>%d</i></b> on <i>CatchChallenger</i>",(std::string(client->getPseudo())).c_str());
         return;
     }
-    ui->label_connecting_status->setText(tr("Waiting: %1").arg(waitedData.join(", ")));
+    ui->label_connecting_status->setText(sprintf("Waiting: %1", waitedData.join(", ")));
 }
 
 

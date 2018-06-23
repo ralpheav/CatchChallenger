@@ -1,8 +1,9 @@
-#ifndef FILE_H
-#define FILE_H
+#ifndef CATCHCHALLENGER_FILE_H
+#define CATCHCHALLENGER_FILE_H
 
 #include <fstream>
 #include <iostream>
+#include <string>
 #include <sys/stat.h>
 
 namespace CatchChallenger
@@ -15,9 +16,10 @@ namespace CatchChallenger
     class File
     {
         private:
-            std::string filename;
-            ofstream outfile;
-            ifstream infile;
+            FileMode m_mode;
+            std::string m_filename;
+	    std::ofstream outfile;
+	    std::ifstream infile;
 
         public:
 
@@ -25,107 +27,138 @@ namespace CatchChallenger
             }
 
             File(const std::string& filename, FileMode mode = FileMode::WriteOnly) {
-                this->filename = filename;
+                m_filename = filename;
+		m_mode = mode; 
                 open(mode);
             }
 
             void open(FileMode mode) {
-                if (mode == FileMode::WriteOnly) {
-                    outfile.open(this->filename);
+		m_mode = mode;
+                if (m_mode == FileMode::WriteOnly) {
+                    outfile.open(this->m_filename);
                 }
-                if (mode == FileMode::ReadOnly) {
-                    infile.open(this->filename);
+                if (m_mode == FileMode::ReadOnly) {
+                    infile.open(this->m_filename);
                 }
             }
 
             void setFileName(const std::string& filename) {
-                this->filename = filename;
+                this->m_filename = filename;
             }
 
             std::string filename() {
-                return filename;
+                return m_filename;
             }
 
             bool exists() {
-                ifstream f(this->filename);
+		std::ifstream f(this->m_filename);
                 return f.good();
             }
 
             void write(const std::string& data) {
-                if (mode == FileMode::WriteOnly) {
-                    outfile << data << endl;
+                std::cout <<"STRING" << std::endl;
+                if (this->m_mode == FileMode::WriteOnly) {
+                    outfile << data << std::endl;
+                } else {
+                    std::cerr << "the file is write only" << std::endl;
                 }
             }
 
             template<class T>
             void write(T data) {
-                if (mode == FileMode::WriteOnly) {
+                if (m_mode == FileMode::WriteOnly) {
                     outfile.write(static_cast<T>(data), sizeof(data));
+                } else {
+                    std::cerr << "the file is write only" << std::endl;
                 }
+
             }
 
             void write(int data) {
-                if (mode == FileMode::WriteOnly) {
-                    outfile << data << endl;
+                if (m_mode == FileMode::WriteOnly) {
+                    outfile << data << std::endl;
+                } else {
+                    std::cerr << "the file is write only" << std::endl;
                 }
             }
 
             void write(float data) {
-                if (mode == FileMode::WriteOnly) {
-                    outfile << data << endl;
+                if (m_mode == FileMode::WriteOnly) {
+                    outfile << data << std::endl;
+                } else {
+                    std::cerr << "the file is write only" << std::endl;
                 }
             }
 
             void close() {
-                if (mode == FileMode::WriteOnly) {
+                if (m_mode == FileMode::WriteOnly) {
                     outfile.close();
                 }
 
-                if (mode == FileMode::ReadOnly) {
+                if (m_mode == FileMode::ReadOnly) {
                     infile.close();
                 }
             }
 
-            template<class T>
-            T readAll() {
-                T data;
-                if (mode == FileMode::ReadOnly) {
-                    infile >> data;
+            std::string readAll() {
+                std::string data;
+                if (m_mode == FileMode::ReadOnly) {
+                    std::string buffer;
+                    while (infile >> buffer) {
+                        data += buffer + static_cast<char>(infile.peek());
+                    }
+                } else {
+                    std::cerr << "the file is Read only" << std::endl;
                 }
                 return data;
             }
 
             template<class T>
             void read(T& data) {
-                if (mode == FileMode::ReadOnly) {
-                    outfile.read(static_cast<T>(data), sizeof(data));
+                std::cout <<  "template" << std::endl;
+                if (m_mode == FileMode::ReadOnly) {
+                    infile.read(static_cast<T>(data), sizeof(data));
+                } else {
+                    std::cerr << "the file is read only" << std::endl;
                 }
             }
 
             void read(std::string& data) {
-                if (mode == FileMode::ReadOnly) {
-                    infile >> data;
+                std::cout << "string" << std::endl;
+                if (m_mode == FileMode::ReadOnly) {
+                    std::string buffer;
+                    while (infile >> buffer) {
+                        data += buffer + static_cast<char>(infile.peek());
+                    }
+                } else {
+                    std::cerr << "the file is read only" << std::endl;
                 }
             }
 
             void read(int& data) {
-                if (mode == FileMode::ReadOnly) {
+                if (m_mode == FileMode::ReadOnly) {
                     infile >> data;
+                } else {
+                    std::cerr << "the file is read only" << std::endl;
                 }
             }
 
             void read(float& data) {
-                if (mode == FileMode::ReadOnly) {
+                if (m_mode == FileMode::ReadOnly) {
                     infile >> data;
+                } else {
+                    std::cerr << "the file is read only" << std::endl;
                 }
             }
 
             void remove() {
-                if (mode == FileMode::WriteOnly) {
-                    outfile << "" << endl;
+                if (m_mode == FileMode::WriteOnly) {
+                    outfile << "" << std::endl;
+                } else {
+                    std::cerr << "the file is read only" << std::endl;
                 }
             }
-    }
+    };
 }
 
-#endif // FILE_H
+#endif // CATCHCHALLENGER_FILE_H
