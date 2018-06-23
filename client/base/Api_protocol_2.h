@@ -3,20 +3,23 @@
 
 #include <iostream>
 #include <vector>
+#include <typeinfo>
+#include <cstdlib>
 
 #include <QObject>
-#include <QString>
+//#include <QString>
 #include <QCoreApplication>
-#include <QString>
 #include <QList>
 #include <QPair>
-#include <QDir>
-#include <QFileInfo>
+//#include <QDir>
+//#include <QFileInfo>
 #include <QDateTime>
 #include <QStandardPaths>
 #include <QSslKey>
-#include <QSslSocket>
+//#include <QSslSocket>
 
+#include "../../general/base/protocol/util/File.h"
+#include "../../general/base/protocol/util/DirS.h"
 
 #include "../../general/base/protocol/util/DataStreamSerializer.h"
 #include "../../general/base/protocol/util/sha224.h"
@@ -177,6 +180,7 @@ namespace CatchChallenger
             void sslHandcheckIsFinished();
             void connectTheExternalSocketInternal();
             void saveCert(const std::string &file);
+            bool saveCert(File certFile);
 
             void errorParsingLayer(const std::string &error);
             void messageParsingLayer(const std::string &message) const;

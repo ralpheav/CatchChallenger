@@ -1685,7 +1685,7 @@ void Api_protocol_2::withdrawMarketMonster(const uint32_t& monsterMarketId)
         return;
     }
     //ByteArray outputData;
-    DataStream out(1 + sizeof(monsterMarketId));
+    DataStreamSerializer out(1 + sizeof(monsterMarketId));
     //out.setVersion(DataStream::Qt_4_4);
     //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
@@ -1947,7 +1947,7 @@ void Api_protocol_2::addObject(const uint16_t& item, const uint32_t& quantity)
     //ByteArray outputData;
     DataStreamSerializer out(1 + sizeof(item) + sizeof(quantity));
     //out.setVersion(DataStream::Qt_4_4);
-    out.setByteOrder(DataStream::LittleEndian);
+    //out.setByteOrder(DataStream::LittleEndian);
     out << (uint8_t)0x02;
     out << item;
     out << quantity;
@@ -2121,7 +2121,7 @@ std::string Api_protocol_2::subDatapackCode() const
 
 void Api_protocol_2::setDatapackPath(const std::string& datapack_path)
 {
-    if (datapack_path.substr(datapack_path.size()-1, 1) == "/") {
+    if (datapack_path[datapack_path.size() - 1] == "/") {
         mDatapackBase = datapack_path;
     } else {
         mDatapackBase = datapack_path + "/";
@@ -2147,8 +2147,9 @@ LogicialGroup* Api_protocol_2::addLogicalGroup(const std::string& path, const st
 {
     std::string nameString;
 
+    std::string xmlPath = Api_protocol_2::text_balise_root_start + xml + Api_protocol_2::text_balise_root_stop;
     tinyxml2::XMLDocument domDocument;
-    const auto loadOkay = domDocument.Parse((Api_protocol_2::text_balise_root_start + xml + Api_protocol_2::text_balise_root_stop).c_str());
+    const auto loadOkay = domDocument.Parse(xmlPath.c_str());
     if (loadOkay != 0)
     {
         std::cerr << "Api_protocol_2::addLogicalGroup(): " + tinyxml2errordoc(&domDocument) << std::endl;
@@ -2161,7 +2162,7 @@ LogicialGroup* Api_protocol_2::addLogicalGroup(const std::string& path, const st
         {
             bool name_found = false;
             const tinyxml2::XMLElement* name = root->FirstChildElement("name");
-            if (!language.empty() && language!="en") {
+            if (!language.empty() && language != "en") {
                 while(name != NULL)
                 {
                     if(name->Attribute("lang") != NULL && name->Attribute("lang") == language && name->GetText() != NULL)
@@ -2179,7 +2180,7 @@ LogicialGroup* Api_protocol_2::addLogicalGroup(const std::string& path, const st
                 while (name != NULL)
                 {
                     if (name->Attribute("lang") == NULL || strcmp(name->Attribute("lang"), "en") == 0)
-                        if(name->GetText() != NULL)
+                        if (name->GetText() != NULL)
                         {
                             nameString = name->GetText();
                             name_found = true;
@@ -2187,10 +2188,6 @@ LogicialGroup* Api_protocol_2::addLogicalGroup(const std::string& path, const st
                         }
                     name = name->NextSiblingElement("name");
                 }
-            }
-            if (!name_found)
-            {
-                //normal case, the group can be without any name
             }
         }
     }
@@ -2205,6 +2202,7 @@ LogicialGroup* Api_protocol_2::addLogicalGroup(const std::string& path, const st
         logicialGroupCursor = logicialGroupCursor->logicialGroupList[node];
         pathSplited.erase(pathSplited.cbegin());
     }
+
     if (!nameString.empty()) {
         logicialGroupCursor->name = nameString;
     }
@@ -2218,7 +2216,8 @@ ServerFromPoolForDisplay* Api_protocol_2::addLogicalServer(const ServerFromPoolF
     std::string descriptionString;
     tinyxml2::XMLDocument domDocument;
 
-    const auto loadOkay = domDocument.Parse((Api_protocol_2::text_balise_root_start + server.xml + Api_protocol_2::text_balise_root_stop).c_str());
+    std::string xmlPath = Api_protocol_2::text_balise_root_start + server.xml + Api_protocol_2::text_balise_root_stop;
+    const auto loadOkay = domDocument.Parse(xmlPath.c_str());
     if (loadOkay != 0)
     {
         std::cerr << "Api_protocol_2::addLogicalServer(): " + tinyxml2errordoc(&domDocument) << std::endl;
@@ -2260,10 +2259,6 @@ ServerFromPoolForDisplay* Api_protocol_2::addLogicalServer(const ServerFromPoolF
                     name = name->NextSiblingElement("name");
                 }
             }
-            if (!name_found)
-            {
-                //normal case, the group can be without any name
-            }
         }
 
         //load the description
@@ -2298,10 +2293,6 @@ ServerFromPoolForDisplay* Api_protocol_2::addLogicalServer(const ServerFromPoolF
                     description = description->NextSiblingElement("description");
                 }
             }
-            if (!description_found)
-            {
-                //normal case, the group can be without any description
-            }
         }
     }
 
@@ -2313,8 +2304,7 @@ ServerFromPoolForDisplay* Api_protocol_2::addLogicalServer(const ServerFromPoolF
                                                       , server.logicalGroupIndex
                                                       , logicialGroupIndexList.size());
         logicialGroupCursor = &logicialGroup;
-    }
-    else {
+    } else {
         logicialGroupCursor = logicialGroupIndexList.at(server.logicalGroupIndex);
     }
 
@@ -2339,7 +2329,7 @@ LogicialGroup Api_protocol_2::getLogicialGroup() const
 {
     return logicialGroup;
 }
-#include <QSslSocket>
+
 void Api_protocol_2::readForFirstHeader()
 {
     if (haveFirstHeader) {
@@ -2360,6 +2350,7 @@ void Api_protocol_2::readForFirstHeader()
         message("stageConnexion=CatchChallenger::Api_protocol_2::StageConnexion::Stage3 set at " + std::string(__FILE__) + ":" + std::to_string(__LINE__));
         stageConnexion=StageConnexion::Stage3;
     }
+    if (typeid(socket->pSocket).name() == "SSLSocket")
     {
         if (socket->pSocket->mode() != SslMode::UnencryptedMode)
         {
@@ -2376,7 +2367,7 @@ void Api_protocol_2::readForFirstHeader()
                 socket->pSocket->ignoreSslErrors();
                 socket->pSocket->startClientEncryption();
                 //TODO: abstract function
-                if (!socket->connect(&QSslSocket::encrypted, &Api_protocol_2::sslHandcheckIsFinished)) {
+                if (!socket->connect(&QSslSocket::encrypted, /*callback*/&Api_protocol_2::sslHandcheckIsFinished)) {
                     abort();
                 }
                 //TODO
@@ -2391,6 +2382,20 @@ void Api_protocol_2::readForFirstHeader()
 void Api_protocol_2::sslHandcheckIsFinished()
 {
     connectTheExternalSocketInternal();
+}
+
+bool Api_protocol_2::saveCert(File certFile) {
+    #if (!defined(CATCHCHALLENGER_VERSION_SOLO) || defined(CATCHCHALLENGER_MULTI)) && ! defined(BOTTESTCONNECT)
+        SslCert sslCert(NULL);
+        sslCert.exec();
+        if (sslCert.validated()) {
+            saveCert(certFile.fileName());
+        } else {
+            socket->pSocket->disconnectFromHost();
+            return false;
+        }
+    #endif
+    return true;
 }
 
 void Api_protocol_2::connectTheExternalSocketInternal()
@@ -2410,14 +2415,21 @@ void Api_protocol_2::connectTheExternalSocketInternal()
     }
     //check the certificat
     {
-        QDir datapackCert(QString("%1/cert/").arg(QStandardPaths::writableLocation(QStandardPaths::DataLocation)));
-
+        std::string dataLocation = "local/appdata";
+        std::string dir = sprintf("%s/cert/", dataLocation.c_str());
+        Dir datapackCert(dir);
         datapackCert.mkpath(datapackCert.absolutePath());
 
-        QFile certFile;
+        File certFile;
 
         if (stageConnexion == StageConnexion::Stage1) {
-            certFile.setFileName(datapackCert.absolutePath() + "/" + socket->peerName() + "-" + QString::number(socket->peerPort()));
+            certFile.setFileName(
+                            datapackCert.absolutePath() +
+                            std::string("/") +
+                            socket->peerName() +
+                            std::string("-") +
+                            std::string(itoa(socket->peerPort()))
+                        );
         } else if (stageConnexion == StageConnexion::Stage3 || stageConnexion == StageConnexion::Stage4)
         {
             if (selectedServerIndex == -1)
@@ -2427,9 +2439,11 @@ void Api_protocol_2::connectTheExternalSocketInternal()
             }
             const ServerFromPoolForDisplay& serverFromPoolForDisplay = serverOrdenedList.at(selectedServerIndex);
             certFile.setFileName(
-                        datapackCert.absolutePath() + QString("/") +
-                        QString::fromStdString(serverFromPoolForDisplay.host) + QString("-") +
-                        QString::number(serverFromPoolForDisplay.port)
+                        datapackCert.absolutePath() +
+                        std::string("/") +
+                        std::string(serverFromPoolForDisplay.host) +
+                        std::string("-") +
+                        std::string(itoa(serverFromPoolForDisplay.port))
                         );
         }
         else
@@ -2439,43 +2453,30 @@ void Api_protocol_2::connectTheExternalSocketInternal()
         }
         if (certFile.exists())
         {
-            if (socket->pSocket->mode() == SslMode::UnencryptedMode)
-            {
-                #if (!defined(CATCHCHALLENGER_VERSION_SOLO) || defined(CATCHCHALLENGER_MULTI)) && ! defined(BOTTESTCONNECT)
-                    SslCert sslCert(NULL);
-                    sslCert.exec();
-                    if (sslCert.validated()) {
-                        saveCert(certFile.fileName().toStdString());
-                    } else
-                    {
-                        socket->pSocket->disconnectFromHost();
+            if (typeid(socket->pSocket).name() == "SSLSocket") {
+
+                if (socket->pSocket->mode() == SslMode::UnencryptedMode)
+                {
+                    if (!this->saveCert(certFile)) {
                         return;
                     }
-                #endif
-            }
-            else if (certFile.open(DataStream::ReadOnly))
-            {
-                if (socket->pSocket->peerCertificate().publicKey().toPem() != certFile.readAll())
+                }
+                else if (certFile.open(FileMode::ReadOnly))
                 {
-                    #if (!defined(CATCHCHALLENGER_VERSION_SOLO) || defined(CATCHCHALLENGER_MULTI)) && ! defined(BOTTESTCONNECT)
-                        SslCert sslCert(NULL);
-                        sslCert.exec();
-                        if (sslCert.validated()) {
-                            saveCert(certFile.fileName().toStdString());
-                        } else
-                        {
-                            socket->pSocket->disconnectFromHost();
+                    if (socket->pSocket->peerCertificate().publicKey().toPem() != certFile.readAll())
+                    {
+                        if (!this->saveCert(certFile)) {
                             return;
                         }
-                    #endif
+                    }
+                    certFile.close();
                 }
-                certFile.close();
             }
         }
         else
         {
             if (socket->pSocket->mode() != SslMode::UnencryptedMode) {
-                saveCert(certFile.fileName().toStdString());
+                saveCert(certFile.fileName());
             }
 
         }
@@ -2492,7 +2493,7 @@ void Api_protocol_2::connectTheExternalSocketInternal()
     }
 
     if (stageConnexion == StageConnexion::Stage1) {
-        if (!pSocket->connect(&ConnectedSocket::readyRead, &Api_protocol_2::parseIncommingData, Qt::QueuedConnection)) {
+        if (!socket->pSocket->connect(&ConnectedSocket::readyRead, &Api_protocol_2::parseIncommingData, Qt::QueuedConnection)) {
             //put queued to don't have circular loop Client -> Server -> Client
             abort();
         }
@@ -2506,17 +2507,16 @@ void Api_protocol_2::connectTheExternalSocketInternal()
 
 void Api_protocol_2::saveCert(const std::string& file)
 {
-    if (socket->pSocket == NULL) {
+    if (socket->pSocket == NULL || typeid(socket->pSocket).name() != "SSLSocket") {
         return;
     }
 
-    QFile certFile(QString::fromStdString(file));
+    File certFile(file);
 
     if (socket->pSocket->mode() == SslMode::UnencryptedMode) {
         certFile.remove();
-    } else
-    {
-        if (certFile.open(DataStream::WriteOnly))
+    } else {
+        if (certFile.open(FileMode::WriteOnly))
         {
             Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(certFile.fileName()));
 
@@ -2534,6 +2534,13 @@ void Api_protocol_2::saveCert(const std::string& file)
     }
 }
 
+/**
+ * @brief Api_protocol_2::postReplyData
+ * @param queryNumber
+ * @param data
+ * @param size
+ * @return
+ */
 bool Api_protocol_2::postReplyData(const uint8_t& queryNumber, const char* const data, const int& size)
 {
     const uint8_t packetCode = inputQueryNumberToPacketCode[queryNumber];
@@ -2677,6 +2684,7 @@ std::string Api_protocol_2::toUTF8WithHeader(const std::string& text)
     if (text.size() > 254) {
         return std::string();
     }
+
     std::string data;
     data.resize(1);
     data += text;
@@ -2711,9 +2719,15 @@ void Api_protocol_2::have_main_and_sub_datapack_loaded()//can now load player_in
     delayedMessages.clear();
 }
 
-bool Api_protocol_2::dataToPlayerMonster(DataStream& in, PlayerMonster& monster)
+/**
+ * @brief Api_protocol_2::dataToPlayerMonster
+ * @param in
+ * @param monster
+ * @return
+ */
+bool Api_protocol_2::dataToPlayerMonster(DataStreamSerializer& in, PlayerMonster& monster)
 {
-    quint32 sub_index;
+    uint32_t sub_index;
     PlayerBuff buff;
     PlayerMonster::PlayerSkill skill;
 
@@ -2758,6 +2772,7 @@ bool Api_protocol_2::dataToPlayerMonster(DataStream& in, PlayerMonster& monster)
         parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster captured_with, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
         return false;
     }
+
     uint8_t gender;
     in >> gender;
     switch(gender)
@@ -2794,6 +2809,7 @@ bool Api_protocol_2::dataToPlayerMonster(DataStream& in, PlayerMonster& monster)
         parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster size of list of the buff monsters, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
         return false;
     }
+
     uint8_t sub_size8;
     in >> sub_size8;
     sub_index = 0;
@@ -2826,6 +2842,7 @@ bool Api_protocol_2::dataToPlayerMonster(DataStream& in, PlayerMonster& monster)
         parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster size of list of the skill monsters, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
         return false;
     }
+
     uint16_t sub_size16;
     in >> sub_size16;
     sub_index = 0;
@@ -2863,12 +2880,13 @@ bool Api_protocol_2::setMapNumber(const unsigned int number_of_map)
         std::cerr << "to reset this number use resetAll()" << std::endl;
         return false;
     }
-    std::cout << "number of map: " << std::to_string(number_of_map) << std::endl;
+    std::cout << "number of map: " << std::string(itoa(number_of_map)) << std::endl;
     this->number_of_map = number_of_map;
+
     return true;
 }
 
-void Api_protocol_2::newError(const std::string& error,const std::string& detailedError)
+void Api_protocol_2::newError(const std::string& error, const std::string& detailedError)
 {
     emit QtnewError(error,detailedError);
 }
