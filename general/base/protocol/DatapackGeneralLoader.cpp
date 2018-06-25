@@ -2,7 +2,7 @@
 
 using namespace CatchChallenger;
 
-std::vector<Reputation> DatapackGeneralLoader::loadReputation(const std::string &file)
+std::vector<Reputation> DatapackGeneralLoader::loadReputation(const std::string& file)
 {
     std::regex excludeFilterRegex("[\"']");
     std::regex typeRegex("^[a-z]{1,32}$");

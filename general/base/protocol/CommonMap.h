@@ -20,12 +20,12 @@ namespace CatchChallenger
             {
                 struct Map_BorderContent_TopBottom
                 {
-                    CommonMap *map;
+                    CommonMap* map;
                     int16_t x_offset;//the max map size is 255, then offset have range: -255 to 255, see Map_loader::tryLoadMap() check size
                 };
                 struct Map_BorderContent_LeftRight
                 {
-                    CommonMap *map;
+                    CommonMap* map;
                     int16_t y_offset;//the max map size is 255, then offset have range: -255 to 255, see Map_loader::tryLoadMap() check size
                 };
                 Map_BorderContent_TopBottom top;
@@ -34,16 +34,16 @@ namespace CatchChallenger
                 Map_BorderContent_LeftRight right;
             };
             Map_Border border;
-            std::vector<CommonMap *> near_map;//only the border (left, right, top, bottom) AND them self
+            std::vector<CommonMap*> near_map;//only the border (left, right, top, bottom) AND them self
 
-            std::vector<CommonMap *> linked_map;//not only the border, with tp, door, ...
+            std::vector<CommonMap*> linked_map;//not only the border, with tp, door, ...
             struct Teleporter
             {
                 uint8_t source_x;
                 uint8_t source_y;/*source*/
                 uint8_t destination_x;
                 uint8_t destination_y;/*destination*/
-                CommonMap *map;
+                CommonMap* map;
                 MapCondition condition;
             };
             Teleporter* teleporter;//for very small list < 20 teleporter, it's this structure the more fast, code not ready for more than 127
@@ -55,12 +55,12 @@ namespace CatchChallenger
             uint32_t group;
             uint32_t id;
 
-            std::unordered_map<std::pair<uint8_t,uint8_t>,std::vector<uint16_t>, pairhash> shops;
-            std::unordered_set<std::pair<uint8_t,uint8_t>,pairhash> learn;
-            std::unordered_set<std::pair<uint8_t,uint8_t>,pairhash> heal;
-            std::unordered_set<std::pair<uint8_t,uint8_t>,pairhash> market;
-            std::unordered_map<std::pair<uint8_t,uint8_t>,std::string,pairhash> zonecapture;
-            std::unordered_map<std::pair<uint8_t,uint8_t>,std::vector<uint16_t>,pairhash> botsFight;
+            std::unordered_map<std::pair<uint8_t, uint8_t>, std::vector<uint16_t>, pairhash> shops;
+            std::unordered_set<std::pair<uint8_t, uint8_t>, pairhash> learn;
+            std::unordered_set<std::pair<uint8_t, uint8_t>, pairhash> heal;
+            std::unordered_set<std::pair<uint8_t, uint8_t>, pairhash> market;
+            std::unordered_map<std::pair<uint8_t, uint8_t>, std::string,pairhash> zonecapture;
+            std::unordered_map<std::pair<uint8_t, uint8_t>, std::vector<uint16_t>, pairhash> botsFight;
             //trigger line in front of bot fight
             std::unordered_map<std::pair<uint8_t,uint8_t>,std::vector<uint16_t>,pairhash> botsFightTrigger;
 
@@ -68,4 +68,4 @@ namespace CatchChallenger
     };
 }
 
-#endif // MAP_H
+#endif // CATCHCHALLENGER_MAP_H

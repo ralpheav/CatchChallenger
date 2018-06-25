@@ -29,12 +29,14 @@ namespace CatchChallenger
             static std::vector<std::string> skinIdList(const std::string& skinPath);
             static std::string dropPrefixAndSuffixLowerThen33(const std::string& str);
             static bool rmpath(const std::string& dirPath);
+
             enum ListFolder
             {
                 Dirs         = 1,
                 Files        = 2,
                 FilesAndDirs = 3
             };
+
             struct InodeDescriptor
             {
                 enum Type
