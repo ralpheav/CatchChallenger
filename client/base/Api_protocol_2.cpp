@@ -2415,10 +2415,9 @@ void Api_protocol_2::connectTheExternalSocketInternal()
     }
     //check the certificat
     {
-        std::string dataLocation = "local/appdata";
-        std::string dir = sprintf("%s/cert/", dataLocation.c_str());
+        std::string dir = sprintf("%s/cert/", Dir::appPath().c_str());
         Dir datapackCert(dir);
-        datapackCert.mkpath(datapackCert.absolutePath());
+        datapackCert.mkpath();
 
         File certFile;
 
@@ -2546,6 +2545,7 @@ bool Api_protocol_2::postReplyData(const uint8_t& queryNumber, const char* const
     const uint8_t packetCode = inputQueryNumberToPacketCode[queryNumber];
     removeFromQueryReceived(queryNumber);
     const uint8_t& fixedSize = ProtocolParsingBase::packetFixedSize[packetCode + 128];
+
     if (fixedSize != 0xFE)
     {
         if (fixedSize != size)
@@ -2570,22 +2570,20 @@ bool Api_protocol_2::postReplyData(const uint8_t& queryNumber, const char* const
 
         return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput, posOutput);
     }
-    else
-    {
-        //dynamic size
-        //send the network message
-        uint32_t posOutput = 0;
-        ProtocolParsingBase::tempBigBufferForOutput[posOutput] = 0x01;
-        posOutput += 1;
-        ProtocolParsingBase::tempBigBufferForOutput[posOutput] = queryNumber;
-        posOutput += 1 + 4;
-        *reinterpret_cast<uint32_t*>(ProtocolParsingBase::tempBigBufferForOutput + 1 + 1) = htole32(size);//set the dynamic size
 
-        memcpy(ProtocolParsingBase::tempBigBufferForOutput + 1 + 1 + 4, data, size);
-        posOutput += size;
+    //dynamic size
+    //send the network message
+    uint32_t posOutput = 0;
+    ProtocolParsingBase::tempBigBufferForOutput[posOutput] = 0x01;
+    posOutput += 1;
+    ProtocolParsingBase::tempBigBufferForOutput[posOutput] = queryNumber;
+    posOutput += 1 + 4;
+    *reinterpret_cast<uint32_t*>(ProtocolParsingBase::tempBigBufferForOutput + 1 + 1) = htole32(size);//set the dynamic size
 
-        return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput, posOutput);
-    }
+    memcpy(ProtocolParsingBase::tempBigBufferForOutput + 1 + 1 + 4, data, size);
+    posOutput += size;
+
+    return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput, posOutput);
 }
 
 bool Api_protocol_2::packOutcommingData(const uint8_t& packetCode, const char* const data, const int& size)
@@ -2613,20 +2611,17 @@ bool Api_protocol_2::packOutcommingData(const uint8_t& packetCode, const char* c
 
         return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput, posOutput);
     }
-    else
-    {
-        //dynamic size
-        //send the network message
-        uint32_t posOutput = 0;
-        ProtocolParsingBase::tempBigBufferForOutput[posOutput] = packetCode;
-        posOutput += 1 + 4;
-        *reinterpret_cast<uint32_t*>(ProtocolParsingBase::tempBigBufferForOutput + 1) = htole32(size);//set the dynamic size
+    //dynamic size
+    //send the network message
+    uint32_t posOutput = 0;
+    ProtocolParsingBase::tempBigBufferForOutput[posOutput] = packetCode;
+    posOutput += 1 + 4;
+    *reinterpret_cast<uint32_t*>(ProtocolParsingBase::tempBigBufferForOutput + 1) = htole32(size);//set the dynamic size
 
-        memcpy(ProtocolParsingBase::tempBigBufferForOutput + 1 + 4, data, size);
-        posOutput += size;
+    memcpy(ProtocolParsingBase::tempBigBufferForOutput + 1 + 4, data, size);
+    posOutput += size;
 
-        return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput, posOutput);
-    }
+    return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput, posOutput);
 }
 
 
@@ -2634,6 +2629,7 @@ bool Api_protocol_2::packOutcommingQuery(const uint8_t& packetCode, const uint8_
 {
     registerOutputQuery(queryNumber,packetCode);
     const uint8_t& fixedSize = ProtocolParsingBase::packetFixedSize[packetCode];
+
     if (fixedSize != 0xFE)
     {
         if (fixedSize != size)
@@ -2658,22 +2654,19 @@ bool Api_protocol_2::packOutcommingQuery(const uint8_t& packetCode, const uint8_
 
         return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput, posOutput);
     }
-    else
-    {
-        //dynamic size
-        //send the network message
-        uint32_t posOutput = 0;
-        ProtocolParsingBase::tempBigBufferForOutput[posOutput] = packetCode;
-        posOutput += 1;
-        ProtocolParsingBase::tempBigBufferForOutput[posOutput] = queryNumber;
-        posOutput += 1 + 4;
-        *reinterpret_cast<uint32_t*>(ProtocolParsingBase::tempBigBufferForOutput + 1 + 1) = htole32(size);//set the dynamic size
+    //dynamic size
+    //send the network message
+    uint32_t posOutput = 0;
+    ProtocolParsingBase::tempBigBufferForOutput[posOutput] = packetCode;
+    posOutput += 1;
+    ProtocolParsingBase::tempBigBufferForOutput[posOutput] = queryNumber;
+    posOutput += 1 + 4;
+    *reinterpret_cast<uint32_t*>(ProtocolParsingBase::tempBigBufferForOutput + 1 + 1) = htole32(size);//set the dynamic size
 
-        memcpy(ProtocolParsingBase::tempBigBufferForOutput + 1 + 1 + 4, data, size);
-        posOutput += size;
+    memcpy(ProtocolParsingBase::tempBigBufferForOutput + 1 + 1 + 4, data, size);
+    posOutput += size;
 
-        return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput, posOutput);
-    }
+    return internalSendRawSmallPacket(ProtocolParsingBase::tempBigBufferForOutput, posOutput);
 }
 
 std::string Api_protocol_2::toUTF8WithHeader(const std::string& text)
@@ -3088,7 +3081,7 @@ void Api_protocol_2::haveTheDatapack()
 
     BaseWindow::haveDatapack = true;
 
-    BaseWindow::settings.setValue("DatapackHashBase-" + QString::fromStdString(BaseWindow::client->datapackPathBase()),
+    BaseWindow::settings.setValue("DatapackHashBase-" + std::string(BaseWindow::client->datapackPathBase()),
                       ByteArray(
                                  CommonSettingsCommon::commonSettingsCommon.datapackHashBase.data(),
                                  static_cast<int>(CommonSettingsCommon::commonSettingsCommon.datapackHashBase.size())
@@ -3107,17 +3100,17 @@ void Api_protocol_2::haveTheDatapackMainSub()
     }
 
     BaseWindow::haveDatapackMainSub = true;
-    BaseWindow::settings.setValue("DatapackHashMain-"+QString::fromStdString(BaseWindow::client->datapackPathMain()),
+    BaseWindow::settings.setValue("DatapackHashMain-" + std::string(BaseWindow::client->datapackPathMain()),
                       ByteArray(
                           CommonSettingsServer::commonSettingsServer.datapackHashServerMain.data(),
                           static_cast<int>(CommonSettingsServer::commonSettingsServer.datapackHashServerMain.size())
-                                  )
+                          )
                       );
-    BaseWindow::settings.setValue("DatapackHashSub-"+QString::fromStdString(BaseWindow::client->datapackPathSub()),
+    BaseWindow::settings.setValue("DatapackHashSub-" + std::string(BaseWindow::client->datapackPathSub()),
                       ByteArray(
                           CommonSettingsServer::commonSettingsServer.datapackHashServerSub.data(),
                           static_cast<int>(CommonSettingsServer::commonSettingsServer.datapackHashServerSub.size())
-                                  )
+                          )
                       );
 
     this->parseDatapackMainSub(BaseWindow::client->mainDatapackCode(), BaseWindow::client->subDatapackCode());
@@ -3134,7 +3127,7 @@ void Api_protocol_2::parseDatapack(const std::string& datapackPath)
 
     inProgress = true;
 
-    if(!CommonSettingsCommon::commonSettingsCommon.httpDatapackMirrorBase.empty())//static
+    if (!CommonSettingsCommon::commonSettingsCommon.httpDatapackMirrorBase.empty())//static
     {
         const std::vector<char>& hash = CatchChallenger::DatapackChecksum::doChecksumBase(datapackPath);
         if (hash.empty())
@@ -3268,7 +3261,7 @@ void /*BaseWindow::*/Api_protocol_2::datapackChecksumError()
         //qDebug() << "BaseWindow::datapackChecksumError()";
     #endif
 
-    datapackIsParsed=false;
+    datapackIsParsed = false;
 
     //reset all the cached hash
     settings.remove("DatapackHashBase-" + std::string(client->datapackPathBase()));

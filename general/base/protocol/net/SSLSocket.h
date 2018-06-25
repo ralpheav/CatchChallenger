@@ -19,8 +19,47 @@
 
 namespace CatchChallenger
 {
+    enum SSLCertificate {
+        Organization,
+        CommonName,
+        LocalityName,
+        OrganizationalUnitName,
+        CountryName,
+        StateOrProvinceName,
+        EmailAddress
+    };
+
+    class SSLKey {
+        std::string key;
+
+        public:
+            std::string getKey() {
+                return key;
+            }
+
+            std::string toPem() {
+                //TODO: get the Pem
+                return key;
+            }
+    };
+
+    class SSLInfo {
+        SSLKey key;
+
+        public:
+            std::string issuerInfo(SSLCertificate certificate) {
+                //TODO: get the certificate field
+                return std::string();
+            }
+
+            SSLKey publicKey() {
+                return key;
+            }
+    };
+
     class SSLSocket : public ISocket
     {
+        SSLInfo info;
         int waitForDisconnectedTime;
         int waitForConnectTime;
         PeerVerifyMode verifyMode;
@@ -75,6 +114,7 @@ namespace CatchChallenger
         std::string errorString();
         int readData(char* message, size_t max);
         int writeData(const char* message, size_t max);
+        SSLInfo peerCertificate();
     };
 }
 

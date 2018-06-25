@@ -298,3 +298,8 @@ int SSLSocket::send(const char* message) {
 const char* SSLSocket::getBuffer() {
    return buffer;
 }
+
+SSLInfo SSLSocket::peerCertificate() {
+    //TODO: get SSL certificate info
+    return info;
+}

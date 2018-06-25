@@ -1,9 +1,10 @@
 #ifndef CATCHCHALLENGER_DIR_H
 #define CATCHCHALLENGER_DIR_H
 
-#include <iostream>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <pwd.h>
 #include "limits.h"
 #include "stdlib.h"
 
@@ -35,9 +36,39 @@ namespace CatchChallenger
             }
 
             std::string absolutePath() {
+                return m_path;
+            }
+
+            std::string currentPath() {
 
                 std::string apath = realpath(__FILE__, NULL);
                 return apath;
+            }
+
+            static std::string appPath() {
+                std::string appdir;
+
+                #ifdef _WIN32
+                    appdir = getenv("APPDATA");
+                    if (appdir.empty()) {
+                        appdir = getenv("USER");
+                        appdir.append("\\local\\appData");
+                    }
+                #else
+                    #ifdef __linux__
+                        struct passwd password;
+                        size_t bufferSize = sysconf(_SC_GETPW_R_SIZE_MAX);
+                        char* buffer = new char[bufferSize];
+                        struct passwd* passwordResult;
+                        int result = getpwuid_r(getuid(), &password, buffer, bufferSize, &passwordResult);
+                        appdir = passwordResult->pw_dir;
+                        if (result == 0) {
+                            //appdir.append("/");
+                        }
+                    #endif
+                #endif
+
+                return appdir;
             }
     };
 }
