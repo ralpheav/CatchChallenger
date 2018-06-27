@@ -4,6 +4,7 @@
 #define CATCHCHALLENGER_ISOCKET_H
 
 #include <cstdint>
+#include <vector>
 
 namespace CatchChallenger
 {
@@ -111,31 +112,36 @@ namespace CatchChallenger
             int port;
             char host[15];
 
-            SocketState state;
-            SocketError error;
+            SocketState m_state;
+            SocketError m_error;
         public:
             virtual void setSocketOption(SocketOption option, int mode) = 0;
             virtual void abort() = 0;
             virtual void disconnectFromHost() = 0;
-            virtual void disconnectFromFakeServer() = 0;
+            //virtual void disconnectFromFakeServer() = 0;
             virtual void connectToHost(const std::string& host, int port) = 0;
             virtual int64_t bytesAvailable() const = 0;
             virtual void close() = 0;
-            virtual bool isValid() = 0;
             virtual uint64_t getRXSize() = 0;
             virtual uint64_t getTXSize() = 0;
-            virtual SocketError error() const = 0;
-            virtual SocketState state() const = 0;
+            SocketError error() const
+            {
+                return m_error;
+            }
+            virtual SocketState state() const
+            {
+                return m_state;
+            }
             virtual bool isValid() const = 0;
             virtual bool socketDescriptor() = 0;
 
-            virtual void connected() = 0;
-            virtual void disconnected() = 0;
-            virtual void error(SocketError socketError) = 0;
-            virtual void stateChanged(SocketState socketState) = 0;
-            virtual void aboutToDelete() = 0;
-            virtual void readyRead() = 0;
-            virtual void deleteLater() = 0;
+//            virtual void connected() = 0;
+//            virtual void disconnected() = 0;
+//            virtual void error(SocketError socketError) = 0;
+//            virtual void stateChanged(SocketState socketState) = 0;
+//            virtual void aboutToDelete() = 0;
+//            virtual void readyRead() = 0;
+//            virtual void deleteLater() = 0;
 
         protected:
 
@@ -143,8 +149,8 @@ namespace CatchChallenger
             virtual bool canReadLine() const = 0;
             virtual uint64_t readData(char* data, int64_t maxSize) = 0;
             virtual uint64_t writeData(const char* data, int64_t maxSize) = 0;
-            void internal_writeData(std::vector<unsigned char> rawData) = 0;
-            int64_t bytesAvailableWithMutex() = 0;
+            virtual void internal_writeData(std::vector<unsigned char> rawData) = 0;
+            virtual int64_t bytesAvailableWithMutex() = 0;
     };
 }
 

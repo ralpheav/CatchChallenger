@@ -12,36 +12,36 @@
 #include "FakeServer.h"
 #include "ISocket.h"
 
-namespace CatchChallenger {
-
+namespace CatchChallenger
+{
     class FakeSocket : public ISocket
     {
         public:
             friend class FakeServer;
 
-            explicit FakeSocket();
+             FakeSocket();
             ~FakeSocket();
 
             void abort();
             void disconnectFromHost();
             void disconnectFromFakeServer();
-            void connectToHost();
+            void connectToHost(const std::string& host, int port);
             int64_t bytesAvailable() const;
             void close();
-            bool isValid();
             FakeSocket* getTheOtherSocket();
             uint64_t getRXSize();
             uint64_t getTXSize();
-            int error() const;
-            int state() const;
+            SocketState state() const;
             bool isValid() const;
+            bool socketDescriptor();
+            void setSocketOption(SocketOption option, int mode);
 
-            virtual void connected() = 0;
-            virtual void disconnected() = 0;
-            virtual void error(SocketError socketError) = 0;
-            virtual void stateChanged(SocketState socketState) = 0;
-            virtual void aboutToDelete() = 0;
-            virtual void readyRead() = 0;
+            //virtual void connected() = 0;
+            //virtual void disconnected() = 0;
+            //virtual void error(SocketError socketError) = 0;
+            //virtual void stateChanged(SocketState socketState) = 0;
+            //virtual void aboutToDelete() = 0;
+            //virtual void readyRead() = 0;
 
         protected:
             FakeSocket* theOtherSocket;
@@ -53,7 +53,6 @@ namespace CatchChallenger {
         private:
             std::vector<unsigned char> data;
             static std::mutex mutex;
-            SocketError error;
 
             uint64_t RX_size;
             void internal_writeData(std::vector<unsigned char> rawData);

@@ -89,21 +89,19 @@ namespace CatchChallenger
         int read();
         const char* getBuffer();
         void setSocketOption(SocketOption option,int parameter);
-        bool bytesAvailable();
+        int64_t bytesAvailable() const;
         bool encryptedBytesAvailable();
         void abort();
         void connectToHost(const std::string& host, int port);
         void disconnectFromHost();
-        SocketError error();
         void flush();
-        bool isValid();
+        bool isValid() const;
         bool socketDescriptor();
         std::string localAddress();
         int localPort();
         std::string peerAddress();
         std::string peerName();
         int peerPort();
-        SocketState state();
         void ignoreSslErrors();
         void startClientEncryption();
         bool waitForConnected(int msec);
@@ -115,6 +113,15 @@ namespace CatchChallenger
         int readData(char* message, size_t max);
         int writeData(const char* message, size_t max);
         SSLInfo peerCertificate();
+        void close();
+        uint64_t getRXSize();
+        uint64_t getTXSize();
+        bool isSequential() const;
+        bool canReadLine() const;
+        uint64_t readData(char* data, int64_t maxSize);
+        uint64_t writeData(const char* data, int64_t maxSize);
+        void internal_writeData(std::vector<unsigned char> rawData);
+        int64_t bytesAvailableWithMutex();
     };
 }
 

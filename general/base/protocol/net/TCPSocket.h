@@ -37,28 +37,34 @@ namespace CatchChallenger
             int read();
             int send(const std::string& message);
             std::string getBuffer();
-            void setSocketOption(SocketOption option,int parameter);
-            bool bytesAvailable();
+            void setSocketOption(SocketOption option, int mode);
+            int64_t bytesAvailable() const;
             bool encryptedBytesAvailable();
             void abort();
             void connectToHost(const std::string& host, int port);
             void disconnectFromHost();
-            SocketError error();
             void flush();
-            bool isValid();
+            bool isValid() const;
             bool socketDescriptor();
             std::string localAddress();
             int localPort();
             std::string peerAddress();
             std::string peerName();
             int peerPort();
-            SocketState state();
             bool waitForConnected(int msec);
             bool waitForDisconnected(int msec);
             bool openMode();
             std::string errorString();
-            int readData(char* message, size_t max);
-            int writeData(const char* message, size_t max);
+            uint64_t readData(char* data, int64_t maxSize);
+            uint64_t writeData(const char* data, int64_t maxSize);
+
+            void close();
+            bool isSequential() const;
+            bool canReadLine() const;
+            void internal_writeData(std::vector<unsigned char> rawData);
+            int64_t bytesAvailableWithMutex();
+            uint64_t getRXSize();
+            uint64_t getTXSize();
         protected:
             bool haveSocket() const;
 

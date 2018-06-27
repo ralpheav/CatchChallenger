@@ -24,6 +24,10 @@ FakeSocket::~FakeSocket()
     aboutToDelete();
 }
 
+bool FakeSocket::socketDescriptor() {
+    return true;
+}
+
 void FakeSocket::abort()
 {
     #ifdef FAKESOCKETDEBUG
@@ -49,7 +53,7 @@ void FakeSocket::disconnectFromHost()
         lock_guard<mutex> guard(FakeSocket::mutex);
         data.clear();
     }
-    state = SocketState::unconnected;
+    m_state = SocketState::unconnected;
 
     disconnected();
 }
@@ -69,12 +73,12 @@ void FakeSocket::disconnectFromFakeServer()
         lock_guard<mutex> guard(FakeSocket::mutex);
         data.clear();
     }
-    state = SocketState::unconnected;
+    m_state = SocketState::unconnected;
 
     disconnected();
 }
 
-void FakeSocket::connectToHost()
+void FakeSocket::connectToHost(const std::string& host, int port)
 {
     #ifdef FAKESOCKETDEBUG
         Logger::instance().log(Logger::Debug, std::stringLiteral("FakeSocket::connectToHost()"));
@@ -84,7 +88,7 @@ void FakeSocket::connectToHost()
     }
 
     FakeServer::server.addPendingConnection(this);
-    state = SocketState::connected;
+    m_state = SocketState::connected;
 
     connected();
 }
@@ -115,7 +119,7 @@ void FakeSocket::close()
     disconnectFromHost();
 }
 
-bool FakeSocket::isValid()
+bool FakeSocket::isValid() const
 {
     return theOtherSocket != nullptr;
 }
@@ -139,25 +143,26 @@ uint64_t FakeSocket::getTXSize()
     return theOtherSocket->getRXSize();
 }
 
+void FakeSocket::setSocketOption(SocketOption option, int mode) {
+    //TODO
+}
+
 void error(SocketError socketError) {
-    error = socketError;
+    m_error = socketError;
 }
 
 void stateChanged(SocketState socketState) {
-    state = socketState;
+    m_state = socketState;
 }
 
-
-int FakeSocket::error() const {
-    return error;
-}
-
-int FakeSocket::state() const
+SocketState FakeSocket::state() const
 {
     if (theOtherSocket == NULL) {
-        return SocketState::connected;
+        m_state = SocketState::connected;
     }
-    return SocketState::unconnected;
+    m_state = SocketState::unconnected;
+
+    return m_state;
 }
 
 int64_t FakeSocket::readData(char* rawData, int64_t maxSize)

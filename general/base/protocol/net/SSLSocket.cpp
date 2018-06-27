@@ -5,7 +5,7 @@ SSLSocket::SSLSocket() {
 }
 
 SSLSocket::~SSLSocket() {
-    if (state == SocketState::ConnectedState) {
+    if (m_state == SocketState::ConnectedState) {
         // release connection state
         SSL_free(ssl);
     }
@@ -69,17 +69,17 @@ bool SSLSocket::connect() {
     SSL_set_fd(ssl, socket_descriptor);
 
     if (SSL_connect(ssl) == -1) {
-        state = SocketState::UnconnectedState;
+        m_state = SocketState::UnconnectedState;
 
         return false;
     }
-    state = SocketState::ConnectedState;
+    m_state = SocketState::ConnectedState;
 
     return true;
 }
 
 bool SSLSocket::getState() {
-    return state;
+    return m_state;
 }
 
 SSL_CTX* SSLSocket::init()
@@ -147,12 +147,28 @@ int SSLSocket::read() {
     return bytes;
 }
 
+void SSLSocket::close() {
+    SSL_free(ssl);
+    close(socket_descriptor);
+    SSL_CTX_free(ctx);
+}
+
+uint64_t SSLSocket::getRXSize() {
+    //TODO
+    return 0;
+}
+
+uint64_t SSLSocket::getTXSize() {
+    //TODO
+    return 0;
+}
+
 void SSLSocket::setSocketOption(SocketOption option, int parameter) {
     this->option = option;
     //getsockopt() //SO_ERROR
 }
 
-bool SSLSocket::bytesAvailable() {
+int64_t SSLSocket::bytesAvailable() const {
     int bytes_available = 0;
     ioctl(socket_descriptor, FIONREAD, &bytes_available);
 
@@ -181,10 +197,6 @@ void SSLSocket::disconnectFromHost() {
     SSL_CTX_free(ctx);
 }
 
-SocketError SSLSocket::error() {
-    return error;
-}
-
 void SSLSocket::flush() {
     int mark = 0;
     char waste[BUFSIZ];
@@ -202,8 +214,37 @@ void SSLSocket::flush() {
     }
 }
 
-bool SSLSocket::isValid() {
+bool SSLSocket::isValid() const {
     return socket_descriptor > 0;
+}
+
+bool SSLSocket::isSequential() const {
+    //TODO
+    return false;
+}
+
+bool SSLSocket::canReadLine() const {
+    //TODO
+    return false;
+}
+
+uint64_t SSLSocket::readData(char* data, int64_t maxSize) {
+    //TODO
+    return 0;
+}
+
+uint64_t SSLSocket::writeData(const char* data, int64_t maxSize) {
+    //TODO
+    return 0;
+}
+
+void SSLSocket::internal_writeData(std::vector<unsigned char> rawData) {
+    //TODO
+}
+
+int64_t SSLSocket::bytesAvailableWithMutex() {
+    //TODO
+    return 0;
 }
 
 bool SSLSocket::socketDescriptor() {
@@ -236,10 +277,6 @@ SslMode SSLSocket::setMode(SslMode mode) {
 
 SslMode SSLSocket::mode() {
     return mode;
-}
-
-SocketState SSLSocket::state() {
-    return state;
 }
 
 void SSLSocket::setPeerVerifyMode(PeerVerifyMode mode) {

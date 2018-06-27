@@ -6,9 +6,6 @@
 #include <typeinfo>
 #include <cstdlib>
 
-#include <QSslKey>
-//#include <QSslSocket>
-
 #include "../../general/base/protocol/util/File.h"
 #include "../../general/base/protocol/util/Dir.h"
 
@@ -55,7 +52,7 @@ namespace CatchChallenger
             bool dataToPlayerMonster(QDataStream& in, PlayerMonster& monster);
 
             //protocol command
-            bool tryLogin(const std::string& login,const std::string& pass);
+            bool tryLogin(const std::string& login, const std::string& pass);
             bool tryCreateAccount();
             bool sendProtocol();
             bool protocolWrong() const;
@@ -106,7 +103,7 @@ namespace CatchChallenger
 
             bool getIsLogged() const;
             bool getCaracterSelected() const;
-            std::map<uint8_t,uint64_t> getQuerySendTimeList() const;
+            std::map<uint8_t, uint64_t> getQuerySendTimeList() const;
 
             //to manipulate the monsters
             Player_private_and_public_informations player_informations;

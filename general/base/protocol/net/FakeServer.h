@@ -28,10 +28,10 @@ namespace CatchChallenger {
             bool listen();
             virtual FakeSocket* nextPendingConnection();
             void close();
-            virtual void newConnection() = 0;
-            virtual void disconnected()  = 0;
-            virtual void aboutToDelete() = 0;
-            virtual void destroyed()     = 0;
+            //virtual void newConnection() = 0;
+            //virtual void disconnected()  = 0;
+            //virtual void aboutToDelete() = 0;
+            //virtual void destroyed()     = 0;
         private:
             std::mutex mutex;
             bool m_isListening;
