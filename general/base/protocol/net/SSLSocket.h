@@ -8,12 +8,15 @@
 #include <malloc.h>
 #include <string.h>
 #include <string>
+#include <list>
 
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <resolv.h>
 #include <netdb.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <termios.h>
 
 #include "ISocket.h"
 
@@ -70,25 +73,27 @@ namespace CatchChallenger
         SSL *ssl;
 
         int socket_descriptor;
-        struct hostent *host;
+        struct hostent *hostAddress;
         struct sockaddr_in addr;
+        SslMode m_sslMode;
 
     public:
 
         SSLSocket();
         ~SSLSocket();
 
+        void open(DeviceMode mode);
         void loadCertificates(const char* CertFile, const char* KeyFile);
         int openConnection(const char* hostname, int port);
         SSL_CTX* initCTX();
         void showCerts();
         bool connect();
         bool getState();
+        SSL_CTX* init();
         const char* getEncryptation();
         int send(const char* message);
         int read();
         const char* getBuffer();
-        void setSocketOption(SocketOption option,int parameter);
         int64_t bytesAvailable() const;
         bool encryptedBytesAvailable();
         void abort();
@@ -107,7 +112,8 @@ namespace CatchChallenger
         bool waitForConnected(int msec);
         bool waitForDisconnected(int msec);
         bool openMode();
-        SslMode mode();
+        SslMode sslMode();
+        void setSslMode(SslMode mode);
         void setPeerVerifyMode(PeerVerifyMode mode);
         std::string errorString();
         int readData(char* message, size_t max);
@@ -122,6 +128,7 @@ namespace CatchChallenger
         uint64_t writeData(const char* data, int64_t maxSize);
         void internal_writeData(std::vector<unsigned char> rawData);
         int64_t bytesAvailableWithMutex();
+        std::list<SslError> sslErrors();
     };
 }
 

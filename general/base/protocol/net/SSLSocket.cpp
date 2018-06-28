@@ -1,5 +1,7 @@
 #include "SSLSocket.h"
 
+using namespace CatchChallenger;
+
 SSLSocket::SSLSocket() {
     SSL_library_init();
 }
@@ -10,9 +12,14 @@ SSLSocket::~SSLSocket() {
         SSL_free(ssl);
     }
     // close socket
-    close(socket_descriptor);
+    ::close(socket_descriptor);
     // release context
     SSL_CTX_free(ctx);
+}
+
+void SSLSocket::open(DeviceMode mode) {
+    m_mode = mode;
+    //TODO
 }
 
 void SSLSocket::loadCertificates(const char* CertFile, const char* KeyFile)
@@ -39,7 +46,7 @@ void SSLSocket::loadCertificates(const char* CertFile, const char* KeyFile)
 
 int SSLSocket::openConnection(const char* hostname, int port)
 {
-    if ((host = gethostbyname(hostname)) == nullptr)
+    if ((hostAddress = gethostbyname(hostname)) == nullptr)
     {
         perror(hostname);
         abort();
@@ -50,11 +57,11 @@ int SSLSocket::openConnection(const char* hostname, int port)
     bzero(&addr, sizeof(addr));
     addr.sin_family      = AF_INET;
     addr.sin_port        = htons(port);
-    addr.sin_addr.s_addr = *(long*)(host->h_addr);
+    addr.sin_addr.s_addr = *(long*)(hostAddress->h_addr);
 
     if (::connect(socket_descriptor, (struct sockaddr*)&addr, sizeof(addr)) != 0 )
     {
-        close(socket_descriptor);
+        ::close(socket_descriptor);
         perror(hostname);
         abort();
     }
@@ -149,7 +156,7 @@ int SSLSocket::read() {
 
 void SSLSocket::close() {
     SSL_free(ssl);
-    close(socket_descriptor);
+    ::close(socket_descriptor);
     SSL_CTX_free(ctx);
 }
 
@@ -163,11 +170,6 @@ uint64_t SSLSocket::getTXSize() {
     return 0;
 }
 
-void SSLSocket::setSocketOption(SocketOption option, int parameter) {
-    this->option = option;
-    //getsockopt() //SO_ERROR
-}
-
 int64_t SSLSocket::bytesAvailable() const {
     int bytes_available = 0;
     ioctl(socket_descriptor, FIONREAD, &bytes_available);
@@ -176,24 +178,26 @@ int64_t SSLSocket::bytesAvailable() const {
 }
 
 bool SSLSocket::encryptedBytesAvailable() {
-    return this->getEncryptation() != null;
+    return this->getEncryptation() != nullptr;
 }
 
 void SSLSocket::abort() {
     shutdown(socket_descriptor, SHUT_RDWR);
 }
 
-int SSLSocket::connectToHost(const std::string& host, int port) {
+void SSLSocket::connectToHost(const std::string& host, int port) {
     this->openConnection(host.c_str(), port);
 
     strcpy(this->host, host.c_str());
     this->port = port;
 
-    return this->connect();
+    if (this->connect()) {
+        m_state = SocketState::ConnectedState;
+    }
 }
 
 void SSLSocket::disconnectFromHost() {
-    close(socket_descriptor);
+    ::close(socket_descriptor);
     SSL_CTX_free(ctx);
 }
 
@@ -210,7 +214,7 @@ void SSLSocket::flush() {
         if (mark) {
             return;
         }
-        read(socket_descriptor, waste, sizeof(waste));
+        ::read(socket_descriptor, waste, sizeof(waste));
     }
 }
 
@@ -248,7 +252,7 @@ int64_t SSLSocket::bytesAvailableWithMutex() {
 }
 
 bool SSLSocket::socketDescriptor() {
-    return socket_file_descriptor > 0;
+    return socket_descriptor > 0;
 }
 
 std::string SSLSocket::localAddress() {
@@ -271,12 +275,12 @@ int SSLSocket::peerPort() {
     //TODO
 }
 
-SslMode SSLSocket::setMode(SslMode mode) {
-    this->mode = mode;
+void SSLSocket::setSslMode(SslMode mode) {
+    this->m_sslMode = mode;
 }
 
-SslMode SSLSocket::mode() {
-    return mode;
+SslMode SSLSocket::sslMode() {
+    return m_sslMode;
 }
 
 void SSLSocket::setPeerVerifyMode(PeerVerifyMode mode) {
@@ -308,7 +312,7 @@ bool SSLSocket::openMode() {
 
 std::string SSLSocket::errorString() {
     //TODO
-    return string();
+    return std::string();
 }
 
 int SSLSocket::readData(char* message, size_t max) {
@@ -325,11 +329,6 @@ int SSLSocket::writeData(const char* message, size_t max) {
     int result = SSL_write(ssl, message, max);
 
     return result;
-}
-
-int SSLSocket::send(const char* message) {
-    // encrypt and send the message
-    return SSL_write(ssl, message, strlen(message));
 }
 
 const char* SSLSocket::getBuffer() {

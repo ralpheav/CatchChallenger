@@ -23,7 +23,7 @@ namespace CatchChallenger {
 
             static FakeServer server;
 
-            virtual bool hasPendingConnections();
+            bool hasPendingConnections();
             bool isListening() const;
             bool listen();
             virtual FakeSocket* nextPendingConnection();

@@ -7,21 +7,27 @@ FakeSocket::FakeSocket()
 {
     theOtherSocket = nullptr;
     RX_size        = 0;
-    //open(QIODevice::ReadWrite | QIODevice::Unbuffered);
 }
 
 FakeSocket::~FakeSocket()
 {
     if (theOtherSocket != nullptr)
     {
-        FakeSocket *tempOtherSocket = theOtherSocket;
+        FakeSocket* tempOtherSocket = theOtherSocket;
         theOtherSocket = nullptr;
         tempOtherSocket->theOtherSocket = nullptr;
-        tempOtherSocket->state = SocketState::unconnected;;
-        tempOtherSocket->disconnected();
+        tempOtherSocket->m_state = SocketState::UnconnectedState;
+        //TODO: HOW the event disconected is going to be trigger
+        //tempOtherSocket->disconnected();
     }
 
-    aboutToDelete();
+    //TODO: HOW the event disconected is going to be trigger
+    //aboutToDelete();
+}
+
+void FakeSocket::open(DeviceMode mode) {
+    //TODO write read file
+    m_mode = mode;
 }
 
 bool FakeSocket::socketDescriptor() {
@@ -33,6 +39,7 @@ void FakeSocket::abort()
     #ifdef FAKESOCKETDEBUG
         Logger::instance().log(Logger::Debug, std::stringLiteral("FakeSocket::abort()"));
     #endif
+
     disconnectFromHost();
 }
 
@@ -46,16 +53,17 @@ void FakeSocket::disconnectFromHost()
         Logger::instance().log(Logger::Debug, std::stringLiteral("FakeSocket::disconnectFromHost()"));
     #endif
 
-    FakeSocket *tempOtherSocket = theOtherSocket;
+    FakeSocket* tempOtherSocket = theOtherSocket;
     theOtherSocket = nullptr;
     tempOtherSocket->disconnectFromHost();
     {
-        lock_guard<mutex> guard(FakeSocket::mutex);
+        std::lock_guard<std::mutex> guard(FakeSocket::mutex);
         data.clear();
     }
-    m_state = SocketState::unconnected;
+    m_state = SocketState::UnconnectedState;
 
-    disconnected();
+    //TODO:  disconected event
+    //disconnected();
 }
 
 void FakeSocket::disconnectFromFakeServer()
@@ -70,12 +78,13 @@ void FakeSocket::disconnectFromFakeServer()
 
     theOtherSocket = nullptr;
     {
-        lock_guard<mutex> guard(FakeSocket::mutex);
+        std::lock_guard<std::mutex> guard(FakeSocket::mutex);
         data.clear();
     }
-    m_state = SocketState::unconnected;
+    m_state = SocketState::UnconnectedState;
 
-    disconnected();
+    //TODO: event disconnected
+    //disconnected();
 }
 
 void FakeSocket::connectToHost(const std::string& host, int port)
@@ -83,21 +92,23 @@ void FakeSocket::connectToHost(const std::string& host, int port)
     #ifdef FAKESOCKETDEBUG
         Logger::instance().log(Logger::Debug, std::stringLiteral("FakeSocket::connectToHost()"));
     #endif
+
     if (theOtherSocket != NULL) {
         return;
     }
 
     FakeServer::server.addPendingConnection(this);
-    m_state = SocketState::connected;
+    m_state = SocketState::ConnectedState;
 
-    connected();
+    //TODO: connected event
+    //connected();
 }
 
 int64_t FakeSocket::bytesAvailableWithMutex()
 {
     int64_t size;
     {
-        lock_guard<mutex> guard(FakeSocket::mutex);
+        std::lock_guard<std::mutex> guard(FakeSocket::mutex);
 
         #ifdef FAKESOCKETDEBUG
             Logger::instance().log(Logger::Debug, std::stringLiteral("bytesAvailable(): data.size(): %1").arg(data.size()));
@@ -143,36 +154,33 @@ uint64_t FakeSocket::getTXSize()
     return theOtherSocket->getRXSize();
 }
 
-void FakeSocket::setSocketOption(SocketOption option, int mode) {
-    //TODO
-}
-
-void error(SocketError socketError) {
-    m_error = socketError;
-}
-
-void stateChanged(SocketState socketState) {
+void FakeSocket::state(SocketState socketState) {
     m_state = socketState;
 }
 
 SocketState FakeSocket::state() const
 {
+    return m_state;
+}
+
+SocketState FakeSocket::updateState()
+{
     if (theOtherSocket == NULL) {
-        m_state = SocketState::connected;
+        m_state = SocketState::ConnectedState;
     }
-    m_state = SocketState::unconnected;
+    m_state = SocketState::UnconnectedState;
 
     return m_state;
 }
 
-int64_t FakeSocket::readData(char* rawData, int64_t maxSize)
+uint64_t FakeSocket::readData(char* rawData, int64_t maxSize)
 {
-    lock_guard<mutex> guard(FakeSocket::mutex);
+    std::lock_guard<std::mutex> guard(FakeSocket::mutex);
 
     std::vector<unsigned char> extractedData;
-    std::vector<unsigned char>::iterator it;
-    for(int index = 0, it = this->data.begin(); it != this->data.end() && index < maxSize; it++, index++) {
-        extractedData.push_back(it->first);
+    std::vector<unsigned char>::iterator it = this->data.begin();
+    for(int index = 0; it != this->data.end() && index < maxSize; it++, index++) {
+        extractedData.push_back(*it);
     }
 
     #ifdef FAKESOCKETDEBUG
@@ -186,7 +194,7 @@ int64_t FakeSocket::readData(char* rawData, int64_t maxSize)
     return extractedData.size();
 }
 
-int64_t FakeSocket::writeData(const char* rawData, int64_t size)
+uint64_t FakeSocket::writeData(const char* rawData, int64_t size)
 {
     if (theOtherSocket == nullptr)
     {
@@ -196,7 +204,7 @@ int64_t FakeSocket::writeData(const char* rawData, int64_t size)
     }
     std::vector<unsigned char> dataToSend;
     {
-        lock_guard<mutex> guard(FakeSocket::mutex);
+        std::lock_guard<std::mutex> guard(FakeSocket::mutex);
 
         #ifdef FAKESOCKETDEBUG
             Logger::instance().log(Logger::Debug, std::stringLiteral("writeData(): size: %1").arg(size));
@@ -213,17 +221,24 @@ int64_t FakeSocket::writeData(const char* rawData, int64_t size)
 void FakeSocket::internal_writeData(std::vector<unsigned char> rawData)
 {
     {
-        lock_guard<mutex> guard(FakeSocket::mutex);
+        std::lock_guard<std::mutex> guard(FakeSocket::mutex);
 
         #ifdef FAKESOCKETDEBUG
             Logger::instance().log(Logger::Debug, std::stringLiteral("internal_writeData(): size: %1").arg(rawData.size()));
         #endif
 
         RX_size += rawData.size();
-        this->data += rawData;
-    }
 
-    readyRead();
+        if (rawData.size() == this->data.size()) {
+            std::vector<unsigned char>::iterator itRawData = rawData.begin();
+            std::vector<unsigned char>::iterator itData    = this->data.begin();
+            for(; itRawData != rawData.end(); itRawData++, itData++) {
+                *itData += *itRawData;
+            }
+        }
+    }
+    //TODO:  event readyRead
+    //readyRead();
 }
 
 bool FakeSocket::isSequential() const

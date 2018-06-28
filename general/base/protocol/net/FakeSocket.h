@@ -6,6 +6,7 @@
 #include <mutex>
 #include <vector>
 #include <stdint.h>
+#include <cstring>
 
 #include "../config/GeneralVariable.h"
 #include "../log/logger.h"
@@ -22,6 +23,7 @@ namespace CatchChallenger
              FakeSocket();
             ~FakeSocket();
 
+            void open(DeviceMode mode);
             void abort();
             void disconnectFromHost();
             void disconnectFromFakeServer();
@@ -34,7 +36,7 @@ namespace CatchChallenger
             SocketState state() const;
             bool isValid() const;
             bool socketDescriptor();
-            void setSocketOption(SocketOption option, int mode);
+            void state(SocketState socketState);
 
             //virtual void connected() = 0;
             //virtual void disconnected() = 0;
@@ -45,12 +47,13 @@ namespace CatchChallenger
 
         protected:
             FakeSocket* theOtherSocket;
-            virtual bool isSequential() const;
-            virtual bool canReadLine() const;
-            virtual uint64_t readData(char* data, int64_t maxSize);
-            virtual uint64_t writeData(const char* data, int64_t maxSize);
+            bool isSequential() const;
+            bool canReadLine() const;
+            uint64_t readData(char* data, int64_t maxSize);
+            uint64_t writeData(const char* data, int64_t maxSize);
 
         private:
+            SocketState updateState();
             std::vector<unsigned char> data;
             static std::mutex mutex;
 

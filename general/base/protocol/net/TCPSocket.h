@@ -34,10 +34,10 @@ namespace CatchChallenger
             TCPSocket();
             TCPSocket(int file_descriptor);
 
+            void open(DeviceMode mode);
             int read();
             int send(const std::string& message);
             std::string getBuffer();
-            void setSocketOption(SocketOption option, int mode);
             int64_t bytesAvailable() const;
             bool encryptedBytesAvailable();
             void abort();

@@ -1,5 +1,7 @@
 #include "TCPSocket.h"
 
+using namespace CatchChallenger;
+
 TCPSocket::TCPSocket() {
     socket_file_descriptor = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -12,6 +14,10 @@ TCPSocket::TCPSocket() {
 
 TCPSocket::TCPSocket(int file_descriptor) {
     socket_file_descriptor = file_descriptor;
+}
+
+void TCPSocket::open(DeviceMode mode) {
+    m_mode = mode;
 }
 
 bool TCPSocket::haveSocket() const {
@@ -38,11 +44,6 @@ int TCPSocket::send(const std::string& message) {
     return result;
 }
 
-void TCPSocket::setSocketOption(SocketOption option, int mode) {
-    this->option = option;
-    //getsockopt() //SO_ERROR
-}
-
 int64_t TCPSocket::bytesAvailable() const {
     int bytes_available = 0;
     ioctl(socket_file_descriptor, FIONREAD, &bytes_available);
@@ -54,12 +55,12 @@ bool TCPSocket::encryptedBytesAvailable() {
     return false;
 }
 
-void close() {
+void TCPSocket::close() {
     ::close(socket_file_descriptor);
 }
 
 bool TCPSocket::isValid() const {
-    return socket_descriptor > 0;
+    return socket_file_descriptor > 0;
 }
 
 bool TCPSocket::isSequential() const {
@@ -95,7 +96,7 @@ void TCPSocket::abort() {
     shutdown(socket_file_descriptor, SHUT_RDWR);
 }
 
-int TCPSocket::connectToHost(const std::string& host, int port) {
+void TCPSocket::connectToHost(const std::string& host, int port) {
     memset(&serv_addr, '0', sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(port);
@@ -103,17 +104,19 @@ int TCPSocket::connectToHost(const std::string& host, int port) {
     if (inet_pton(AF_INET, host.c_str(), &serv_addr.sin_addr) <= 0)
     {
         std::cerr << "Invalid address or address not supported" << std::endl;
-        return 0;
+        return;
     }
 
     strcpy(this->host, host.c_str());
     this->port = port;
 
-    return ::connect(socket_file_descriptor, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    if (::connect(socket_file_descriptor, (struct sockaddr *)&serv_addr, sizeof(serv_addr))) {
+        m_state = SocketState::ConnectedState;
+    }
 }
 
 void TCPSocket::disconnectFromHost() {
-    close(socket_file_descriptor);
+    ::close(socket_file_descriptor);
 }
 
 void TCPSocket::flush() {
@@ -129,12 +132,8 @@ void TCPSocket::flush() {
         if (mark) {
             return;
         }
-        read(socket_file_descriptor, waste, sizeof(waste));
+        ::read(socket_file_descriptor, waste, sizeof(waste));
     }
-}
-
-bool TCPSocket::isValid() {
-    return socket_file_descriptor > 0;
 }
 
 bool TCPSocket::socketDescriptor() {
@@ -186,7 +185,7 @@ uint64_t TCPSocket::readData(char* data, int64_t maxSize) {
     }
 
     uint64_t result = ::read(socket_file_descriptor, data, (size_t)maxSize);
-    message[max] = 0;
+    data[maxSize] = 0;
 
     return result;
 }

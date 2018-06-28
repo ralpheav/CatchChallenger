@@ -106,6 +106,13 @@ namespace CatchChallenger
         unknown = 0
     };
 
+    enum DeviceMode {
+        Read,
+        write,
+        ReadWrite,
+        Unbuffered
+    };
+
     class ISocket
     {
         protected:
@@ -114,8 +121,10 @@ namespace CatchChallenger
 
             SocketState m_state;
             SocketError m_error;
+            std::pair<SocketOption, int> m_option;
+            DeviceMode m_mode;
         public:
-            virtual void setSocketOption(SocketOption option, int mode) = 0;
+            virtual void open(DeviceMode mode) = 0;
             virtual void abort() = 0;
             virtual void disconnectFromHost() = 0;
             //virtual void disconnectFromFakeServer() = 0;
@@ -131,6 +140,11 @@ namespace CatchChallenger
             virtual SocketState state() const
             {
                 return m_state;
+            }
+            void setSocketOption(SocketOption option, int parameter) {
+                m_option = std::make_pair(option, parameter);
+                //getsockopt() //SO_ERROR
+                //TODO: is a list of options necessarily?
             }
             virtual bool isValid() const = 0;
             virtual bool socketDescriptor() = 0;

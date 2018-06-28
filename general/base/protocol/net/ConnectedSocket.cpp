@@ -11,18 +11,22 @@ ConnectedSocket::ConnectedSocket(ISocket* socket) : pSocket(socket)
 {
     pSocket->setSocketOption(SocketOption::KeepAliveOption, 1);
     purgeBuffer();
-    //open(QIODevice::ReadWrite | QIODevice::Unbuffered);
+    pSocket->open(DeviceMode::ReadWrite);//may it is going to be removed
 }
 
 ConnectedSocket::~ConnectedSocket()
 {
-    pSocket->deleteLater();
+    //TODO: trigger the delete_later event
+    //deleteLater();
 }
 
-//std::list<QSslError> ConnectedSocket::sslErrors() const
-//{
-//    return pSocket->sslErrors();
-//}
+std::list<SslError> ConnectedSocket::sslErrors() const
+{
+    if (typeid(pSocket).name() == "SSLSocket") {
+        return pSocket->sslErrors();
+    }
+    return {};
+}
 
 void ConnectedSocket::purgeBuffer()
 {
