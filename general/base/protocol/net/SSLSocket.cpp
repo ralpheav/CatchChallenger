@@ -251,8 +251,8 @@ int64_t SSLSocket::bytesAvailableWithMutex() {
     return 0;
 }
 
-bool SSLSocket::socketDescriptor() {
-    return socket_descriptor > 0;
+int SSLSocket::socketDescriptor() {
+    return socket_descriptor;
 }
 
 std::string SSLSocket::localAddress() {
@@ -285,6 +285,10 @@ SslMode SSLSocket::sslMode() {
 
 void SSLSocket::setPeerVerifyMode(PeerVerifyMode mode) {
     verifyMode = mode;
+}
+
+std::list<SslError> SSLSocket::sslErrors() {
+    return sslErrorsList;
 }
 
 void SSLSocket::ignoreSslErrors() {

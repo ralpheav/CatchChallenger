@@ -20,7 +20,7 @@ namespace CatchChallenger
         public:
             friend class FakeServer;
 
-             FakeSocket();
+             explicit FakeSocket();
             ~FakeSocket();
 
             void open(DeviceMode mode);
@@ -35,8 +35,17 @@ namespace CatchChallenger
             uint64_t getTXSize();
             SocketState state() const;
             bool isValid() const;
-            bool socketDescriptor();
+            int socketDescriptor();
             void state(SocketState socketState);
+            void flush();
+            std::string localAddress();
+            int localPort();
+            std::string peerAddress();
+            std::string peerName();
+
+            bool waitForConnected(int msecs);
+            bool waitForDisconnected(int msecs);
+            bool openMode();
 
             //virtual void connected() = 0;
             //virtual void disconnected() = 0;

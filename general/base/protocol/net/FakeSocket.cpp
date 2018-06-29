@@ -30,8 +30,9 @@ void FakeSocket::open(DeviceMode mode) {
     m_mode = mode;
 }
 
-bool FakeSocket::socketDescriptor() {
-    return true;
+int FakeSocket::socketDescriptor() {
+    //TODO get the descriptor faked
+    return 0;
 }
 
 void FakeSocket::abort()
@@ -241,6 +242,33 @@ void FakeSocket::internal_writeData(std::vector<unsigned char> rawData)
     //readyRead();
 }
 
+void FakeSocket::flush() {
+    //TODO
+    //may not nnecesarrily
+}
+
+std::string FakeSocket::localAddress() {
+    return std::string("0.0.0.0");
+}
+
+int FakeSocket::localPort() {
+    return 80;
+}
+
+std::string FakeSocket::peerAddress() {
+    return std::string("0.0.0.0");
+}
+
+std::string FakeSocket::peerName() {
+    return std::string();
+}
+
+std::string FakeSocket::errorString() {
+    //TODO
+    return std::string();
+}
+
+
 bool FakeSocket::isSequential() const
 {
     return true;
@@ -248,6 +276,18 @@ bool FakeSocket::isSequential() const
 
 bool FakeSocket::canReadLine () const
 {
+    return false;
+}
+
+bool FakeSocket::waitForConnected(int msecs) {
+    return false;
+}
+
+bool FakeSocket::waitForDisconnected(int msecs) {
+    return false;
+}
+
+bool FakeSocket::openMode() {
     return false;
 }
 

@@ -4,9 +4,6 @@
 
 using namespace CatchChallenger;
 
-std::string HostAddress::localhost = "127.0.0.1";
-std::string HostAddress::Null      = "0.0.0.0";
-
 ConnectedSocket::ConnectedSocket(ISocket* socket) : pSocket(socket)
 {
     pSocket->setSocketOption(SocketOption::KeepAliveOption, 1);
@@ -20,22 +17,29 @@ ConnectedSocket::~ConnectedSocket()
     //deleteLater();
 }
 
+SSLSocket* ConnectedSocket::getSSLSocket() const {
+    if (typeid(pSocket).name() == "SSLScket") {
+        return reinterpret_cast<SSLSocket *>(pSocket);
+    }
+
+    return new SSLSocket();
+}
+
 std::list<SslError> ConnectedSocket::sslErrors() const
 {
-    if (typeid(pSocket).name() == "SSLSocket") {
-        return pSocket->sslErrors();
-    }
-    return {};
+    return this->getSSLSocket()->sslErrors();
 }
 
 void ConnectedSocket::purgeBuffer()
 {
     if (pSocket->bytesAvailable()) {
-         readyRead();
+        //TODO:  call event ready Read
+         //readyRead();
     }
 
-    if (pSocket->encryptedBytesAvailable()) {
-        readyRead();
+    if (this->getSSLSocket()->encryptedBytesAvailable()) {
+        //TODO:  call event ready Read
+        //readyRead();
     }
 }
 
@@ -100,7 +104,8 @@ int ConnectedSocket::error() const
 bool ConnectedSocket::flush()
 {
     if (pSocket) {
-        return pSocket->flush();
+        pSocket->flush();
+        return true;
     }
 
     return false;
@@ -119,11 +124,11 @@ void ConnectedSocket::setTcpCork(const bool& cork)
 {
     #ifdef __linux__
         #if ! defined(EPOLLCATCHCHALLENGERSERVER) && ! defined (ONLYMAPRENDER)
-            const int* &infd;
+            const int infd =
+            //TODO: WARNING..........What is this??
         #else
-            const int32_t& infd;
+            const int32_t infd =
         #endif
-
         pSocket->socketDescriptor();
         if (infd != -1)
         {
@@ -141,7 +146,9 @@ HostAddress ConnectedSocket::localAddress() const
     std::cerr << "ConnectedSocket::localAddress(): deprecated form incorrect value for i2p" << std::endl;
 
     if (pSocket != nullptr) {
-        return pSocket->localAddress();
+        HostAddress host;
+        host.setAddress(pSocket->localAddress());
+        return host;
     }
 
     return HostAddress::Null;
@@ -162,7 +169,9 @@ HostAddress ConnectedSocket::peerAddress() const
     std::cerr << "ConnectedSocket::peerAddress(): deprecated form incorrect value for i2p" << std::endl;
 
     if (pSocket != nullptr) {
-        return pSocket->peerAddress();
+        HostAddress host;
+        host.setAddress(pSocket->peerAddress());
+        return host;
     }
 
     return HostAddress::Null;
@@ -177,7 +186,7 @@ std::string ConnectedSocket::peerName() const
         pearName = pSocket->peerName();
     }
 
-    return (pearName.isEmpty())? hostName : pearName;
+    return (pearName.empty())? hostName : pearName;
 }
 
 uint16_t ConnectedSocket::peerPort() const
@@ -228,10 +237,12 @@ int64_t ConnectedSocket::bytesAvailable() const
 OpenMode ConnectedSocket::openMode() const
 {
     if (pSocket != nullptr) {
-        return pSocket->openMode();
+        if (pSocket->openMode()) {
+            return OpenMode::open;
+        }
     }
 
-    return 0;
+    return OpenMode::unknown;
 }
 
 std::string ConnectedSocket::errorString() const
@@ -271,7 +282,7 @@ bool ConnectedSocket::isSequential() const
     return true;
 }
 
-bool ConnectedSocket::canReadLine () const
+bool ConnectedSocket::canReadLine() const
 {
     return false;
 }

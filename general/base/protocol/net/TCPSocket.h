@@ -45,7 +45,7 @@ namespace CatchChallenger
             void disconnectFromHost();
             void flush();
             bool isValid() const;
-            bool socketDescriptor();
+            int socketDescriptor();
             std::string localAddress();
             int localPort();
             std::string peerAddress();

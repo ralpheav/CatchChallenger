@@ -76,6 +76,7 @@ namespace CatchChallenger
         struct hostent *hostAddress;
         struct sockaddr_in addr;
         SslMode m_sslMode;
+        std::list<SslError> sslErrorsList;
 
     public:
 
@@ -101,7 +102,7 @@ namespace CatchChallenger
         void disconnectFromHost();
         void flush();
         bool isValid() const;
-        bool socketDescriptor();
+        int socketDescriptor();
         std::string localAddress();
         int localPort();
         std::string peerAddress();

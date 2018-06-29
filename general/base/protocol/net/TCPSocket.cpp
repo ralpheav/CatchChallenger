@@ -136,8 +136,8 @@ void TCPSocket::flush() {
     }
 }
 
-bool TCPSocket::socketDescriptor() {
-    return socket_file_descriptor > 0;
+int TCPSocket::socketDescriptor() {
+    return socket_file_descriptor;
 }
 
 std::string TCPSocket::localAddress() {
@@ -176,6 +176,7 @@ bool TCPSocket::openMode() {
 
 std::string TCPSocket::errorString() {
     //TODO
+    return std::string();
 }
 
 uint64_t TCPSocket::readData(char* data, int64_t maxSize) {

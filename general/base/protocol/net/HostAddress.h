@@ -7,75 +7,106 @@
 #include <string>
 #include <sstream>
 
-namespace CatchChallenger {
+namespace CatchChallenger
+{
 
-class HostAddress {
+    class HostAddress {
 
-    static std::string localhost;
-    static std::string Null;
+        std::string        ip;
+    public:
 
-    std::string ip;
+        enum SpecialAddress {
+            Null,
+            Broadcast,
+            LocalHost,
+            LocalHostIPv6,
+            Any,
+            AnyIPv6,
+            AnyIPv4
+        };
 
-public:
-
-    void setAddress(const std::string& ip) {
-        this->ip = ip;
-    }
-
-    void clear() {
-        ip.clear();
-    }
-
-    bool isEqual(HostAddress second) const {
-        return ip == second.ip;
-    }
-
-    bool isMulticast() const {
-        return false;
-    }
-
-    bool isLoopback() const {
-        return false;
-    }
-
-    std::string toString() const {
-        return ip;
-    }
-
-    std::string toIpv6() {
-        std::vector<std::string> octets = split(ip, ".");
-
-        unsigned char* octetBytes = new unsigned char[4];
-
-        for (int index = 0; index < 4; ++index) {
-             octetBytes[i] = static_cast<unsigned char>(octets[index]);
+        HostAddress() {
         }
 
-        unsigned char* ipv4asIpV6addr = new unsigned char[16];
+        HostAddress(SpecialAddress address) {
+        }
 
-        ipv4asIpV6addr[10] = (unsigned char)0xff;
-        ipv4asIpV6addr[11] = (unsigned char)0xff;
-        ipv4asIpV6addr[12] = octetBytes[0];
-        ipv4asIpV6addr[13] = octetBytes[1];
-        ipv4asIpV6addr[14] = octetBytes[2];
-        ipv4asIpV6addr[15] = octetBytes[3];
-    }
+        void setAddress(const std::string& ip) {
+            this->ip = ip;
+        }
 
-private:
+        void setAddress(SpecialAddress address) {
+            switch(address) {
+                Null:
+                        this->ip = std::string("0.0.0.0");
+                        break;
+                LocalHost:
+                        this->ip = std::string("127.0.0.1");
+                        break;
+            }
+        }
 
-    std::vector<std::string> split(const std::string& target, char delimitator)
-    {
-        std::vector<std::string> result;
-        std::istringstream iss(target);
+        void clear() {
+            ip.clear();
+        }
 
-        for (std::string token; std::getline(iss, token, delimitator);)
+        bool isEqual(HostAddress second) const {
+            return ip == second.ip;
+        }
+
+        bool isMulticast() const {
+            return false;
+        }
+
+        bool isLoopback() const {
+            return false;
+        }
+
+        std::string toString() const {
+            return ip;
+        }
+
+        std::string toIpv6() {
+            std::vector<std::string> octets = split(ip, '.');
+
+            unsigned char* octetBytes = new unsigned char[4];
+
+            for (int index = 0; index < 4; ++index) {
+                 octetBytes[index] = static_cast<unsigned char>(atoi(octets[index].c_str()));
+            }
+
+            unsigned char* ipv4asIpV6addr = new unsigned char[16];
+
+            ipv4asIpV6addr[10] = (unsigned char)0xff;
+            ipv4asIpV6addr[11] = (unsigned char)0xff;
+            ipv4asIpV6addr[12] = octetBytes[0];
+            ipv4asIpV6addr[13] = octetBytes[1];
+            ipv4asIpV6addr[14] = octetBytes[2];
+            ipv4asIpV6addr[15] = octetBytes[3];
+        }
+
+        HostAddress& operator = (SpecialAddress address){
+            HostAddress hostAddress;
+            hostAddress.setAddress(address);
+            return hostAddress;
+        }
+
+    private:
+
+        std::vector<std::string> split(const std::string& target, char delimitator)
         {
-            result.push_back(std::move(token));
-        }
+            std::vector<std::string> result;
+            std::istringstream iss(target);
 
-        return result;
-    }
-};
+            for (std::string token; std::getline(iss, token, delimitator);)
+            {
+                result.push_back(std::move(token));
+            }
+
+            return result;
+        }
+    };
+}
 
 #endif // ! defined(EPOLLCATCHCHALLENGERSERVER) && ! defined (ONLYMAPRENDER)
 #endif // CATCHCHALLENGER_CONNECTEDSOCKET_H

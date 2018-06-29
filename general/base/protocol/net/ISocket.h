@@ -103,7 +103,8 @@ namespace CatchChallenger
     };
 
     enum OpenMode {
-        unknown = 0
+        unknown = 0,
+        open
     };
 
     enum DeviceMode {
@@ -147,7 +148,18 @@ namespace CatchChallenger
                 //TODO: is a list of options necessarily?
             }
             virtual bool isValid() const = 0;
-            virtual bool socketDescriptor() = 0;
+            virtual int socketDescriptor() = 0;
+            virtual void flush() = 0;
+            virtual std::string localAddress() = 0;
+            virtual int localPort() = 0;
+            virtual std::string peerAddress() = 0;
+            virtual std::string peerName() = 0;
+            virtual int peerPort() = 0;
+
+            virtual bool waitForConnected(int msecs) = 0;
+            virtual bool waitForDisconnected(int msecs) = 0;
+            virtual bool openMode() = 0;
+            virtual std::string errorString();
 
 //            virtual void connected() = 0;
 //            virtual void disconnected() = 0;
@@ -157,12 +169,13 @@ namespace CatchChallenger
 //            virtual void readyRead() = 0;
 //            virtual void deleteLater() = 0;
 
+            virtual uint64_t readData(char* data, int64_t maxSize) = 0;
+            virtual uint64_t writeData(const char* data, int64_t maxSize) = 0;
+
         protected:
 
             virtual bool isSequential() const = 0;
             virtual bool canReadLine() const = 0;
-            virtual uint64_t readData(char* data, int64_t maxSize) = 0;
-            virtual uint64_t writeData(const char* data, int64_t maxSize) = 0;
             virtual void internal_writeData(std::vector<unsigned char> rawData) = 0;
             virtual int64_t bytesAvailableWithMutex() = 0;
     };
