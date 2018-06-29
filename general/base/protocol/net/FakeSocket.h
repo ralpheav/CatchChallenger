@@ -42,6 +42,7 @@ namespace CatchChallenger
             int localPort();
             std::string peerAddress();
             std::string peerName();
+            int peerPort();
 
             bool waitForConnected(int msecs);
             bool waitForDisconnected(int msecs);

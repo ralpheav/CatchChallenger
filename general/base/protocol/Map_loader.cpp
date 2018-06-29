@@ -1723,13 +1723,7 @@ tinyxml2::XMLElement* Map_loader::getXmlCondition(const std::string& fileName, c
     return NULL;
 }
 
-MapCondition Map_loader::xmlConditionToMapCondition(const std::string& conditionFile,
-                                                    #ifdef CATCHCHALLENGER_XLMPARSER_TINYXML1
-                                                        const tinyxml2::XMLElement*
-                                                    #elif defined(CATCHCHALLENGER_XLMPARSER_TINYXML2)
-                                                        const tinyxml2::XMLElement*
-                                                    #endif
-                                                    const conditionContent)
+MapCondition Map_loader::xmlConditionToMapCondition(const std::string& conditionFile, const tinyxml2::XMLElement* const conditionContent)
 {
     #ifdef ONLYMAPRENDER
         return MapCondition();

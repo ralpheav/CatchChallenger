@@ -44,7 +44,7 @@ enum Player_type : uint8_t
     Player_type_dev     = 0x40
 };
 
-enum Orientation : uint8_ts
+enum Orientation : uint8_t
 {
     Orientation_none   = 0,//where the target orientation don't matter
     Orientation_top    = 1,

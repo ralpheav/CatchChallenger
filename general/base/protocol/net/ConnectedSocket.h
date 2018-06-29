@@ -64,15 +64,16 @@ namespace CatchChallenger
             State       m_state;
             ISocket*    pSocket;
 
-            virtual void	connected() = 0;
-            virtual void	disconnected() = 0;
-            virtual void	error(SocketError socketError) = 0;
-            virtual void	stateChanged(SocketState socketState) = 0;
+            //TODO: need to create events ???
+            //virtual void	connected() = 0;
+            //virtual void	disconnected() = 0;
+            //virtual void	error(SocketError socketError) = 0;
+            //virtual void	stateChanged(SocketState socketState) = 0;
             //virtual void    sslErrors(const std::list<QSslError> &errors) = 0;
-            virtual void    destroyed() = 0;
-            virtual void    readyRead() = 0;
-            virtual void    stateChanged() = 0;
-            virtual void    encrypted() = 0;
+            //virtual void    destroyed() = 0;
+            //virtual void    readyRead() = 0;
+            //virtual void    stateChanged() = 0;
+            //virtual void    encrypted() = 0;
         private:
             void destroyedSocket();
             void purgeBuffer();

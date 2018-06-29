@@ -9,7 +9,7 @@
 #include "CommonMap.h"
 
 #ifndef EPOLLCATCHCHALLENGERSERVER
-#include <QObject>
+// #include <QObject>
 #endif
 
 #ifdef CATCHCHALLENGER_CLASS_GATEWAY

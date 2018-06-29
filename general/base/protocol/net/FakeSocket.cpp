@@ -263,6 +263,10 @@ std::string FakeSocket::peerName() {
     return std::string();
 }
 
+int FakeSocket::peerPort() {
+    return 0;
+}
+
 std::string FakeSocket::errorString() {
     //TODO
     return std::string();

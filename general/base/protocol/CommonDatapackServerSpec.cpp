@@ -6,7 +6,7 @@
 #include "Map_loader.h"
 #include "fighter/FightLoader.h"
 #include "DatapackGeneralLoader.h"
-#include "../../general/base/FacilityLibGeneral.h"
+#include "FacilityLibGeneral.h"
 
 #include <iostream>
 #include <vector>
@@ -27,7 +27,7 @@ void CommonDatapackServerSpec::parseDatapack(const std::string& datapackPath, co
 {
     if (isParsedSpec) {
         return;
-    \}
+    }
     if (parsingSpec) {
         return;
     }

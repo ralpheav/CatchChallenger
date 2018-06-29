@@ -8,7 +8,7 @@
 #include <openssl/sha.h>
 
 #ifndef EPOLLCATCHCHALLENGERSERVER
-    #include <QMetaType>
+//    #include <QMetaType>
 #endif
 
 #ifndef EPOLLCATCHCHALLENGERSERVERNOCOMPRESSION

@@ -12,7 +12,8 @@ namespace CatchChallenger
 
     class HostAddress {
 
-        std::string        ip;
+        std::string ip;
+
     public:
 
         enum SpecialAddress {
@@ -29,6 +30,7 @@ namespace CatchChallenger
         }
 
         HostAddress(SpecialAddress address) {
+            setAddress(address);
         }
 
         void setAddress(const std::string& ip) {
@@ -86,9 +88,8 @@ namespace CatchChallenger
         }
 
         HostAddress& operator = (SpecialAddress address){
-            HostAddress hostAddress;
-            hostAddress.setAddress(address);
-            return hostAddress;
+            this->setAddress(address);
+            return *this;
         }
 
     private:

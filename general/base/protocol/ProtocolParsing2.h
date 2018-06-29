@@ -7,6 +7,10 @@
 #include <stdint.h>
 #include <string>
 
+#ifndef EPOLLCATCHCHALLENGERSERVERNOCOMPRESSION
+    #include "zstd.h"
+#endif
+
 #include "config/GeneralVariable.h"
 
 #ifdef EPOLLCATCHCHALLENGERSERVER

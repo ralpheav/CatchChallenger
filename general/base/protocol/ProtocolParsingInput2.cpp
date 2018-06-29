@@ -20,10 +20,7 @@ ssize_t ProtocolParsingInputOutput::read(char* data, const size_t& size)
         if (socket == NULL) {
             return -1;
         }
-        if (socket->openMode() | QIODevice::WriteOnly)
-        {
-            continue;
-        } else {
+        if (!socket->openMode() /*| QIODevice::WriteOnly*/) {
             messageParsingLayer("Socket open in read only!");
             disconnectClient();
             return false;
@@ -36,7 +33,7 @@ ssize_t ProtocolParsingInputOutput::read(char* data, const size_t& size)
             if (socket == NULL) {
                 return -1;
             }
-            const int& temp_size = static_cast<int>(socket->read(data, size));
+            const int& temp_size = static_cast<int>(socket->readData(data, size));
         #endif
         RXSize += temp_size;
         return temp_size;
@@ -58,9 +55,7 @@ ssize_t ProtocolParsingInputOutput::write(const char* const data, const size_t& 
         if (socket == NULL) {
             return -1;
         }
-        if(socket->openMode() | QIODevice::WriteOnly) {
-            continue;
-        } else {
+        if (socket->openMode() /*| QIODevice::WriteOnly*/) {
             messageParsingLayer("Socket open in write only!");
             disconnectClient();
             return false;
@@ -88,7 +83,7 @@ ssize_t ProtocolParsingInputOutput::write(const char* const data, const size_t& 
                     std::cerr << "Bug at data-sending: " << binarytoHexa(data,cursor) << " " <<
                                  binarytoHexa(data + cursor, static_cast<uint32_t>(size) - cursor) << ", cursor:" << cursor << std::endl;
                 } else {
-                    std::cerr << "Bug at data-sending: " << binarytoHexa(data+cursor,static_cast<uint32_t>(size)-cursor) << std::endl;
+                    std::cerr << "Bug at data-sending: " << binarytoHexa(data + cursor, static_cast<uint32_t>(size) - cursor) << std::endl;
                 }
                 abort();
             }
@@ -128,7 +123,7 @@ ssize_t ProtocolParsingInputOutput::write(const char* const data, const size_t& 
         if (socket == NULL) {
             return -1;
         }
-        const ssize_t& byteWriten = socket->write(data, size);
+        const ssize_t& byteWriten = socket->writeData(data, size);
     #endif
     #ifndef EPOLLCATCHCHALLENGERSERVER
         TXSize += byteWriten;
