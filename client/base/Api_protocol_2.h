@@ -37,6 +37,7 @@ namespace CatchChallenger
 {
     class Api_protocol_2 : public ProtocolParsingInputOutput, public MoveOnTheMap
     {
+            bool inProgress;
             Settings setting;
         public:
             static bool internalVersionDisplayed;
@@ -49,7 +50,7 @@ namespace CatchChallenger
             bool disconnectClient();
             void unloadSelection();
             const ServerFromPoolForDisplay& getCurrentServer(const unsigned int& index);
-            bool dataToPlayerMonster(QDataStream& in, PlayerMonster& monster);
+            bool dataToPlayerMonster(DataStreamSerializer& in, PlayerMonster& monster);
 
             //protocol command
             bool tryLogin(const std::string& login, const std::string& pass);

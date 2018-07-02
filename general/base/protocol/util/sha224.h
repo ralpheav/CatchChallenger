@@ -14,9 +14,9 @@ class SHA224
 
     public:
 
-        SHA(const char* string);
+        SHA(const char* input_string);
 
-        void addData(const char* string);
+        void addData(const char* input_string);
         void execute();
         void getDigest(char* out_digest);
         void getDigestHex(char* out_digestHex);

@@ -8,6 +8,8 @@ class DataStreamSerializer {
 
     void* buffer;
     size_t last_size;
+    uint32_t position;
+    bool open;
 
 public:
 
@@ -20,7 +22,33 @@ public:
             throw std::out_of_range("Size must not set with zero");
         }
         last_size = 0;
+        position = 0;
         buffer = ::operator new(size);
+        open = false;
+    }
+
+    /**
+     * @brief DataStreamSerializer
+     */
+    DataStreamSerializer(bool openToRead = false) {
+        open = openToRead;
+        position = sizeof(buffer);
+    }
+
+    /**
+     * @brief isOpen
+     * @return
+     */
+    bool isOpen() {
+        return open;
+    }
+
+    /**
+     * @brief setOpen
+     * @param open
+     */
+    void setOpen(bool open = true) {
+        this->open = open;
     }
 
 private:
@@ -28,13 +56,28 @@ private:
     /**
      * Write template for int8_t, int16_t, int32_t, uint8_t, uint16_t, uint32_t
      * @brief write
-     * @param string
+     * @param T
      * @return
      */
     template <typename T> DataStreamSerializer& write(const T& value) {
         memcpy(buffer + last_size, &value, sizeof(T));
         last_size += sizeof(T);
-        std::cout <<"size "<< last_size << std::endl;
+        std::cout << "size "<< last_size << std::endl;
+	position = last_size - 1;
+    }
+
+    /**
+     * Reading template for int8_t, int16_t, int32_t, uint8_t, uint16_t, uint32_t
+     * @brief read
+     * @param T
+     * @return
+     */
+    template <typename T> DataStreamSerializer& read(T& out_value) {
+        if (open) {
+            memcpy(&out_value, buffer, sizeof(T));
+            buffer += sizeof(T);
+            position -= sizeof(T);
+        }
     }
 
     /**
@@ -43,17 +86,41 @@ private:
      * @param string
      * @return
      */
-    DataStreamSerializer& write(const std::string& string) {
-        size_t length = string.length();
+    DataStreamSerializer& write(const std::string& in_string) {
+        size_t length = in_string.length();
         memcpy(buffer + last_size, &length, sizeof(int8_t));//TODO: should it be int8_t ??? or more
         last_size += sizeof(int8_t);
-        memcpy(buffer + last_size, string.c_str(), length);
+        memcpy(buffer + last_size, in_string.c_str(), length);
         last_size += length;
 
-        std::cout <<"size "<< last_size << std::endl;
+        std::cout << "size "<< last_size << std::endl;
+	position = last_size - 1;
+    }
+
+    /**
+     * @brief read
+     * @param string
+     * @return
+     */
+    DataStreamSerializer& read(std::string& out_string) {
+        if (open) {
+            size_t length;
+            memcpy(&length, buffer, sizeof(int8_t));
+            buffer += sizeof(int8_t);
+            position -= sizeof(int8_t);
+
+            char deserializated_string[length];
+            memcpy(deserializated_string, &buffer, length);
+            buffer += length;
+            position -= length;
+
+            out_string = deserializated_string;
+        }
     }
 
 public:
+
+    //Write into bytes stream
 
     DataStreamSerializer& operator<<(const int8_t& i) {
         return write(i);
@@ -79,19 +146,77 @@ public:
         return write(i);
     }
 
-    DataStreamSerializer& operator<<(const std::string& string) {
-        return write(string);
+    DataStreamSerializer& operator<<(const std::string& out_string) {
+        return write(out_string);
     }
 
+    //Reading byte stream
+
+    DataStreamSerializer& operator>>(int8_t& i) {
+        this->read(i);
+        return *this;
+    }
+
+    DataStreamSerializer& operator>>(int16_t& i) {
+        this->read(i);
+        return *this;
+    }
+
+    DataStreamSerializer& operator>>(int32_t& i) {
+        this->read(i);
+        return *this;
+    }
+
+    DataStreamSerializer& operator>>(uint8_t& i) {
+        this->read(i);
+        return *this;
+    }
+
+    DataStreamSerializer& operator>>(uint16_t& i) {
+        this->read(i);
+        return *this;
+    }
+
+    DataStreamSerializer& operator>>(uint32_t& i) {
+        this->read(i);
+        return *this;
+    }
+
+    DataStreamSerializer& operator>>(std::string& in_string) {
+        this->read(in_string);
+        return *this;
+    }
+
+    /**
+     * @brief data
+     * @return
+     */
     void *data() {
         return buffer;
     }
 
+    /**
+     * @brief constData
+     * @return
+     */
     const void *constData() {
         return buffer;
     }
 
+    /**
+     * @brief size
+     * @return
+     */
     size_t size() {
         return last_size;
     }
+
+    /**
+     * @brief pos
+     * @return
+     */
+    uint32_t pos() {
+        return position;
+    }
+
 };

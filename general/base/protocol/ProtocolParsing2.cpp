@@ -306,24 +306,24 @@ void ProtocolParsing::initialiseTheVariable(const InitialiseTheVariableType& ini
 
             //register meta type
             #ifndef EPOLLCATCHCHALLENGERSERVER
-                //for Api_protocol::tradeAddTradeMonster()
-                qRegisterMetaType<CatchChallenger::PlayerMonster>("CatchChallenger::PlayerMonster");
-                //for battleAcceptedByOther(stat,publicPlayerMonster);
-                qRegisterMetaType<PublicPlayerMonster>("PublicPlayerMonster");
-                //for battleAcceptedByOther(stat,publicPlayerMonster);
-                qRegisterMetaType<std::vector<uint8_t>>("std::vector<uint8_t>");
-                //for battleAcceptedByOther(stat,publicPlayerMonster);
-                qRegisterMetaType<std::vector<Skill::AttackReturn>>("std::vector<Skill::AttackReturn>");
-                qRegisterMetaType<std::vector<CharacterEntry>>("std::vector<CharacterEntry>");
-                //for battleAcceptedByOther(stat,publicPlayerMonster);
-                qRegisterMetaType<std::vector<uint8_t>>("std::vector<uint8_t>");
-                //for battleAcceptedByOther(stat,publicPlayerMonster);
-                qRegisterMetaType<std::vector<Skill::AttackReturn>>("std::vector<Skill::AttackReturn>");
-                qRegisterMetaType<std::vector<CharacterEntry>>("std::vector<CharacterEntry>");
+//                //for Api_protocol::tradeAddTradeMonster()
+//                qRegisterMetaType<CatchChallenger::PlayerMonster>("CatchChallenger::PlayerMonster");
+//                //for battleAcceptedByOther(stat,publicPlayerMonster);
+//                qRegisterMetaType<PublicPlayerMonster>("PublicPlayerMonster");
+//                //for battleAcceptedByOther(stat,publicPlayerMonster);
+//                qRegisterMetaType<std::vector<uint8_t>>("std::vector<uint8_t>");
+//                //for battleAcceptedByOther(stat,publicPlayerMonster);
+//                qRegisterMetaType<std::vector<Skill::AttackReturn>>("std::vector<Skill::AttackReturn>");
+//                qRegisterMetaType<std::vector<CharacterEntry>>("std::vector<CharacterEntry>");
+//                //for battleAcceptedByOther(stat,publicPlayerMonster);
+//                qRegisterMetaType<std::vector<uint8_t>>("std::vector<uint8_t>");
+//                //for battleAcceptedByOther(stat,publicPlayerMonster);
+//                qRegisterMetaType<std::vector<Skill::AttackReturn>>("std::vector<Skill::AttackReturn>");
+//                qRegisterMetaType<std::vector<CharacterEntry>>("std::vector<CharacterEntry>");
 
-                #if ! defined (ONLYMAPRENDER)
-                    qRegisterMetaType<QSslSocket::SslMode>("QSslSocket::SslMode");
-                #endif
+//                #if ! defined (ONLYMAPRENDER)
+//                    qRegisterMetaType<QSslSocket::SslMode>("QSslSocket::SslMode");
+//                #endif
             #endif
         break;
     }

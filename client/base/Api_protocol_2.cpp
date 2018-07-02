@@ -11,10 +11,10 @@ const unsigned char protocolHeaderToMatchGameServer[] = PROTOCOL_HEADER_GAMESERV
     #include <sys/stat.h>
 #endif
 
-#ifndef BOTTESTCONNECT
-    #include "SslCert.h"
-    #include "LanguagesSelect.h"
-#endif
+//#ifndef BOTTESTCONNECT
+//    #include "SslCert2.h"
+//    #include "LanguagesSelect.h"
+//#endif
 
 #ifdef BENCHMARKMUTIPLECLIENT
     char Api_protocol_2::hurgeBufferForBenchmark[4096];
@@ -271,9 +271,9 @@ bool Api_protocol_2::sendProtocol()
 
 std::string Api_protocol_2::socketDisconnectedForReconnect()
 {
-    if(stageConnexion!=StageConnexion::Stage2)
+    if (stageConnexion!=StageConnexion::Stage2)
     {
-        if(stageConnexion!=StageConnexion::Stage3)
+        if (stageConnexion!=StageConnexion::Stage3)
         {
             //newError("Internal problem","Api_protocol_2::socketDisconnectedForReconnect(): "+std::to_string((int)stageConnexion));
             Logger::instance().log(Logger::Debug, "Internal problem: Api_protocol_2::socketDisconnectedForReconnect(): " + std::to_string((int)stageConnexion);
@@ -461,7 +461,7 @@ void Api_protocol_2::send_player_move(const uint8_t& moved_unit, const Direction
         if (infd != -1) {
             ::write(infd, hurgeBufferMove, 3);
         } else {
-            internalSendRawSmallPacket(hurgeBufferMove,3);
+            internalSendRawSmallPacket(hurgeBufferMove, 3);
         }
         return;
     #endif
@@ -593,7 +593,7 @@ void Api_protocol_2::sendChatText(const Chat_type& chatType, const std::string& 
         out << text;
         //outputData += ByteArray(tempText.data(), tempText.size());
         //TODO: need to route to the ConnectSocket
-        //out.device()->seek(out.device()->pos() + tempText.size());
+        //out.seek(out.device()->pos() + tempText.size());
     }
     packOutcommingData(0x03, out.constData(), out.size());
 }
@@ -2724,45 +2724,45 @@ bool Api_protocol_2::dataToPlayerMonster(DataStreamSerializer& in, PlayerMonster
     PlayerBuff buff;
     PlayerMonster::PlayerSkill skill;
 
-    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint16_t))
+    if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint16_t))
     {
-        parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster id, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+        parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster id, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
         return false;
     }
     in >> monster.monster;
-    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
+    if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint8_t))
     {
-        parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster level, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+        parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster level, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
         return false;
     }
     in >> monster.level;
-    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint32_t))
+    if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint32_t))
     {
-        parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster remaining_xp, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+        parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster remaining_xp, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
         return false;
     }
     in >> monster.remaining_xp;
-    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint32_t))
+    if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint32_t))
     {
-        parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster hp, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+        parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster hp, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
         return false;
     }
     in >> monster.hp;
-    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint32_t))
+    if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint32_t))
     {
-        parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster sp, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+        parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster sp, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
         return false;
     }
     in >> monster.sp;
-    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint16_t))
+    if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint16_t))
     {
-        parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster captured_with, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+        parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster captured_with, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
         return false;
     }
     in >> monster.catched_with;
-    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
+    if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint8_t))
     {
-        parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster captured_with, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+        parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster captured_with, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
         return false;
     }
 
@@ -2776,19 +2776,20 @@ bool Api_protocol_2::dataToPlayerMonster(DataStreamSerializer& in, PlayerMonster
             monster.gender = (Gender)gender;
         break;
         default:
-            parseError("Procotol wrong or corrupted", std::string("gender code wrong: ")+std::to_string(gender)+", line: "+std::string(__FILE__)+":"+std::to_string(__LINE__));
+            parseError("Procotol wrong or corrupted", std::string("gender code wrong: ") + std::to_string(gender) + ", line: " + std::string(__FILE__) + ":" + std::to_string(__LINE__));
             return false;
         break;
     }
-    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint32_t))
+    if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint32_t))
     {
-        parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster egg_step, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+        parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster egg_step, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
         return false;
     }
     in >> monster.egg_step;
-    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
+
+    if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint8_t))
     {
-        parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster character_origin, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+        parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster character_origin, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
         return false;
     }
     {
@@ -2797,9 +2798,9 @@ bool Api_protocol_2::dataToPlayerMonster(DataStreamSerializer& in, PlayerMonster
         monster.character_origin = character_origin;
     }
 
-    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
+    if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint8_t))
     {
-        parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster size of list of the buff monsters, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+        parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster size of list of the buff monsters, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
         return false;
     }
 
@@ -2808,21 +2809,21 @@ bool Api_protocol_2::dataToPlayerMonster(DataStreamSerializer& in, PlayerMonster
     sub_index = 0;
     while(sub_index < sub_size8)
     {
-        if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
+        if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint8_t))
         {
-            parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster buff, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+            parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster buff, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
             return false;
         }
         in >> buff.buff;
-        if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
+        if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint8_t))
         {
-            parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster buff level, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+            parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster buff level, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
             return false;
         }
         in >> buff.level;
-        if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
+        if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint8_t))
         {
-            parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster buff level, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+            parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster buff level, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
             return false;
         }
         in >> buff.remainingNumberOfTurn;
@@ -2830,9 +2831,9 @@ bool Api_protocol_2::dataToPlayerMonster(DataStreamSerializer& in, PlayerMonster
         sub_index++;
     }
 
-    if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint16_t))
+    if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint16_t))
     {
-        parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster size of list of the skill monsters, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+        parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster size of list of the skill monsters, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
         return false;
     }
 
@@ -2841,21 +2842,21 @@ bool Api_protocol_2::dataToPlayerMonster(DataStreamSerializer& in, PlayerMonster
     sub_index = 0;
     while (sub_index < sub_size16)
     {
-        if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint16_t))
+        if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint16_t))
         {
-            parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster skill, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+            parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster skill, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
             return false;
         }
         in >> skill.skill;
-        if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
+        if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint8_t))
         {
-            parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster skill level, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+            parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster skill level, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
             return false;
         }
         in >> skill.level;
-        if (in.device()->pos() < 0 || !in.device()->isOpen() || (in.device()->size()-in.device()->pos()) < (int)sizeof(uint8_t))
+        if (in.pos() < 0 || !in.isOpen() || (in.size() - in.pos()) < (int)sizeof(uint8_t))
         {
-            parseError("Procotol wrong or corrupted",std::string("wrong size to get the monster skill level, line: ")+std::string(__FILE__)+":"+std::to_string(__LINE__));
+            parseError("Procotol wrong or corrupted", std::string("wrong size to get the monster skill level, line: ") + std::string(__FILE__) + ":" + std::to_string(__LINE__));
             return false;
         }
         in >> skill.endurance;

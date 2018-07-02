@@ -184,10 +184,10 @@ struct MonsterItemEffectOutOfFight
 
 struct ItemFull
 {
-    std::unordered_map<uint16_t, std::vector<MonsterItemEffect> > monsterItemEffect;
-    std::unordered_map<uint16_t, std::vector<MonsterItemEffectOutOfFight> > monsterItemEffectOutOfFight;
-    std::unordered_map<CATCHCHALLENGER_TYPE_ITEM/*item*/, std::unordered_map<uint16_t/*monster*/,uint16_t/*evolveTo*/> > evolutionItem;
-    std::unordered_map<CATCHCHALLENGER_TYPE_ITEM/*item*/, std::unordered_set<uint16_t/*monster*/> > itemToLearn;
+    std::unordered_map<uint16_t, std::vector<MonsterItemEffect>> monsterItemEffect;
+    std::unordered_map<uint16_t, std::vector<MonsterItemEffectOutOfFight>> monsterItemEffectOutOfFight;
+    std::unordered_map<CATCHCHALLENGER_TYPE_ITEM/*item*/, std::unordered_map<uint16_t/*monster*/, uint16_t/*evolveTo*/>> evolutionItem;
+    std::unordered_map<CATCHCHALLENGER_TYPE_ITEM/*item*/, std::unordered_set<uint16_t/*monster*/>> itemToLearn;
     std::unordered_map<uint16_t, uint32_t> repel;
     std::unordered_map<CATCHCHALLENGER_TYPE_ITEM, Item> item;
     CATCHCHALLENGER_TYPE_ITEM itemMaxId;
@@ -318,24 +318,28 @@ class PublicPlayerMonster
 class PlayerMonster : public PublicPlayerMonster
 {
     public:
-    struct PlayerSkill
-    {
-        uint16_t skill;
-        uint8_t level;//start at 1
-        uint8_t endurance;
-    };
-    uint32_t remaining_xp;
-    uint32_t sp;
-    uint32_t egg_step;
-    //in form of list to get random into the list
-    std::vector<PlayerSkill> skills;
-    #ifndef CATCHCHALLENGER_VERSION_SINGLESERVER
-    uint32_t id;//id into the db, only on server part, but no way to leave from here with risk of structure problem
-    #endif
-    uint32_t character_origin;
+        struct PlayerSkill
+        {
+            uint16_t skill;
+            uint8_t level;//start at 1
+            uint8_t endurance;
+        };
+
+        uint32_t remaining_xp;
+        uint32_t sp;
+        uint32_t egg_step;
+
+        //in form of list to get random into the list
+        std::vector<PlayerSkill> skills;
+
+        #ifndef CATCHCHALLENGER_VERSION_SINGLESERVER
+            uint32_t id;//id into the db, only on server part, but no way to leave from here with risk of structure problem
+        #endif
+
+        uint32_t character_origin;
 };
 
-bool operator!=(const PlayerMonster &monster1,const PlayerMonster &monster2);
+bool operator!=(const PlayerMonster &monster1, const PlayerMonster &monster2);
 
 struct PlayerQuest
 {
@@ -360,15 +364,15 @@ struct Player_private_and_public_informations
     Player_public_informations public_informations;
     uint64_t cash,warehouse_cash;
     //crafting
-    char * recipes;
+    char* recipes;
     /// \todo put out of here to have mutalised engine
     std::vector<PlayerMonster> playerMonster,warehouse_playerMonster;
     CLAN_ID_TYPE clan;
-    char * encyclopedia_monster;
-    char * encyclopedia_item;//should be: CommonDatapack::commonDatapack.items.item.size()/8+1
+    char* encyclopedia_monster;
+    char* encyclopedia_item;//should be: CommonDatapack::commonDatapack.items.item.size()/8+1
     uint32_t repel_step;
     bool clan_leader;
-    char * bot_already_beaten;//should be: CommonDatapackServerSpec::commonDatapackServerSpec.botFightsMaxId/8+1
+    char* bot_already_beaten;//should be: CommonDatapackServerSpec::commonDatapackServerSpec.botFightsMaxId/8+1
 
     /* item and plant is keep under database format to keep the dataintegrity and save quickly the data
      * More memory usage by 2x, but improve the code maintenance because the id in memory is id in database
@@ -380,28 +384,28 @@ struct Player_private_and_public_informations
         std::unordered_set<uint16_t> itemOnMap;
         #if defined(CATCHCHALLENGER_CLASS_ALLINONESERVER) || defined(CATCHCHALLENGER_CLASS_ONLYGAMESERVER)
             #ifdef CATCHCHALLENGER_GAMESERVER_PLANTBYPLAYER
-            std::unordered_map<uint16_t/*pointOnMap:indexOfDirtOnMap*/,PlayerPlant> plantOnMap;
+                std::unordered_map<uint16_t/*pointOnMap:indexOfDirtOnMap*/, PlayerPlant> plantOnMap;
             #endif
         #else
-            std::unordered_map<uint16_t/*pointOnMap:indexOfDirtOnMap*/,PlayerPlant> plantOnMap;
+            std::unordered_map<uint16_t/*pointOnMap:indexOfDirtOnMap*/, PlayerPlant> plantOnMap;
         #endif
         std::unordered_map<uint16_t, PlayerQuest> quests;
-        std::unordered_map<uint8_t,PlayerReputation> reputation;
-        std::unordered_map<CATCHCHALLENGER_TYPE_ITEM,uint32_t/*quantity*/> items,warehouse_items;
+        std::unordered_map<uint8_t, PlayerReputation> reputation;
+        std::unordered_map<CATCHCHALLENGER_TYPE_ITEM, uint32_t/*quantity*/> items, warehouse_items;
     #else
         std::set<ActionAllow> allow;
         //here to send at character login
         std::set<uint16_t> itemOnMap;
         #if defined(CATCHCHALLENGER_CLASS_ALLINONESERVER) || defined(CATCHCHALLENGER_CLASS_ONLYGAMESERVER)
             #ifdef CATCHCHALLENGER_GAMESERVER_PLANTBYPLAYER
-            std::map<uint16_t/*pointOnMap:indexOfDirtOnMap*/,PlayerPlant> plantOnMap;
+                std::map<uint16_t/*pointOnMap:indexOfDirtOnMap*/, PlayerPlant> plantOnMap;
             #endif
         #else
-            std::map<uint16_t/*pointOnMap:indexOfDirtOnMap*/,PlayerPlant> plantOnMap;
+            std::map<uint16_t/*pointOnMap:indexOfDirtOnMap*/, PlayerPlant> plantOnMap;
         #endif
         std::map<uint16_t, PlayerQuest> quests;
-        std::map<uint8_t/*internal id*/,PlayerReputation> reputation;
-        std::map<CATCHCHALLENGER_TYPE_ITEM,uint32_t/*quantity*/> items,warehouse_items;
+        std::map<uint8_t/*internal id*/, PlayerReputation> reputation;
+        std::map<CATCHCHALLENGER_TYPE_ITEM, uint32_t/*quantity*/> items, warehouse_items;
     #endif
 };
 
@@ -661,9 +665,9 @@ struct Skill
 
 enum Place : uint8_t
 {
-    OnPlayer=0,
-    WareHouse=1,
-    Market=2
+    OnPlayer  = 0,
+    WareHouse = 1,
+    Market    = 2
 };
 
 struct Monster
@@ -673,11 +677,11 @@ struct Monster
     {
         uint32_t hp;
         #ifndef CATCHCHALLENGER_CLASS_MASTER
-        uint32_t attack;
-        uint32_t defense;
-        uint32_t special_attack;
-        uint32_t special_defense;
-        uint32_t speed;
+            uint32_t attack;
+            uint32_t defense;
+            uint32_t special_attack;
+            uint32_t special_defense;
+            uint32_t speed;
         #endif
     };
     Stat stat;
@@ -714,7 +718,7 @@ struct Monster
     uint32_t give_xp;
     std::vector<uint32_t> level_to_xp;//first is xp to level 1
     #ifdef CATCHCHALLENGER_CLIENT
-    double powerVar;
+        double powerVar;
     #endif
 
     struct AttackToLearnByItem
@@ -824,8 +828,8 @@ struct BotFight
 struct IndustryStatus
 {
     uint64_t last_update;
-    std::unordered_map<uint32_t,uint32_t> resources;
-    std::unordered_map<uint32_t,uint32_t> products;
+    std::unordered_map<uint32_t, uint32_t> resources;
+    std::unordered_map<uint32_t, uint32_t> products;
 };
 
 class Profile
@@ -859,7 +863,7 @@ public:
 
 struct ServerSpecProfile
 {
-    void * mapPointer;
+    void* mapPointer;
     /*COORD_TYPE*/ uint8_t x;
     /*COORD_TYPE*/ uint8_t y;
     Orientation orientation;
@@ -896,7 +900,7 @@ struct MonstersCollision
 struct Type
 {
     std::string name;
-    std::unordered_map<uint8_t,int8_t> multiplicator;//negative = divide, not multiply
+    std::unordered_map<uint8_t, int8_t> multiplicator;//negative = divide, not multiply
 };
 
 }
