@@ -6,9 +6,11 @@ using namespace CatchChallenger;
 
 ConnectedSocket::ConnectedSocket(ISocket* socket) : pSocket(socket)
 {
-    pSocket->setSocketOption(SocketOption::KeepAliveOption, 1);
-    purgeBuffer();
-    pSocket->open(DeviceMode::ReadWrite);//may it is going to be removed
+    if (pSocket) {
+        pSocket->setSocketOption(SocketOption::KeepAliveOption, 1);
+        purgeBuffer();
+        pSocket->open(DeviceMode::ReadWrite);//may it is going to be removed
+    }
 }
 
 ConnectedSocket::~ConnectedSocket()
@@ -23,6 +25,22 @@ SSLSocket* ConnectedSocket::getSSLSocket() const {
     }
 
     return new SSLSocket();
+}
+
+bool ConnectedSocket::isSSL() {
+    return typeid(pSocket).name() == "SSLScket";
+}
+
+bool ConnectedSocket::isFake() {
+    return typeid(pSocket).name() == "FakeSocket";
+}
+
+bool ConnectedSocket::isTCP() {
+    return typeid(pSocket).name() == "TcpSocket";
+}
+
+bool ConnectedSocket::exists() {
+    return pSocket;
 }
 
 std::list<SslError> ConnectedSocket::sslErrors() const

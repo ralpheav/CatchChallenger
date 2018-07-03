@@ -33,6 +33,7 @@
 #include "../../general/base/protocol/log/logger.h"
 #include "../../general/base/protocol/config/Settings.h"
 
+
 namespace CatchChallenger
 {
     class Api_protocol_2 : public ProtocolParsingInputOutput, public MoveOnTheMap
@@ -44,13 +45,14 @@ namespace CatchChallenger
 
         public:
             //setting.setAppPath(QCoreApplication::applicationDirPath().toStdString()).setDatapackDir("/datapack");
-            explicit Api_protocol_2(ConnectedSocket* socket, bool tolerantMode = false, Settings setting);
+            explicit Api_protocol_2(ConnectedSocket* socket, Settings setting, bool tolerantMode = false);
             ~Api_protocol_2();
 
             bool disconnectClient();
             void unloadSelection();
             const ServerFromPoolForDisplay& getCurrentServer(const unsigned int& index);
             bool dataToPlayerMonster(DataStreamSerializer& in, PlayerMonster& monster);
+            void destroyPlayerInfo();
 
             //protocol command
             bool tryLogin(const std::string& login, const std::string& pass);

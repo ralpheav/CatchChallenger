@@ -43,7 +43,7 @@ namespace CatchChallenger
             std::string peerName() const;
             uint16_t peerPort() const;
             SSLSocket*  getSSLSocket() const;
-            int state() const;
+            int         state() const;
             bool	waitForConnected(int msecs = 30000);
             bool	waitForDisconnected(int msecs = 30000);
             int64_t	bytesAvailable() const;
@@ -52,6 +52,10 @@ namespace CatchChallenger
             int64_t	readData(char* data, int64_t maxSize);
             int64_t	writeData(const char* data, int64_t maxSize);
             void	close();
+            bool        isSSL();
+            bool        isFake();
+            bool        isTCP();
+            bool        exists();
 
         protected:
 

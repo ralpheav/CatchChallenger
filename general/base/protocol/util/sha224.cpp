@@ -1,7 +1,7 @@
 #include "sha224.h"
 
-SHA224::SHA(const char* input_string) {
-    SHA224_Init(&ctx);
+SHA224::SHA224(const char* input_string) {
+    ::SHA224_Init(&ctx);
     SHA224_Update(&ctx, input_string, strlen(input_string));
 }
 

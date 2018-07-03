@@ -5,21 +5,23 @@
 #include <string.h>
 #include <openssl/sha.h>
 
-class SHA224
+namespace CatchChallenger
 {
-    private:
+    class SHA224
+    {
+        private:
 
-        SHA256_CTX ctx;
-        unsigned char m_digest[SHA224_DIGEST_LENGTH];
+            SHA256_CTX ctx;
+            unsigned char m_digest[SHA224_DIGEST_LENGTH];
 
-    public:
+        public:
 
-        SHA(const char* input_string);
+            SHA224(const char* input_string);
 
-        void addData(const char* input_string);
-        void execute();
-        void getDigest(char* out_digest);
-        void getDigestHex(char* out_digestHex);
+            void addData(const char* input_string);
+            void execute();
+            void getDigest(char* out_digest);
+            void getDigestHex(char* out_digestHex);
     };
-
+}
 #endif //SHA224_H

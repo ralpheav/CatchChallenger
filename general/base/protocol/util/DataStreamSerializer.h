@@ -134,6 +134,10 @@ public:
         return write(i);
     }
 
+    DataStreamSerializer& operator<<(const int64_t& i) {
+        return write(i);
+    }
+
     DataStreamSerializer& operator<<(const uint8_t& i) {
         return write(i);
     }
@@ -143,6 +147,10 @@ public:
     }
 
     DataStreamSerializer& operator<<(const uint32_t& i) {
+        return write(i);
+    }
+
+    DataStreamSerializer& operator<<(const uint64_t& i) {
         return write(i);
     }
 
@@ -167,6 +175,11 @@ public:
         return *this;
     }
 
+    DataStreamSerializer& operator>>(int64_t& i) {
+        this->read(i);
+        return *this;
+    }
+
     DataStreamSerializer& operator>>(uint8_t& i) {
         this->read(i);
         return *this;
@@ -178,6 +191,11 @@ public:
     }
 
     DataStreamSerializer& operator>>(uint32_t& i) {
+        this->read(i);
+        return *this;
+    }
+
+    DataStreamSerializer& operator>>(uint64_t& i) {
         this->read(i);
         return *this;
     }
