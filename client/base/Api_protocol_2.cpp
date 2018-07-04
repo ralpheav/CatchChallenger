@@ -2299,10 +2299,9 @@ ServerFromPoolForDisplay* Api_protocol_2::addLogicalServer(const ServerFromPoolF
     LogicialGroup* logicialGroupCursor;
     if (server.logicalGroupIndex >= logicialGroupIndexList.size())
     {
-        Logger::instance().log(Logger::Debug, sprintf("out of range for addLogicalGroup: %s, server.logicalGroupIndex %d <= logicialGroupIndexList.size() %d (defaulting to root folder)"
-                                                      , "server.xml"
-                                                      , server.logicalGroupIndex
-                                                      , logicialGroupIndexList.size()));
+        std::stringstream ss;
+        ss << "out of range for addLogicalGroup: server.xml, server.logicalGroupIndex " << server.logicalGroupIndex << " <= logicialGroupIndexList.size() " << logicialGroupIndexList.size() << " (defaulting to root folder)";
+        Logger::instance().log(Logger::Debug, ss.str());
         logicialGroupCursor = &logicialGroup;
     } else {
         logicialGroupCursor = logicialGroupIndexList.at(server.logicalGroupIndex);
@@ -2367,7 +2366,7 @@ void Api_protocol_2::readForFirstHeader()
                 socket->getSSLSocket()->ignoreSslErrors();
                 socket->getSSLSocket()->startClientEncryption();
                 //TODO: abstract function
-                if (!socket->connect(&QSslSocket::encrypted, /*callback*/&Api_protocol_2::sslHandcheckIsFinished)) {
+                if (!socket->connect(SslMode::encryptedMode)) {
                     abort();
                 }
                 //TODO
@@ -2384,38 +2383,40 @@ void Api_protocol_2::sslHandcheckIsFinished()
     connectTheExternalSocketInternal();
 }
 
-bool Api_protocol_2::saveCert(File certFile) {
+bool Api_protocol_2::checkCert(const File& certFile) {
     #if (!defined(CATCHCHALLENGER_VERSION_SOLO) || defined(CATCHCHALLENGER_MULTI)) && ! defined(BOTTESTCONNECT)
         SslCert sslCert(NULL);
-        sslCert.exec();
         if (sslCert.validated()) {
-            saveCert(certFile.fileName());
+            saveCert(certFile.filename());
         } else {
-            socket->pSocket->disconnectFromHost();
+            socket->disconnectFromHost();
             return false;
         }
     #endif
+
     return true;
 }
 
 void Api_protocol_2::connectTheExternalSocketInternal()
 {
-    if (socket->pSocket == NULL)
+    if (socket->exists())
     {
         newError(std::string("Internal problem"), std::string("Api_protocol_2::connectTheExternalSocket() socket->sslSocket==NULL"));
         return;
     }
-    if (socket->peerName().isEmpty() || socket->pSocket->state() != SocketState::ConnectedState)
+    if (socket->peerName().empty() || socket->state() != SocketState::ConnectedState)
     {
         newError(std::string("Internal problem"),std::string("Api_protocol_2::connectTheExternalSocket() socket->sslSocket->peerAddress()==QHostAddress::Null: ") +
-                 socket->peerName().toStdString() + "-" + std::to_string(socket->peerPort()) +
-                 ", state: " + std::to_string(socket->pSocket->state())
+                 socket->peerName() + "-" + std::to_string(socket->peerPort()) +
+                 ", state: " + std::to_string(socket->state())
                  );
         return;
     }
     //check the certificat
     {
-        std::string dir = sprintf("%s/cert/", Dir::appPath().c_str());
+        std::stringstream ss;
+        ss << Dir::appPath() << "/cert/";
+        std::string dir = ss.str();
         Dir datapackCert(dir);
         datapackCert.mkpath();
 
@@ -2433,7 +2434,7 @@ void Api_protocol_2::connectTheExternalSocketInternal()
         {
             if (selectedServerIndex == -1)
             {
-                parseError("Internal error, file: "+std::string(__FILE__) + ":" + std::to_string(__LINE__), std::string("Api_protocol_2::connectTheExternalSocket() selectedServerIndex==-1"));
+                parseError("Internal error, file: " + std::string(__FILE__) + std::string(":") + std::to_string(__LINE__), std::string("Api_protocol_2::connectTheExternalSocket() selectedServerIndex==-1"));
                 return;
             }
             const ServerFromPoolForDisplay& serverFromPoolForDisplay = serverOrdenedList.at(selectedServerIndex);
@@ -2452,19 +2453,19 @@ void Api_protocol_2::connectTheExternalSocketInternal()
         }
         if (certFile.exists())
         {
-            if (typeid(socket->pSocket).name() == "SSLSocket") {
+            if (socket->isSSL()) {
 
-                if (socket->pSocket->mode() == SslMode::UnencryptedMode)
+                if (socket->getSSLSocket()->sslMode() == SslMode::UnencryptedMode)
                 {
-                    if (!this->saveCert(certFile)) {
+                    if (!this->checkCert(certFile)) {
                         return;
                     }
                 }
                 else if (certFile.open(FileMode::ReadOnly))
                 {
-                    if (socket->pSocket->peerCertificate().publicKey().toPem() != certFile.readAll())
+                    if (socket->getSSLSocket()->peerCertificate().publicKey().toPem() != certFile.readAll())
                     {
-                        if (!this->saveCert(certFile)) {
+                        if (!this->checkCert(certFile)) {
                             return;
                         }
                     }
@@ -2474,8 +2475,8 @@ void Api_protocol_2::connectTheExternalSocketInternal()
         }
         else
         {
-            if (socket->pSocket->mode() != SslMode::UnencryptedMode) {
-                saveCert(certFile.fileName());
+            if (socket->getSSLSocket()->sslMode() != SslMode::UnencryptedMode) {
+                saveCert(certFile.filename());
             }
 
         }
@@ -2492,7 +2493,7 @@ void Api_protocol_2::connectTheExternalSocketInternal()
     }
 
     if (stageConnexion == StageConnexion::Stage1) {
-        if (!socket->pSocket->connect(&ConnectedSocket::readyRead, &Api_protocol_2::parseIncommingData, Qt::QueuedConnection)) {
+        if (!socket->connect(SslMode::UnencryptedMode)) {
             //put queued to don't have circular loop Client -> Server -> Client
             abort();
         }
@@ -2506,28 +2507,28 @@ void Api_protocol_2::connectTheExternalSocketInternal()
 
 void Api_protocol_2::saveCert(const std::string& file)
 {
-    if (socket->pSocket == NULL || typeid(socket->pSocket).name() != "SSLSocket") {
+    if (socket == NULL || !socket->isSSL()) {
         return;
     }
 
     File certFile(file);
 
-    if (socket->pSocket->mode() == SslMode::UnencryptedMode) {
+    if (socket->getSSLSocket()->sslMode() == SslMode::UnencryptedMode) {
         certFile.remove();
     } else {
         if (certFile.open(FileMode::WriteOnly))
         {
-            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(certFile.fileName()));
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(certFile.filename()));
 
-            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->pSocket->peerCertificate().issuerInfo(QSslCertificate::Organization)));
-            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->pSocket->peerCertificate().issuerInfo(QSslCertificate::CommonName)));
-            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->pSocket->peerCertificate().issuerInfo(QSslCertificate::LocalityName)));
-            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->pSocket->peerCertificate().issuerInfo(QSslCertificate::OrganizationalUnitName)));
-            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->pSocket->peerCertificate().issuerInfo(QSslCertificate::CountryName)));
-            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->pSocket->peerCertificate().issuerInfo(QSslCertificate::StateOrProvinceName)));
-            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->pSocket->peerCertificate().issuerInfo(QSslCertificate::EmailAddress)));
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->getSSLSocket()->peerCertificate().issuerInfo(SslCertificate::Organization)));
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->getSSLSocket()->peerCertificate().issuerInfo(SslCertificate::CommonName)));
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->getSSLSocket()->peerCertificate().issuerInfo(SslCertificate::LocalityName)));
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->getSSLSocket()->peerCertificate().issuerInfo(SslCertificate::OrganizationalUnitName)));
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->getSSLSocket()->peerCertificate().issuerInfo(SslCertificate::CountryName)));
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->getSSLSocket()->peerCertificate().issuerInfo(SslCertificate::StateOrProvinceName)));
+            Logger::instance().log(Logger::Debug, "Register the certificate into" + std::string(socket->getSSLSocket()->peerCertificate().issuerInfo(SslCertificate::EmailAddress)));
 
-            certFile.write(socket->pSocket->peerCertificate().publicKey().toPem());
+            certFile.write(socket->getSSLSocket()->peerCertificate().publicKey().toPem());
             certFile.close();
         }
     }

@@ -19,6 +19,12 @@ ConnectedSocket::~ConnectedSocket()
     //deleteLater();
 }
 
+bool ConnectedSocket::connect(SslMode mode) {
+    this->getSSLSocket()->setSslMode(mode);
+    this->connectToHost(hostName, port);
+    return this->state() == SocketState::ConnectedState;
+}
+
 SSLSocket* ConnectedSocket::getSSLSocket() const {
     if (typeid(pSocket).name() == "SSLScket") {
         return reinterpret_cast<SSLSocket *>(pSocket);

@@ -22,7 +22,7 @@
 
 namespace CatchChallenger
 {
-    enum SSLCertificate {
+    enum SslCertificate {
         Organization,
         CommonName,
         LocalityName,
@@ -50,7 +50,7 @@ namespace CatchChallenger
         SSLKey key;
 
         public:
-            std::string issuerInfo(SSLCertificate certificate) {
+            std::string issuerInfo(SslCertificate certificate) {
                 //TODO: get the certificate field
                 return std::string();
             }

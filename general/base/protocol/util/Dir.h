@@ -7,6 +7,7 @@
 #include <pwd.h>
 #include "limits.h"
 #include "stdlib.h"
+#include <string>
 
 namespace CatchChallenger
 {
@@ -29,6 +30,13 @@ namespace CatchChallenger
                 if (stat(path.c_str(), &st) == -1) {
                     mkdir(path.c_str(), 0700);
                 }
+            }
+
+            void mkpath() {
+                if (this->m_path.empty()) {
+                    this->m_path = currentPath();
+                }
+                mkpath(this->m_path);
             }
 
             std::string path() {

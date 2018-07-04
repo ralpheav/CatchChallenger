@@ -67,7 +67,8 @@ namespace CatchChallenger
     enum SslMode {
         UnencryptedMode,
         SslClientMode,
-        SslServerMode
+        SslServerMode,
+        encryptedMode
     };
 
     enum PeerVerifyMode {

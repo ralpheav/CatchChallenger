@@ -24,6 +24,7 @@ namespace CatchChallenger
         public:
 
             File() {
+                m_mode = ReadOnly;
             }
 
             File(const std::string& filename, FileMode mode = FileMode::WriteOnly) {
@@ -32,21 +33,24 @@ namespace CatchChallenger
                 open(mode);
             }
 
-            void open(FileMode mode) {
+            bool open(FileMode mode) {
 		m_mode = mode;
                 if (m_mode == FileMode::WriteOnly) {
                     outfile.open(this->m_filename);
+                    return outfile.is_open();
                 }
                 if (m_mode == FileMode::ReadOnly) {
                     infile.open(this->m_filename);
+                    return infile.is_open();
                 }
+                return false;
             }
 
             void setFileName(const std::string& filename) {
                 this->m_filename = filename;
             }
 
-            std::string filename() {
+            std::string filename() const {
                 return m_filename;
             }
 

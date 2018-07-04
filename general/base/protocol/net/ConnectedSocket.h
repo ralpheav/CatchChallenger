@@ -33,21 +33,21 @@ namespace CatchChallenger
             void	connectToHost(const std::string& hostName, uint16_t port);
             void	connectToHost(const HostAddress& address, uint16_t port);
             void	disconnectFromHost();
-            int     error() const;
+            int         error() const;
             bool	flush();
             bool	isValid() const;
-            void    setTcpCork(const bool &cork);
+            void        setTcpCork(const bool &cork);
             HostAddress localAddress() const;
-            uint16_t localPort() const;
+            uint16_t    localPort() const;
             HostAddress peerAddress() const;
             std::string peerName() const;
-            uint16_t peerPort() const;
+            uint16_t    peerPort() const;
             SSLSocket*  getSSLSocket() const;
             int         state() const;
             bool	waitForConnected(int msecs = 30000);
             bool	waitForDisconnected(int msecs = 30000);
             int64_t	bytesAvailable() const;
-            OpenMode openMode() const;
+            OpenMode    openMode() const;
             std::string errorString() const;
             int64_t	readData(char* data, int64_t maxSize);
             int64_t	writeData(const char* data, int64_t maxSize);
@@ -56,6 +56,7 @@ namespace CatchChallenger
             bool        isFake();
             bool        isTCP();
             bool        exists();
+            bool        connect(SslMode mode);
 
         protected:
 
