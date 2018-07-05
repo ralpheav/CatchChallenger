@@ -7,34 +7,34 @@
 #include <cstdlib>
 #include <sstream>
 
-#include "../../general/base/protocol/util/File.h"
-#include "../../general/base/protocol/util/Dir.h"
+#include "../../../general/base/protocol/util/File.h"
+#include "../../../general/base/protocol/util/Dir.h"
 
-#include "../../general/base/protocol/util/DataStreamSerializer.h"
-#include "../../general/base/protocol/util/sha224.h"
+#include "../../../general/base/protocol/util/DataStreamSerializer.h"
+#include "../../../general/base/protocol/util/sha224.h"
 
-#include "../../general/base/protocol/lib/tinyXML2/tinyxml2.h"
-#include "../../general/base/protocol/lib/tinyXML2/customtinyxml2.h"
+#include "../../../general/base/protocol/lib/tinyXML2/tinyxml2.h"
+#include "../../../general/base/protocol/lib/tinyXML2/customtinyxml2.h"
 
 #include "ClientStructures2.h"
-#include "../../general/base/protocol/general/GeneralStructures.h"
-#include "../../general/base/protocol/general/GeneralVariable.h"
+#include "../../../general/base/protocol/general/GeneralStructures.h"
+#include "../../../general/base/protocol/general/GeneralVariable.h"
 
-#include "../../general/base/protocol/ProtocolParsing2.h"
-#include "../../general/base/protocol/MoveOnTheMap.h"
-#include "../../general/base/protocol/ProtocolVersion2.h"
-#include "../../general/base/protocol/CommonDatapack.h"
+#include "../../../general/base/protocol/ProtocolParsing2.h"
+#include "../../../general/base/protocol/MoveOnTheMap.h"
+#include "../../../general/base/protocol/ProtocolVersion2.h"
+#include "../../../general/base/protocol/CommonDatapack.h"
 
-#include "../../general/base/protocol/CommonSettingsCommon.h"
+#include "../../../general/base/protocol/CommonSettingsCommon.h"
 
-#include "../../general/base/protocol/CommonSettingsServer.h"
-#include "../../general/base/protocol/FacilityLib.h"
-#include "../../general/base/protocol/FacilityLibGeneral.h"
-#include "../../general/base/protocol/general/GeneralType.h"
-#include "../../general/base/protocol/log/logger.h"
-#include "../../general/base/protocol/config/Settings.h"
+#include "../../../general/base/protocol/CommonSettingsServer.h"
+#include "../../../general/base/protocol/FacilityLib.h"
+#include "../../../general/base/protocol/FacilityLibGeneral.h"
+#include "../../../general/base/protocol/general/GeneralType.h"
+#include "../../../general/base/protocol/log/logger.h"
+#include "../../../general/base/protocol/config/Settings.h"
 
-#include "../../general/base/protocol/net/SslCert.h"
+#include "../../../general/base/protocol/net/SslCert.h"
 
 
 namespace CatchChallenger

@@ -52,8 +52,13 @@ public:
     std::vector<uint8_t> get() {
         return storage;
     }
+
     std::vector<uint8_t>* ptrget() {
         return &storage;
+    }
+
+    const char* toHex() const {
+        return (char *)(storage.data());
     }
 };
 

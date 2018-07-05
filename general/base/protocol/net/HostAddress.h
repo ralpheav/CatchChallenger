@@ -29,6 +29,10 @@ namespace CatchChallenger
         HostAddress() {
         }
 
+        HostAddress(std::string ip) {
+            this->ip = ip;
+        }
+
         HostAddress(SpecialAddress address) {
             setAddress(address);
         }
