@@ -20,6 +20,7 @@ namespace CatchChallenger
             std::string m_filename;
 	    std::ofstream outfile;
 	    std::ifstream infile;
+            std::string m_lastError;
 
         public:
 
@@ -155,12 +156,20 @@ namespace CatchChallenger
                 }
             }
 
-            void remove() {
+            bool remove() {
                 if (m_mode == FileMode::WriteOnly) {
                     outfile << "" << std::endl;
+                    return true;
                 } else {
                     std::cerr << "the file is read only" << std::endl;
                 }
+                return false;
+            }
+
+            std::string errorString() {
+                //m_lastError = stderr(errno);
+                //redir the cerr
+                return m_lastError;
             }
     };
 }

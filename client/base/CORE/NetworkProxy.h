@@ -22,24 +22,25 @@ namespace CatchChallenger
                 FtpCachingProxy
             };
 
+            static NetworkProxy m_networkProxy;
+
         private:
 
-            NetworkProxy m_networkProxy;
-            std::string m_type;
+            ProxyType m_type;
 
         public:
             explicit NetworkProxy() {
                 m_type = DefaultProxy;
             }
-            ~NetworkProxy() {
 
+            ~NetworkProxy() {
             }
 
-            std::string type() const {
+            ProxyType type() const {
                 return m_type;
             }
 
-            static void setApplicationProxy(const NetworkProxy &proxy) {
+            static void setApplicationProxy(const NetworkProxy& proxy) {
                 m_networkProxy = proxy;
             }
 
@@ -48,6 +49,8 @@ namespace CatchChallenger
             }
 
     };
+
+    NetworkProxy NetworkProxy::m_networkProxy;
 }
 
 #endif // CATCHCHALLENGER_NETWORKPROXY_H

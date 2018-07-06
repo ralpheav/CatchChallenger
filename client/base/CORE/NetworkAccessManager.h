@@ -28,8 +28,8 @@ namespace CatchChallenger
         ~NetworkAccessManager() {
         }
 
-        void setProxy(const &proxy) const {
-            m_proxy = proxy;
+        void setProxy(const NetworkProxy& proxy) const {
+            m_proxy.setApplicationProxy(proxy);
         }
 
     };

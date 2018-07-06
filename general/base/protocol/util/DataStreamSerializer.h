@@ -1,3 +1,6 @@
+#ifndef DATASTREAMSERIALIZER_H
+#define DATASTREAMSERIALIZER_H
+
 #include <cstring>
 #include <stdexcept>
 
@@ -238,3 +241,5 @@ public:
     }
 
 };
+
+#endif //DATASTREAMSERIALIZER_H

@@ -84,12 +84,12 @@ Api_client_real::~Api_client_real()
     zstdDecodeThreadSub.wait();
 }
 
-bool Api_client_real::parseReplyData(const uint8_t& mainCodeType,const uint8_t &queryNumber, const char* const data, const unsigned int& size)
+bool Api_client_real::parseReplyData(const uint8_t& mainCodeType,const uint8_t& queryNumber, const char* const data, const unsigned int& size)
 {
     return Api_client_real::parseReplyData(mainCodeType, queryNumber, std::string(data, size));
 }
 
-bool Api_client_real::parseReplyData(const uint8_t &mainCodeType, const uint8_t &queryNumber, const std::string &data)
+bool Api_client_real::parseReplyData(const uint8_t& mainCodeType, const uint8_t& queryNumber, const std::string& data)
 {
     if (querySendTime.find(queryNumber) != querySendTime.cend())
     {
@@ -100,7 +100,7 @@ bool Api_client_real::parseReplyData(const uint8_t &mainCodeType, const uint8_t 
         querySendTime.erase(queryNumber);
     }
 
-    DataStreamSerializer in(data.size());
+    DataStreamSerializer in(static_cast<const unsigned int>(data.size()));
     //in.setVersion(QDataStream::Qt_4_4);
     //in.setByteOrder(QDataStream::LittleEndian);
     in << data;
@@ -136,25 +136,28 @@ bool Api_client_real::parseReplyData(const uint8_t &mainCodeType, const uint8_t 
                         boolList.push_back(returnCode&0x40);
                         boolList.push_back(returnCode&0x80);
                     }
-                    if((uint32_t)boolList.size()<datapackFilesListBase.size())
+                    if ((uint32_t)boolList.size() < datapackFilesListBase.size())
                     {
-                        newError(tr("Procotol wrong or corrupted").toStdString(),
-                                 QStringLiteral("bool list too small with main ident: %1, and queryNumber: %2, type: query_type_protocol")
-                                 .arg(mainCodeType).arg(queryNumber).toStdString());
+                        std::stringstream ss;
+                        ss << "bool list too small with main ident: " << mainCodeType << ", and queryNumber: " << queryNumber << ", type: query_type_protocol";
+                        Logger::instance().log(Logger::Debug, ss.str());
+
                         return false;
                     }
                     unsigned int index = 0;
-                    while (index<datapackFilesListBase.size())
+                    while (index < datapackFilesListBase.size())
                     {
                         if (boolList.front())
                         {
-                            qDebug() << (QStringLiteral("remove the file: %1")
-                                         .arg(QString::fromStdString(mDatapackBase)+text_slash+
-                                              QString::fromStdString(datapackFilesListBase.at(index))));
+                            std::stringstream ss;
+                            ss << "remove the file: " << mDatapackBase << text_slash << datapackFilesListBase.at(index);
+                            Logger::instance().log(Logger::Debug, ss.str());
 
                             File file(mDatapackBase + text_slash + datapackFilesListBase.at(index));
                             if (!file.remove()) {
-                                qDebug() << (QStringLiteral("unable to remove the file: %1: %2").arg(QString::fromStdString(datapackFilesListBase.at(index))).arg(file.errorString()));
+                                std::stringstream ss;
+                                ss << "unable to remove the file: " << datapackFilesListMain.at(index) << ": " << file.errorString();
+                                Logger::instance().log(Logger::Debug, ss.str());
                             }
                             //removeFile(datapackFilesListBase.at(index));
                         }
@@ -165,9 +168,10 @@ bool Api_client_real::parseReplyData(const uint8_t &mainCodeType, const uint8_t 
                     cleanDatapackBase();
                     if (boolList.size() >= 8)
                     {
-                        newError(std::string("Procotol wrong or corrupted"),
-                                 std::string("bool list too big with main ident: %1, and queryNumber: %2, type: query_type_protocol")
-                                 .arg(queryNumber).toStdString());
+                        std::stringstream ss;
+                        ss << "Procotol wrong or corrupted " << "bool list too big with main ident: " << mainCodeType << ", and queryNumber: " << queryNumber << ", type: query_type_protocol";
+                        Logger::instance().log(Logger::Debug, ss.str());
+
                         return false;
                     }
                     if (!httpModeBase) {
@@ -182,7 +186,8 @@ bool Api_client_real::parseReplyData(const uint8_t &mainCodeType, const uint8_t 
                     {
                         datapackStatus = DatapackStatus::Sub;
                         if (!httpModeMain) {
-                            checkIfContinueOrFinished();
+                            //TODO: virtual function call
+                            //checkIfContinueOrFinished();
                         }
                         return true;
                     }
@@ -191,20 +196,21 @@ bool Api_client_real::parseReplyData(const uint8_t &mainCodeType, const uint8_t 
                     {
                         uint8_t returnCode;
                         in >> returnCode;
-                        boolList.push_back(returnCode&0x01);
-                        boolList.push_back(returnCode&0x02);
-                        boolList.push_back(returnCode&0x04);
-                        boolList.push_back(returnCode&0x08);
-                        boolList.push_back(returnCode&0x10);
-                        boolList.push_back(returnCode&0x20);
-                        boolList.push_back(returnCode&0x40);
-                        boolList.push_back(returnCode&0x80);
+                        boolList.push_back(returnCode & 0x01);
+                        boolList.push_back(returnCode & 0x02);
+                        boolList.push_back(returnCode & 0x04);
+                        boolList.push_back(returnCode & 0x08);
+                        boolList.push_back(returnCode & 0x10);
+                        boolList.push_back(returnCode & 0x20);
+                        boolList.push_back(returnCode & 0x40);
+                        boolList.push_back(returnCode & 0x80);
                     }
                     if ((uint32_t)boolList.size() < datapackFilesListMain.size())
                     {
-                        newError(tr("Procotol wrong or corrupted").toStdString(),
-                                 QStringLiteral("bool list too small with main ident: %1, and queryNumber: %2, type: query_type_protocol")
-                                 .arg(mainCodeType).arg(queryNumber).toStdString());
+                        std::stringstream ss;
+                        ss << "Procotol wrong or corrupted " << "bool list too big with main ident: "<<mainCodeType<<", and queryNumber: "<<queryNumber<<", type: query_type_protocol";
+                        Logger::instance().log(Logger::Debug, ss.str());
+
                         return false;
                     }
                     unsigned int index = 0;
@@ -212,12 +218,15 @@ bool Api_client_real::parseReplyData(const uint8_t &mainCodeType, const uint8_t 
                     {
                         if (boolList.front())
                         {
-                            qDebug() << (QStringLiteral("remove the file: %1")
-                                         .arg(QString::fromStdString(mDatapackMain)+text_slash+QString::fromStdString(datapackFilesListMain.at(index))));
+                            std::stringstream ss;
+                            ss << "Remove the file: " << mDatapackMain << text_slash << datapackFilesListMain.at(index);
+                            Logger::instance().log(Logger::Debug, ss.str());
 
                             File file(mDatapackMain + text_slash + datapackFilesListMain.at(index));
                             if (!file.remove()) {
-                                qDebug() << (QStringLiteral("unable to remove the file: %1: %2").arg(QString::fromStdString(datapackFilesListMain.at(index))).arg(file.errorString()));
+                                std::stringstream ss;
+                                ss << "unable to remove the file: " << datapackFilesListMain.at(index) << ": " << file.errorString();
+                                Logger::instance().log(Logger::Debug, ss.str());
                             }
                         }
                         boolList.pop_front();
@@ -227,9 +236,10 @@ bool Api_client_real::parseReplyData(const uint8_t &mainCodeType, const uint8_t 
                     cleanDatapackMain();
                     if (boolList.size() >= 8)
                     {
-                        newError(tr("Procotol wrong or corrupted").toStdString(),
-                                 QStringLiteral("bool list too big with main ident: %1, and queryNumber: %2, type: query_type_protocol")
-                                 .arg(mainCodeType).arg(queryNumber).toStdString());
+                        std::stringstream ss;
+                        ss << "Procotol wrong or corrupted" << "bool list too big with main ident: " << mainCodeType << ", and queryNumber: " << queryNumber << ", type: query_type_protocol";
+                        Logger::instance().log(Logger::Debug, ss.str());
+
                         return false;
                     }
                     if (!httpModeMain) {
@@ -245,7 +255,8 @@ bool Api_client_real::parseReplyData(const uint8_t &mainCodeType, const uint8_t 
                     {
                         datapackStatus = DatapackStatus::Finished;
                         if (!httpModeSub) {
-                            datapackDownloadFinishedSub();
+                            //TODO: virtual
+                            //datapackDownloadFinishedSub();
                         }
                         return true;
                     }
@@ -265,9 +276,10 @@ bool Api_client_real::parseReplyData(const uint8_t &mainCodeType, const uint8_t 
                     }
                     if ((uint32_t)boolList.size() < datapackFilesListSub.size())
                     {
-                        newError(tr("Procotol wrong or corrupted").toStdString(),
-                                 QStringLiteral("bool list too small with sub ident: %1, and queryNumber: %2, type: query_type_protocol")
-                                 .arg(mainCodeType).arg(queryNumber).toStdString());
+                        std::stringstream ss;
+                        ss << "Procotol wrong or corrupted" << "bool list too big with main ident: " << mainCodeType << ", and queryNumber: " << queryNumber << ", type: query_type_protocol";
+                        Logger::instance().log(Logger::Debug, ss.str());
+
                         return false;
                     }
                     unsigned int index = 0;
@@ -275,11 +287,15 @@ bool Api_client_real::parseReplyData(const uint8_t &mainCodeType, const uint8_t 
                     {
                         if (boolList.front())
                         {
-                            qDebug() << (QStringLiteral("remove the file: %1")
-                                         .arg(QString::fromStdString(mDatapackSub)+text_slash+QString::fromStdString(datapackFilesListSub.at(index))));
+                            std::stringstream ss;
+                            ss << "Remove the file: " << mDatapackMain << text_slash << datapackFilesListMain.at(index);
+                            Logger::instance().log(Logger::Debug, ss.str());
+
                             File file(mDatapackSub + text_slash + datapackFilesListSub.at(index));
                             if (!file.remove()) {
-                                qDebug() << (QStringLiteral("unable to remove the file: %1: %2").arg(QString::fromStdString(datapackFilesListSub.at(index))).arg(file.errorString()));
+                                std::stringstream ss;
+                                ss << "unable to remove the file: " << datapackFilesListMain.at(index) << ": " << file.errorString();
+                                Logger::instance().log(Logger::Debug, ss.str());
                             }
                         }
                         boolList.pop_front();
@@ -289,13 +305,15 @@ bool Api_client_real::parseReplyData(const uint8_t &mainCodeType, const uint8_t 
                     cleanDatapackSub();
                     if (boolList.size() >= 8)
                     {
-                        newError(std::string("Procotol wrong or corrupted"),
-                                 QStringLiteral("bool list too big with sub ident: %1, and queryNumber: %2, type: query_type_protocol")
-                                 .arg(mainCodeType).arg(queryNumber).toStdString());
+                        std::stringstream ss;
+                        ss << "Procotol wrong or corrupted" << "bool list too big with main ident: " << mainCodeType << ", and queryNumber: " << queryNumber << ", type: query_type_protocol";
+                        Logger::instance().log(Logger::Debug, ss.str());
+
                         return false;
                     }
                     if (!httpModeSub) {
-                        datapackDownloadFinishedSub();
+                        //TODO: virtual function
+                        //datapackDownloadFinishedSub();
                     }
                     datapackStatus = DatapackStatus::Finished;
                 }
@@ -311,12 +329,11 @@ bool Api_client_real::parseReplyData(const uint8_t &mainCodeType, const uint8_t 
     }
     if ((in.size() - in.pos()) != 0)
     {
-        ByteArray data_remaining = ByteArray(data.data(), data.size() - in.pos());
+        ByteArray data_remaining = ByteArray((unsigned char*)data.data(), data.size() - in.pos());
 
-        parseError(std::string("Procotol wrong or corrupted"),
-                   QStringLiteral("error: remaining data: Api_client_real::parseReplyData(%1,%2,%3): %4")
-                   .arg(mainCodeType).arg(queryNumber).arg(QString(data_remaining.toHex()))
-                   .toStdString());
+        std::stringstream ss;
+        ss << "Procotol wrong or corrupted" << "error: remaining data: Api_client_real::parseReplyData(" << mainCodeType << "," << queryNumber << "," << data_remaining.toHex() << "): %4";
+        Logger::instance().log(Logger::Debug, ss.str());
 
         return false;
     }
@@ -325,7 +342,7 @@ bool Api_client_real::parseReplyData(const uint8_t &mainCodeType, const uint8_t 
 }
 
 //general data
-void Api_client_real::defineMaxPlayers(const uint16_t &maxPlayers)
+void Api_client_real::defineMaxPlayers(const uint16_t& maxPlayers)
 {
     ProtocolParsing::setMaxPlayers(maxPlayers);
 }
@@ -387,13 +404,13 @@ uint16_t Api_client_real::getPort()
     return port;
 }
 
-void Api_client_real::sendDatapackContentMainSub(const std::string &hashMain, const std::string &hashSub)
+void Api_client_real::sendDatapackContentMainSub(const std::string& hashMain, const std::string& hashSub)
 {
     bool mainNeedUpdate = true;
 
     if (!hashMain.empty()) {
-        if((unsigned int)hashMain.size() == (unsigned int)CommonSettingsServer::commonSettingsServer.datapackHashServerMain.size() &&
-                memcmp(hashMain.data(), CommonSettingsServer::commonSettingsServer.datapackHashServerMain.data(),hashMain.size()) == 0)
+        if ((unsigned int)hashMain.size() == (unsigned int)CommonSettingsServer::commonSettingsServer.datapackHashServerMain.size() &&
+                memcmp(hashMain.data(), CommonSettingsServer::commonSettingsServer.datapackHashServerMain.data(), hashMain.size()) == 0)
         {
             mainNeedUpdate = false;
         }
@@ -406,7 +423,7 @@ void Api_client_real::sendDatapackContentMainSub(const std::string &hashMain, co
     }
     else if (!hashSub.empty()) {
         if ((unsigned int)hashSub.size() == (unsigned int)CommonSettingsServer::commonSettingsServer.datapackHashServerSub.size() &&
-                memcmp(hashSub.data(),CommonSettingsServer::commonSettingsServer.datapackHashServerSub.data(),hashSub.size()) == 0)
+                memcmp(hashSub.data(),CommonSettingsServer::commonSettingsServer.datapackHashServerSub.data(), hashSub.size()) == 0)
         {
             subNeedUpdate = false;
         }
@@ -414,7 +431,7 @@ void Api_client_real::sendDatapackContentMainSub(const std::string &hashMain, co
 
     if (!mainNeedUpdate && !subNeedUpdate)
     {
-        datapackStatus=DatapackStatus::Finished;
+        datapackStatus = DatapackStatus::Finished;
         haveTheDatapackMainSub();
         return;
     }

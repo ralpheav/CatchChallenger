@@ -2,18 +2,19 @@
 #define BYTE_ARRAY_H
 
 #include <vector>
+#include <stdexcept>
 
 class ByteArray {
     std::vector<uint8_t> storage;
 public:
     ByteArray () {}
-    ByteArray(uint8_t* source, size_t size) {
-        int index = 0;
-        while (index < size) {
-            storage.push_back(*(source + index));
-            index++;
-        }
-    }
+//    ByteArray(uint8_t* source, size_t size) {
+//        int index = 0;
+//        while (index < size) {
+//            storage.push_back(*(source + index));
+//            index++;
+//        }
+//    }
 
     ByteArray(unsigned char* source, size_t size) {
         int index = 0;
@@ -26,7 +27,7 @@ public:
 
     ByteArray(const char* source, size_t size) {
         int index = 0;
-        uint8_t* sourceCopy = static_cast<uint8_t*>(source);
+        uint8_t* sourceCopy = (uint8_t*)source;
         while (index < size) {
             storage.push_back(*(sourceCopy + index));
             index++;
