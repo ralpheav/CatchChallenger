@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <iomanip>
 
 namespace CatchChallenger
 {
@@ -49,6 +50,14 @@ namespace CatchChallenger
                 LocalHost:
                         this->ip = std::string("127.0.0.1");
                         break;
+                Broadcast:
+                LocalHostIPv6:
+                Any:
+                AnyIPv6:
+                AnyIPv4:
+                        break;
+                default:
+                        break;
             }
         }
 
@@ -72,6 +81,20 @@ namespace CatchChallenger
             return ip;
         }
 
+        std::string hexStr(unsigned char* data, int pos, int len)
+        {
+            std::stringstream ss;
+            ss << std::hex;
+
+            for (int index = pos; index < pos + len; ++index) {
+                ss << std::setw(2) << std::setfill('0') << (int)data[index];
+                if (index + 1 < len) {
+                    ss << ":";
+                }
+            }
+            return ss.str();
+        }
+
         std::string toIpv6() {
             std::vector<std::string> octets = split(ip, '.');
 
@@ -89,6 +112,8 @@ namespace CatchChallenger
             ipv4asIpV6addr[13] = octetBytes[1];
             ipv4asIpV6addr[14] = octetBytes[2];
             ipv4asIpV6addr[15] = octetBytes[3];
+
+            return hexStr(ipv4asIpV6addr, 10, 6);
         }
 
         HostAddress& operator = (SpecialAddress address){

@@ -25,7 +25,7 @@
 
 namespace CatchChallenger {
 
-enum Chat_type : uint8_t
+enum Chat_type /*: uint8_t*/
 {
     Chat_type_local            = 0x01,
     Chat_type_all              = 0x02,
@@ -36,7 +36,7 @@ enum Chat_type : uint8_t
     Chat_type_system_important = 0x08
 };
 
-enum Player_type : uint8_t
+enum Player_type /*: uint8_t*/
 {
     Player_type_normal  = 0x10,
     Player_type_premium = 0x20,
@@ -44,7 +44,7 @@ enum Player_type : uint8_t
     Player_type_dev     = 0x40
 };
 
-enum Orientation : uint8_t
+enum Orientation /*: uint8_t*/
 {
     Orientation_none   = 0,//where the target orientation don't matter
     Orientation_top    = 1,
@@ -53,19 +53,19 @@ enum Orientation : uint8_t
     Orientation_left   = 4
 };
 
-enum CompressionType : uint8_t
+enum CompressionType /*: uint8_t*/
 {
     CompressionType_None      = 0x00,
     CompressionType_Zstandard = 0x04
 };
 
-enum ActionAllow : uint8_t
+enum ActionAllow /*: uint8_t*/
 {
     ActionAllow_Nothing = 0x00,
     ActionAllow_Clan    = 0x01
 };
 
-enum Direction : uint8_t
+enum Direction /*: uint8_t*/
 {
     Direction_look_at_top    = 1,
     Direction_look_at_right  = 2,
@@ -77,25 +77,25 @@ enum Direction : uint8_t
     Direction_move_at_left   = 8
 };
 
-enum MonsterItemEffectType : uint8_t
+enum MonsterItemEffectType /*: uint8_t*/
 {
     MonsterItemEffectType_AddHp      = 0x01,
     MonsterItemEffectType_RemoveBuff = 0x02
 };
 
-enum MonsterItemEffectTypeOutOfFight : uint8_t
+enum MonsterItemEffectTypeOutOfFight /*: uint8_t*/
 {
     MonsterItemEffectTypeOutOfFight_AddLevel = 0x01
 };
 
-enum RecipeUsage : uint8_t
+enum RecipeUsage /*: uint8_t*/
 {
     RecipeUsage_ok         = 0x01,
     RecipeUsage_impossible = 0x02,//crafting materials not used
     RecipeUsage_failed     = 0x03//crafting materials used
 };
 
-enum Plant_collect : uint8_t
+enum Plant_collect /*: uint8_t*/
 {
     Plant_collect_correctly_collected     = 0x01,
     Plant_collect_empty_dirt              = 0x02,
@@ -184,10 +184,10 @@ struct MonsterItemEffectOutOfFight
 
 struct ItemFull
 {
-    std::unordered_map<uint16_t, std::vector<MonsterItemEffect>> monsterItemEffect;
-    std::unordered_map<uint16_t, std::vector<MonsterItemEffectOutOfFight>> monsterItemEffectOutOfFight;
-    std::unordered_map<CATCHCHALLENGER_TYPE_ITEM/*item*/, std::unordered_map<uint16_t/*monster*/, uint16_t/*evolveTo*/>> evolutionItem;
-    std::unordered_map<CATCHCHALLENGER_TYPE_ITEM/*item*/, std::unordered_set<uint16_t/*monster*/>> itemToLearn;
+    std::unordered_map<uint16_t, std::vector<MonsterItemEffect> > monsterItemEffect;
+    std::unordered_map<uint16_t, std::vector<MonsterItemEffectOutOfFight> > monsterItemEffectOutOfFight;
+    std::unordered_map<CATCHCHALLENGER_TYPE_ITEM/*item*/, std::unordered_map<uint16_t/*monster*/, uint16_t/*evolveTo*/> > evolutionItem;
+    std::unordered_map<CATCHCHALLENGER_TYPE_ITEM/*item*/, std::unordered_set<uint16_t/*monster*/> > itemToLearn;
     std::unordered_map<uint16_t, uint32_t> repel;
     std::unordered_map<CATCHCHALLENGER_TYPE_ITEM, Item> item;
     CATCHCHALLENGER_TYPE_ITEM itemMaxId;
@@ -238,21 +238,21 @@ struct Event
     std::vector<std::string > values;
 };
 
-enum ObjectUsage : uint8_t
+enum ObjectUsage /*: uint8_t*/
 {
     ObjectUsage_correctlyUsed            = 0x01,//is correctly used
     ObjectUsage_failedWithConsumption    = 0x02,//failed to use with consumption of the object
     ObjectUsage_failedWithoutConsumption = 0x03//failed to use without consumption of the object
 };
 
-enum BuyStat : uint8_t
+enum BuyStat /*: uint8_t*/
 {
     BuyStat_Done             = 0x01,
     BuyStat_BetterPrice      = 0x02,
     BuyStat_HaveNotQuantity  = 0x03,
     BuyStat_PriceHaveChanged = 0x04
 };
-enum SoldStat : uint8_t
+enum SoldStat /*: uint8_t*/
 {
     SoldStat_Done             = 0x01,
     SoldStat_BetterPrice      = 0x02,
@@ -291,7 +291,7 @@ struct Player_public_informations
     SPEED_TYPE speed;
 };
 
-enum Gender : uint8_t
+enum Gender /*: uint8_t*/
 {
     Gender_Male    = 0x01,
     Gender_Female  = 0x02,
@@ -441,7 +441,7 @@ struct Map_semi_border
     Map_semi_border_content_left_right right;
 };
 
-enum MapConditionType : uint8_t
+enum MapConditionType /*: uint8_t*/
 {
     MapConditionType_None     = 0x00,
     MapConditionType_Quest    = 0x01,
@@ -468,7 +468,7 @@ struct MapMonster
     uint8_t luck;
 };
 
-enum ParsedLayerLedges : uint8_t
+enum ParsedLayerLedges /*: uint8_t*/
 {
     ParsedLayerLedges_NoLedges     = 0x00,
     ParsedLayerLedges_LedgesLeft   = 0x01,
@@ -539,7 +539,7 @@ struct Shop
     std::vector<CATCHCHALLENGER_TYPE_ITEM> items;
 };
 
-enum QuantityType : uint8_t
+enum QuantityType /*: uint8_t*/
 {
     QuantityType_Quantity,
     QuantityType_Percent
@@ -547,7 +547,7 @@ enum QuantityType : uint8_t
 
 struct Buff
 {
-    enum Duration : uint8_t
+    enum Duration /*: uint8_t*/
     {
         Duration_Always,
         Duration_ThisFight,
@@ -555,7 +555,7 @@ struct Buff
     };
     struct Effect
     {
-        enum EffectOn : uint8_t
+        enum EffectOn /*: uint8_t*/
         {
             EffectOn_HP,
             EffectOn_Defense,
@@ -581,7 +581,7 @@ struct Buff
     std::vector<GeneralEffect> level;//first entry is buff level 1
 };
 
-enum ApplyOn : uint8_t
+enum ApplyOn /*: uint8_t*/
 {
     ApplyOn_AloneEnemy = 0x01,
     ApplyOn_AllEnemy   = 0x02,
@@ -600,7 +600,7 @@ struct MonsterDrops
 
 struct Skill
 {
-    enum AttackReturnCase : uint8_t
+    enum AttackReturnCase /*: uint8_t*/
     {
         AttackReturnCase_NormalAttack  = 0x01,
         AttackReturnCase_MonsterChange = 0x02,
@@ -663,7 +663,7 @@ struct Skill
     uint8_t type;
 };
 
-enum Place : uint8_t
+enum Place /*: uint8_t*/
 {
     OnPlayer  = 0,
     WareHouse = 1,
@@ -694,7 +694,7 @@ struct Monster
     std::vector<AttackToLearn> learn;
 
     #ifndef CATCHCHALLENGER_CLASS_MASTER
-    enum EvolutionType : uint8_t
+    enum EvolutionType /*: uint8_t*/
     {
         EvolutionType_Level,
         EvolutionType_Item,
@@ -785,13 +785,13 @@ struct City
 {
     struct Capture
     {
-        enum Frequency : uint8_t
+        enum Frequency /*: uint8_t*/
         {
             Frequency_week  = 0x01,
             Frequency_month = 0x02
         };
         Frequency frenquency;
-        enum Day : uint8_t
+        enum Day /*: uint8_t*/
         {
             Monday    = 0x01,
             Tuesday   = 0x02,
@@ -873,7 +873,7 @@ struct ServerSpecProfile
     std::string databaseId;/*to resolve with the dictionary, in string (not the number), need port prepare profile*/
 };
 
-enum MonstersCollisionType : uint8_t
+enum MonstersCollisionType /*: uint8_t*/
 {
     MonstersCollisionType_WalkOn   = 0x00,
     MonstersCollisionType_ActionOn = 0x01

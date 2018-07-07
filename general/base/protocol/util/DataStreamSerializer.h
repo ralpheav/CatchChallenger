@@ -63,7 +63,7 @@ private:
      * @return
      */
     template <typename T> DataStreamSerializer& write(const T& value) {
-        memcpy(buffer + last_size, &value, sizeof(T));
+        memcpy(((uint8_t*)buffer) + last_size, &value, sizeof(T));
         last_size += sizeof(T);
         std::cout << "size "<< last_size << std::endl;
 	position = last_size - 1;
@@ -78,7 +78,7 @@ private:
     template <typename T> DataStreamSerializer& read(T& out_value) {
         if (open) {
             memcpy(&out_value, buffer, sizeof(T));
-            buffer += sizeof(T);
+            buffer = ((uint8_t*)buffer) + sizeof(T);
             position -= sizeof(T);
         }
     }
@@ -91,13 +91,15 @@ private:
      */
     DataStreamSerializer& write(const std::string& in_string) {
         size_t length = in_string.length();
-        memcpy(buffer + last_size, &length, sizeof(int8_t));//TODO: should it be int8_t ??? or more
+        memcpy(((uint8_t*)buffer) + last_size, &length, sizeof(int8_t));//TODO: should it be int8_t ??? or more
         last_size += sizeof(int8_t);
-        memcpy(buffer + last_size, in_string.c_str(), length);
+        memcpy(((uint8_t*)buffer) + last_size, in_string.c_str(), length);
         last_size += length;
 
         std::cout << "size "<< last_size << std::endl;
 	position = last_size - 1;
+
+        return *this;
     }
 
     /**
@@ -109,16 +111,17 @@ private:
         if (open) {
             size_t length;
             memcpy(&length, buffer, sizeof(int8_t));
-            buffer += sizeof(int8_t);
+            buffer = ((uint8_t*)buffer) + sizeof(int8_t);
             position -= sizeof(int8_t);
 
             char deserializated_string[length];
             memcpy(deserializated_string, &buffer, length);
-            buffer += length;
+            buffer = ((uint8_t*)buffer) + length;
             position -= length;
 
             out_string = deserializated_string;
         }
+        return *this;
     }
 
 public:
