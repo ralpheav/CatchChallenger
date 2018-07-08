@@ -1,0 +1,1 @@
+emcc -L ../lib/openssl_em/openssl-1.1.0h -I ../lib/openssl_em/openssl-1.1.0h/include openssl_web.cpp -s WASM=1 -o openssl_web.js -lssl -lcrypto --emrun
