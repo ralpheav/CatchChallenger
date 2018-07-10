@@ -1,0 +1,1 @@
+g++ -I/home/ralph/CatchChallengerRalph tests/mainTest.cpp tests/ByteArrayTest.cpp tests/DataStreamTest.cpp -o unit -lcppunit

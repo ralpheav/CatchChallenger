@@ -1,0 +1,2 @@
+git clone git://anongit.freedesktop.org/git/libreoffice/cppunit/
+sudo apt-get install libtool m4 automake
