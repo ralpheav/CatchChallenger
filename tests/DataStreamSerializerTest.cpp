@@ -4,7 +4,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(DataStreamSerializerTestCase);
 
 void DataStreamSerializerTestCase::setUp()
 {
-    datastream = new DataStreamSerializer(8);
+    datastream = new DataStreamSerializer(static_cast<const unsigned int>(8));
 }
 
 void DataStreamSerializerTestCase::tearDown()
@@ -25,10 +25,39 @@ void DataStreamSerializerTestCase::loadTest()
 
 void DataStreamSerializerTestCase::storeTest()
 {
-    std::string data = "24354435";
-    std::string out;
-    datastream->write(data);
-    datastream->read(out);
+    uint8_t byte;
 
-    CPPUNIT_ASSERT_EQUAL(data, out);
+    *datastream << 0x01;
+    *datastream << 0x02;
+    *datastream << 0x03;
+    *datastream << 0x04;
+    *datastream << 0x05;
+    *datastream << 0x06;
+    *datastream << 0x07;
+    *datastream << 0x08;
+
+    *datastream >> byte;
+    CPPUNIT_ASSERT_EQUAL(byte, static_cast<uint8_t>(0x01));
+
+    *datastream >> byte;
+    CPPUNIT_ASSERT_EQUAL(byte, static_cast<uint8_t>(0x02));
+
+    *datastream >> byte;
+    CPPUNIT_ASSERT_EQUAL(byte, static_cast<uint8_t>(0x03));
+
+    *datastream >> byte;
+    CPPUNIT_ASSERT_EQUAL(byte, static_cast<uint8_t>(0x04));
+
+    *datastream >> byte;
+    CPPUNIT_ASSERT_EQUAL(byte, static_cast<uint8_t>(0x05));
+
+    *datastream >> byte;
+    CPPUNIT_ASSERT_EQUAL(byte, static_cast<uint8_t>(0x06));
+
+    *datastream >> byte;
+    CPPUNIT_ASSERT_EQUAL(byte, static_cast<uint8_t>(0x07));
+
+    *datastream >> byte;
+    CPPUNIT_ASSERT_EQUAL(byte, static_cast<uint8_t>(0x08));
+
 }

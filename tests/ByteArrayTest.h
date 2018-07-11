@@ -27,9 +27,9 @@ protected:
     void getDataTest();
 
 private:
-    ByteArray *bytearray;
-    ByteArray *Bytearrayb8;
-    ByteArray *bytearrayCs; 
+    ByteArray* bytearray;
+    ByteArray* bytearrayb8;
+    ByteArray* bytearrayCs;
 };
 
 #endif
