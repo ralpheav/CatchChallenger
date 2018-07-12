@@ -4,7 +4,8 @@
 #include <vector>
 #include <stdexcept>
 
-class ByteArray {
+class ByteArray
+{
     std::vector<uint8_t> storage;
 public:
     ByteArray () {}

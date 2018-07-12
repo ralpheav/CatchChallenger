@@ -1,17 +1,19 @@
 #include "sha224.h"
 
-SHA224::SHA224(const char* input_string) {
+SHA224::SHA(const char* input_string) {
     ::SHA224_Init(&ctx);
     SHA224_Update(&ctx, input_string, strlen(input_string));
 }
 
-void SHA224::addData(const char* input_string) {
-    SHA224_Update(&ctx, input_string, strlen(input_string));
+int SHA224::addData(const char* input_string) {
+    return SHA224_Update(&ctx, input_string, strlen(input_string));
 }
 
-void SHA224::execute() {
-    SHA224_Final(m_digest, &ctx);
+int SHA224::execute() {
+    int result = SHA224_Final(m_digest, &ctx);
     m_digest[SHA224_DIGEST_LENGTH] = 0;
+
+    return result;
 }
 
 void SHA224::getDigest(char* out_digest) {
@@ -27,5 +29,5 @@ void SHA224::getDigestHex(char* out_digestHex) {
     }
 
     strcpy(out_digestHex, mdString);
-    out_digest[SHA224_DIGEST_LENGTH * 2 + 1] = 0;
+    out_digestHex[SHA224_DIGEST_LENGTH * 2 + 1] = 0;
 }

@@ -10,7 +10,9 @@ class FileTestCase : public CppUnit::TestCase
 {
   CPPUNIT_TEST_SUITE(FileTestCase);
       CPPUNIT_TEST(loadTest);
-      CPPUNIT_TEST(storeTest);
+      CPPUNIT_TEST(writeTest);
+      CPPUNIT_TEST(readTest);
+      CPPUNIT_TEST(removeTest);
   CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -19,10 +21,23 @@ public:
 
 protected:
     void loadTest();
-    void storeTest();
+    void writeTest();
+    void readTest();
+    void removeTest();
+
 
 private:
     File* file;
+    File* file1;
+    File* file2;
+    File* file3;
+    File* file4;
+
+    struct Config {
+        unsigned int id;
+        char type[8];
+        int flag;
+    } m_sample;
 };
 
 #endif

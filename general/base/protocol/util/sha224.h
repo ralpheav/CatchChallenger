@@ -1,5 +1,5 @@
-#ifndef SHA224_H
-#define SHA224_H
+#ifndef CATCHCHALLENGER_SHA224_H
+#define CATCHCHALLENGER_SHA224_H
 
 #include <stdio.h>
 #include <string.h>
@@ -18,10 +18,10 @@ namespace CatchChallenger
 
             SHA224(const char* input_string);
 
-            void addData(const char* input_string);
-            void execute();
+            int addData(const char* input_string);
+            int execute();
             void getDigest(char* out_digest);
             void getDigestHex(char* out_digestHex);
     };
 }
-#endif //SHA224_H
+#endif //CATCHCHALLENGER_SHA224_H
