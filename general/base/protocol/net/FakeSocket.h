@@ -43,6 +43,7 @@ namespace CatchChallenger
             std::string peerAddress();
             std::string peerName();
             int peerPort();
+            std::string errorString();
 
             bool waitForConnected(int msecs);
             bool waitForDisconnected(int msecs);

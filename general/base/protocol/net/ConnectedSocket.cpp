@@ -93,6 +93,9 @@ void ConnectedSocket::connectToHost(const std::string& hostName, uint16_t port)
 
     if (pSocket != nullptr) {
         pSocket->connectToHost(hostName, port);
+        if (pSocket->state() == SocketState::ConnectedState) {
+
+        }
     }
 }
 
@@ -120,9 +123,7 @@ void ConnectedSocket::disconnectFromHost()
 
 int ConnectedSocket::error() const
 {
-    pSocket->error();
-
-    return 0;//unknown
+    return pSocket->error();
 }
 
 bool ConnectedSocket::flush()
@@ -225,6 +226,9 @@ uint16_t ConnectedSocket::peerPort() const
 int ConnectedSocket::state() const
 {
     if (pSocket != nullptr) {
+        if (pSocket->state() == SocketState::ConnectedState) {
+            return State::connected;
+        }
         return pSocket->state();
     }
 
