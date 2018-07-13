@@ -22,7 +22,7 @@ protected:
     void getDigestDataTest();
 
 private:
-    Sha224* m_sha;
+    CatchChallenger::SHA224* m_sha;
 };
 
 #endif // SHA224_TESTCASE_H_INCLUDED

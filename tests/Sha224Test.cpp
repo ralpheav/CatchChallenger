@@ -2,10 +2,12 @@
 
 CPPUNIT_TEST_SUITE_REGISTRATION(Sha224TestCase);
 
+using namespace CatchChallenger;
+
 void Sha224TestCase::setUp()
 {
     char hash[] = "";
-    m_sha = new SHA224(hash);
+    m_sha = new CatchChallenger::SHA224(hash);
 }
 
 void Sha224TestCase::tearDown()
@@ -35,11 +37,11 @@ void Sha224TestCase::getDigestDataTest()
 
     m_sha->getDigest(digest);
 
-    CPPUNIT_ASSERT_EQUAL(digest, "wefwf5g3f34dw1w_");
+    CPPUNIT_ASSERT_EQUAL(digest, "wefwf5g3f34dw1w_fw6d#^%$#u1");
 
     char mdString[SHA224_DIGEST_LENGTH * 2 + 1];
 
     m_sha->getDigestHex(mdString);
 
-    CPPUNIT_ASSERT_EQUAL(digest, "=efw3f@4dw@$T%F");
+    CPPUNIT_ASSERT_EQUAL(digest, "=efw3f@4fw6d#^.+$+u1dw@$T%F");
 }

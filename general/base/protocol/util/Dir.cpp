@@ -36,17 +36,15 @@ std::string Dir::currentPath() {
     unsigned int len = 1024;
     char buffer[1024];
     int bytes;
-#ifdef_WIN32 || _WIN64
+#if defined(_WIN32) || defined(_WIN64)
     bytes = GetModuleFileName(nullptr, buffer, len);
-#else
-#if __linux__
+#elif __linux__
     char temp[32];
     sprintf(temp, "proc/%d/exe", getpid());
-    bytes = MIN(readlink(temp, buffer, len), len - 1);
+    bytes = std::min(static_cast<unsigned int>(readlink(temp, buffer, len)), len - 1);
 #else
     std::string apath = realpath(__FILE__, NULL);
     return apath;
-#endif
 #endif
     if (bytes == 0) {
         return std::string();
@@ -55,10 +53,10 @@ std::string Dir::currentPath() {
     return buffer;
 }
 
-static std::string Dir::appPath() {
+std::string Dir::appPath() {
     std::string appdir;
 
-    #ifdef _WIN32 || _WIN64
+    #if defined(_WIN32) || defined(_WIN64)
         appdir = getenv("APPDATA");
         if (appdir.empty()) {
             appdir = getenv("USER");

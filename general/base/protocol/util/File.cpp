@@ -6,22 +6,22 @@ File::File() {
     m_mode = ReadOnly;
 }
 
-File::File(const std::string& filename, FileMode mode = FileMode::WriteOnly) {
+File::File(const std::string& filename, FileMode mode) {
     m_filename = filename;
     open(mode);
 }
 
 bool File::open(FileMode mode) {
     m_mode = mode;
-    ios_base::openmode iosMode;
+    std::ios_base::openmode iosMode;
     if (m_mode == FileMode::WriteOnly) {
-        iosMode = ios::out;
+        iosMode = std::ios::out;
     }
     if (m_mode == FileMode::ReadOnly) {
-        iosMode = ios::in;
+        iosMode = std::ios::in;
     }
 
-    m_file.open(m_filename, ios::in);
+    m_file.open(m_filename, iosMode);
 
     return m_file.is_open();
 }
@@ -55,16 +55,6 @@ void File::write(const std::string& data) {
     }
 }
 
-template<class T>
-void File::write(T data) {
-    if (m_mode == FileMode::WriteOnly) {
-        m_file.write(static_cast<T>(data), sizeof(data));
-    } else {
-        std::cerr << "the file is write only" << std::endl;
-    }
-
-}
-
 void File::write(int data) {
     if (m_mode == FileMode::WriteOnly) {
         m_file << data << std::endl;
@@ -90,22 +80,12 @@ std::string File::readAll() {
     if (m_mode == FileMode::ReadOnly) {
         std::string buffer;
         while (m_file >> buffer) {
-            data += buffer + static_cast<char>(infile.peek());
+            data += buffer + static_cast<char>(m_file.peek());
         }
     } else {
         std::cerr << "the file is Read only" << std::endl;
     }
     return data;
-}
-
-template<class T>
-void File::read(T& data) {
-    std::cout <<  "template" << std::endl;
-    if (m_mode == FileMode::ReadOnly) {
-        m_file.read(static_cast<T>(data), sizeof(data));
-    } else {
-        std::cerr << "the file is read only" << std::endl;
-    }
 }
 
 void File::read(std::string& data) {
@@ -148,11 +128,14 @@ bool File::remove() {
 }
 
 bool File::deleteFile() {
-    std::remove(m_filename);
-    bool deleted = std::ifstream::open(m_filename);
+    std::remove(m_filename.c_str());
+    std::ifstream in;
+    in.open(m_filename);
+    bool deleted = in.is_open();
     if  (!deleted) {
         std::cerr << "The file cannot be deleted." << std::endl;
     }
+    in.close();
     return deleted;
 }
 

@@ -2,6 +2,8 @@
 
 CPPUNIT_TEST_SUITE_REGISTRATION(DataStreamSerializerTestCase);
 
+using namespace CatchChallenger;
+
 void DataStreamSerializerTestCase::setUp()
 {
     datastream = new DataStreamSerializer(static_cast<const unsigned int>(8));

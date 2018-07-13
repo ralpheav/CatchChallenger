@@ -27,17 +27,17 @@ protected:
 
 
 private:
-    File* file;
-    File* file1;
-    File* file2;
-    File* file3;
-    File* file4;
+    CatchChallenger::File* file;
+    CatchChallenger::File* file1;
+    CatchChallenger::File* file2;
+    CatchChallenger::File* file3;
+    CatchChallenger::File* file4;
 
     struct Config {
         unsigned int id;
         char type[8];
         int flag;
-    } m_sample;
+    };
 };
 
 #endif

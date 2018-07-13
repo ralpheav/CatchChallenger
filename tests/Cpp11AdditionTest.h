@@ -4,11 +4,11 @@
 #include "cppunit/TestCase.h"
 #include "cppunit/extensions/HelperMacros.h"
 
-#include "general/base/protocol/util/Cpp11Addition.h"
+#include "general/base/protocol/util/cpp11addition.h"
 
 class Cpp11AdditionTestCase : public CppUnit::TestCase
 {
-  CPPUNIT_TEST_SUITE(DataStreamSerializerTestCase);
+  CPPUNIT_TEST_SUITE(Cpp11AdditionTestCase);
       CPPUNIT_TEST(stringreplaceOneTest);
       CPPUNIT_TEST(stringreplaceAllTest);
       CPPUNIT_TEST(stringregexsplitTest);
@@ -43,7 +43,6 @@ public:
     void tearDown();
 
 protected:
-
     void stringreplaceOneTest();
     void stringreplaceAllTest();
     void stringregexsplitTest();

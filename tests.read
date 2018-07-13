@@ -1,1 +1,1 @@
-g++ -I/home/ralph/CatchChallengerRalph tests/mainTest.cpp tests/ByteArrayTest.cpp tests/DataStreamTest.cpp -o unit -lcppunit
+g++ -std=c++11 -I/home/ralph/CatchChallengerRalph general/base/protocol/util/Dir.cpp general/base/protocol/util/DataStreamSerializer.cpp general/base/protocol/util/File.cpp general/base/protocol/util/sha224.cpp general/base/protocol/util/cpp11addition.cpp tests/mainTest.cpp tests/ByteArrayTest.cpp tests/DataStreamSerializerTest.cpp tests/DirTest.cpp tests/FileTest.cpp tests/Sha224Test.cpp tests/Cpp11AdditionTest.cpp -o unit -lcppunit -lssl -lcrypto

@@ -22,7 +22,7 @@ protected:
     void storeTest();
 
 private:
-    DataStreamSerializer* datastream;
+    CatchChallenger::DataStreamSerializer* datastream;
 };
 
 #endif

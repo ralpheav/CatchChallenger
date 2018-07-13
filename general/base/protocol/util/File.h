@@ -2,6 +2,7 @@
 #define CATCHCHALLENGER_FILE_H
 
 #include <fstream>
+#include <ios>
 #include <iostream>
 #include <string>
 #include <sys/stat.h>
@@ -32,12 +33,27 @@ namespace CatchChallenger
             std::string filename() const;
             bool exists();
             void write(const std::string& data);
-            template<class T> void write(T data);
+            template<typename T>
+            void write(T data) {
+                if (m_mode == FileMode::WriteOnly) {
+                    m_file.write(reinterpret_cast<char*>(&data), sizeof(T));
+                } else {
+                    std::cerr << "the file is write only" << std::endl;
+                }
+            }
             void write(int data);
             void write(float data);
             void close();
             std::string readAll();
-            template<class T> void read(T& data);
+            //template<typename T> void read(T& data);
+            template<typename T>
+            void read(T& data) {
+                if (m_mode == FileMode::ReadOnly) {
+                    m_file.read(reinterpret_cast<char*>(&data), sizeof(T));
+                } else {
+                    std::cerr << "the file is read only" << std::endl;
+                }
+            }
             void read(std::string& data);
             void read(int& data);
             void read(float& data);

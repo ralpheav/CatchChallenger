@@ -6,11 +6,11 @@ using namespace CatchChallenger;
 
 void FileTestCase::setUp()
 {
-    file = new File("test.dat");
-    file1 = new File("dat.dat");
-    file2 = new File("dat.log");
-    file3 = new File("dat.log");
-    file4 = new File("dat.xy");
+    file = new File(std::string("test.dat"));
+    file1 = new File(std::string("dat.dat"));
+    file2 = new File(std::string("dat.log"));
+    file3 = new File(std::string("dat.log"));
+    file4 = new File(std::string("dat.xy"));
 }
 
 void FileTestCase::tearDown()
@@ -43,7 +43,7 @@ void FileTestCase::loadTest()
 
     FileMode mode = file->mode();
 
-    CPPUNIT_ASSERT(mode == Filemode::WriteOnly);
+    CPPUNIT_ASSERT(mode == FileMode::WriteOnly);
 
     result = file->open(FileMode::ReadOnly);
 
@@ -51,7 +51,7 @@ void FileTestCase::loadTest()
 
     mode = file->mode();
 
-    CPPUNIT_ASSERT(mode == Filemode::ReadOnly);
+    CPPUNIT_ASSERT(mode == FileMode::ReadOnly);
 
     std::string thefilename = "neTest.txt";
     file->setFileName(thefilename);
@@ -71,8 +71,8 @@ void FileTestCase::writeTest()
 
     CPPUNIT_ASSERT_EQUAL(file2->exists(), true);
 
-    m_sample = {100, "thetype", 43};
-    file3->write(m_sample);
+    Config sample = {100, "thetype", 43};
+    file3->write(sample);
 
     CPPUNIT_ASSERT_EQUAL(file3->exists(), true);
 
@@ -100,20 +100,21 @@ void FileTestCase::readTest()
     std::string strdata;
     file1->read(strdata);
 
-    CPPUNIT_ASSERT_EQUAL(strdata, "the data");
+    CPPUNIT_ASSERT_EQUAL(strdata, std::string("the data"));
 
+    Config sample;
     file3->open(FileMode::ReadOnly);
-    file1->read(m_sample);
+    file1->read(sample);
 
-    CPPUNIT_ASSERT_EQUAL(m_sample.id, 100);
-    CPPUNIT_ASSERT_EQUAL(m_sample.type, "thetype");
-    CPPUNIT_ASSERT_EQUAL(m_sample.flag, 43);
+    CPPUNIT_ASSERT_EQUAL(sample.id, static_cast<unsigned int>(100));
+    CPPUNIT_ASSERT_EQUAL(sample.type, "thetype");
+    CPPUNIT_ASSERT_EQUAL(sample.flag, 43);
 
     file4->open(FileMode::ReadOnly);
     float dataComp;
     file1->read(dataComp);
 
-    CPPUNIT_ASSERT_EQUAL(dataComp, 1224);
+    CPPUNIT_ASSERT_EQUAL(dataComp, static_cast<float>(1224));
 
     file1->close();
     file2->close();
@@ -126,7 +127,7 @@ void FileTestCase::readTest()
     std::string reading;
     file->close();
     file->open(FileMode::ReadOnly);
-    file->readAll(reading);
+    reading = file->readAll();
 
     CPPUNIT_ASSERT_EQUAL(reading, textExpected);
 
