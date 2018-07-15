@@ -1,22 +1,25 @@
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef CATCHCHALLENGER_SERVER_H
+#define CATCHCHALLENGER_SERVER_H
 
 #include "TCPSocket.h"
 
 #define PORT 8080
 
-class Server : public TCPSocket {
+namespace CatchChallenger
+{
+    class Server : public TCPSocket {
 
-    TCPSocket* client_socket;
-    struct sockaddr_in address;
-    int opt = 1;
+        TCPSocket* client_socket;
+        struct sockaddr_in address;
+        int opt = 1;
 
-public: 
-    Server();
-    bool create(const std::string& host, uint32_t port);
-    bool bind();
-    int listen();
-    TCPSocket* accept();
-};
+    public:
+        Server();
+        bool create(const std::string& host, uint32_t port);
+        bool bind();
+        int listen();
+        TCPSocket* accept();
+    };
+}
 
-#endif
+#endif //CATCHCHALLENGER_SERVER_H

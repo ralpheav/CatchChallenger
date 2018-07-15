@@ -45,8 +45,6 @@ namespace CatchChallenger
             int peerPort();
             std::string errorString();
 
-            bool waitForConnected(int msecs);
-            bool waitForDisconnected(int msecs);
             bool openMode();
 
             //virtual void connected() = 0;

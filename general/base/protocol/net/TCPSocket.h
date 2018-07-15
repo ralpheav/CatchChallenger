@@ -24,8 +24,6 @@ namespace CatchChallenger
             int socket_file_descriptor;
 
         private:
-            int waitForDisconnectedTime;
-            int waitForConnectTime;
             char buffer[1024] = {0}; //TODO: set maxsize, limit
             struct sockaddr_in address;
             struct sockaddr_in serv_addr;
@@ -51,8 +49,6 @@ namespace CatchChallenger
             std::string peerAddress();
             std::string peerName();
             int peerPort();
-            bool waitForConnected(int msec);
-            bool waitForDisconnected(int msec);
             bool openMode();
             std::string errorString();
             uint64_t readData(char* data, int64_t maxSize);

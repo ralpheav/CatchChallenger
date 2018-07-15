@@ -160,16 +160,6 @@ int TCPSocket::peerPort() {
     //TODO connected port
 }
 
-bool TCPSocket::waitForConnected(int msec) {
-    waitForConnectTime = msec;
-    return true;
-}
-
-bool TCPSocket::waitForDisconnected(int msec) {
-    waitForDisconnectedTime = msec;
-    return true;
-}
-
 bool TCPSocket::openMode() {
     //TODO
 }

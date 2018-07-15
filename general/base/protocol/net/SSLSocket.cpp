@@ -299,16 +299,6 @@ void SSLSocket::startClientEncryption() {
     SSL_library_init();
 }
 
-bool SSLSocket::waitForConnected(int msec) {
-    waitForConnectTime = msec;
-    return true;
-}
-
-bool SSLSocket::waitForDisconnected(int msec) {
-    waitForDisconnectedTime = msec;
-    return true;
-}
-
 bool SSLSocket::openMode() {
     //TODO
     return true;

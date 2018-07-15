@@ -5,6 +5,8 @@
 
 #include <cstdint>
 #include <vector>
+#include <limits>
+
 
 namespace CatchChallenger
 {
@@ -125,6 +127,8 @@ namespace CatchChallenger
             SocketError m_error;
             std::pair<SocketOption, int> m_option;
             DeviceMode m_mode;
+            int m_waitForConnection;
+            int m_waitForDisConnection;
         public:
             virtual void open(DeviceMode mode) = 0;
             virtual void abort() = 0;
@@ -157,8 +161,21 @@ namespace CatchChallenger
             virtual std::string peerName() = 0;
             virtual int peerPort() = 0;
 
-            virtual bool waitForConnected(int msecs) = 0;
-            virtual bool waitForDisconnected(int msecs) = 0;
+           virtual  bool waitForConnected(int msecs) {
+                if (msecs >= 0 && msecs < std::numeric_limits<int>::max()) {
+                    m_waitForConnection = msecs;
+                    return true;
+                }
+                return false;
+            }
+
+            virtual bool waitForDisconnected(int msecs) {
+                if (msecs >= 0 && msecs < std::numeric_limits<int>::max()) {
+                    m_waitForDisConnection = msecs;
+                    return true;
+                }
+                return false;
+            }
             virtual bool openMode() = 0;
             virtual std::string errorString();
 

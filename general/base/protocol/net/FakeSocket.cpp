@@ -272,22 +272,13 @@ std::string FakeSocket::errorString() {
     return std::string();
 }
 
-
 bool FakeSocket::isSequential() const
 {
     return true;
 }
 
-bool FakeSocket::canReadLine () const
+bool FakeSocket::canReadLine() const
 {
-    return false;
-}
-
-bool FakeSocket::waitForConnected(int msecs) {
-    return false;
-}
-
-bool FakeSocket::waitForDisconnected(int msecs) {
     return false;
 }
 

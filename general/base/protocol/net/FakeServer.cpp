@@ -26,7 +26,8 @@ void FakeServer::addPendingConnection(FakeSocket* socket)
     newEntry.first->RX_size = 0;
     newEntry.second->RX_size = 0;
 
-    newConnection();
+    //TODO: virtual
+    //newConnection();
 }
 
 bool FakeServer::hasPendingConnections()
@@ -115,4 +116,4 @@ void FakeServer::disconnectedSocket(FakeSocket* socket)
     }
 }
 
-#endif
+#endif //! defined(EPOLLCATCHCHALLENGERSERVER) && ! defined (ONLYMAPRENDER)

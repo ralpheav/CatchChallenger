@@ -1,5 +1,7 @@
 #include "Server.h"
 
+using namespace CatchChallenger;
+
 Server::Server() : TCPSocket() {
 }
 

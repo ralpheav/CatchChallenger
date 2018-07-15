@@ -63,8 +63,6 @@ namespace CatchChallenger
     class SSLSocket : public ISocket
     {
         SSLInfo info;
-        int waitForDisconnectedTime;
-        int waitForConnectTime;
         PeerVerifyMode verifyMode;
         bool ignoreErrors;
 
@@ -110,8 +108,7 @@ namespace CatchChallenger
         int peerPort();
         void ignoreSslErrors();
         void startClientEncryption();
-        bool waitForConnected(int msec);
-        bool waitForDisconnected(int msec);
+
         bool openMode();
         SslMode sslMode();
         void setSslMode(SslMode mode);

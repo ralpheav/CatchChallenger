@@ -1,9 +1,11 @@
 #include "Client.h"
 
+using namespace CatchChallenger;
+
 Client::Client() : TCPSocket() {
 }
 
-int Client::create(const std::string& host, uint32_t port) {
+bool Client::create(const std::string& host, uint32_t port) {
     if (!haveSocket()) {
         return false;
     }

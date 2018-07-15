@@ -46,7 +46,7 @@ bool ConnectedSocket::isTCP() {
 }
 
 bool ConnectedSocket::exists() {
-    return pSocket;
+    return pSocket != nullptr;
 }
 
 std::list<SslError> ConnectedSocket::sslErrors() const

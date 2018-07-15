@@ -41,11 +41,11 @@ namespace CatchChallenger {
             } m_state;
             std::list<std::pair<FakeSocket*, FakeSocket*>> m_listOfConnexion;
             std::list<std::pair<FakeSocket*, FakeSocket*>> m_pendingConnection;
-        protected:
+        public:
             //from the server
             void addPendingConnection(FakeSocket* socket);
-        public:
-            void disconnectedSocket();
+            void disconnectedSocket(FakeSocket* socket);
+
     };
 }
 
