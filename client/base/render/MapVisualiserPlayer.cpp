@@ -86,7 +86,7 @@ MapVisualiserPlayer::MapVisualiserPlayer(const bool &centerOnPlayer, const bool 
     lastTileset = defaultTileset = "trainer";
     lastMonsterTileset = defaultMonsterTileset = "following";
 
-    playerMapObject = new Tiled::MapObject();
+    playerMapObject = new Character::Player();
     followingMonsterMapObject = new Tiled::MapObject();
     grassCurrentObject->setName("playerMapObject");
 
@@ -169,7 +169,7 @@ void MapVisualiserPlayer::keyPressParse()
     if(keyPressed.find(Qt::Key_Left)!=keyPressed.cend())
     {
         //already turned on this direction, then try move into this direction
-        if(direction==CatchChallenger::Direction_look_at_left)
+        if(playerMapObject->isLookingLeft())
         {
             if(!canGoTo(CatchChallenger::Direction_move_at_left,all_map.at(current_map)->logicalMap,x,y,true))
                 return;//Can't do at the left!
@@ -185,21 +185,19 @@ void MapVisualiserPlayer::keyPressParse()
         //look in this direction
         else
         {
-            Tiled::Cell cell=playerMapObject->cell();
-            cell.tile=playerTileset->tileAt(10);
-            playerMapObject->setCell(cell);
+            playerMapObject->lookAtLeft();
             direction=CatchChallenger::Direction_look_at_left;
             lookToMove.start();
             updateFollowingMonsterPosition();
             updateFollowingMonster(CatchChallenger::DrawSmallTiledPosition::walkLeftFoot_Left);
-            emit send_player_direction(direction);
+            emit send_player_direction(playerMapObject->getState());
             parseStop();
         }
     }
     else if(keyPressed.find(Qt::Key_Right)!=keyPressed.cend())
     {
         //already turned on this direction, then try move into this direction
-        if(direction==CatchChallenger::Direction_look_at_right)
+        if(playerMapObject->isLookingRight())
         {
             if(!canGoTo(CatchChallenger::Direction_move_at_right,all_map.at(current_map)->logicalMap,x,y,true))
                 return;//Can't do at the right!
@@ -215,21 +213,19 @@ void MapVisualiserPlayer::keyPressParse()
         //look in this direction
         else
         {
-            Tiled::Cell cell = playerMapObject->cell();
-            cell.tile = playerTileset->tileAt(4);
-            playerMapObject->setCell(cell);
+            playerMapObject->lookAtRight();
             direction = CatchChallenger::Direction_look_at_right;
             lookToMove.start();
             updateFollowingMonsterPosition();
             updateFollowingMonster(CatchChallenger::DrawSmallTiledPosition::walkLeftFoot_Right);
-            emit send_player_direction(direction);
+            emit send_player_direction(playerMapObject->getState());
             parseStop();
         }
     }
     else if(keyPressed.find(Qt::Key_Up)!=keyPressed.cend())
     {
         //already turned on this direction, then try move into this direction
-        if(direction==CatchChallenger::Direction_look_at_top)
+        if(playerMapObject->isLookingUp())
         {
             if(!canGoTo(CatchChallenger::Direction_move_at_top,all_map.at(current_map)->logicalMap,x,y,true))
                 return;//Can't do at the top!
@@ -245,21 +241,19 @@ void MapVisualiserPlayer::keyPressParse()
         //look in this direction
         else
         {
-            Tiled::Cell cell=playerMapObject->cell();
-            cell.tile=playerTileset->tileAt(1);
-            playerMapObject->setCell(cell);
+            playerMapObject->lookAtUp();
             direction=CatchChallenger::Direction_look_at_top;
             lookToMove.start();
             updateFollowingMonsterPosition();
             updateFollowingMonster(CatchChallenger::DrawSmallTiledPosition::walkLeftFoot_Top);
-            emit send_player_direction(direction);
+            emit send_player_direction(playerMapObject->getState());
             parseStop();
         }
     }
     else if(keyPressed.find(Qt::Key_Down)!=keyPressed.cend())
     {
         //already turned on this direction, then try move into this direction
-        if(direction==CatchChallenger::Direction_look_at_bottom)
+        if(playerMapObject->isLookingDown())
         {
             if(!canGoTo(CatchChallenger::Direction_move_at_bottom,all_map.at(current_map)->logicalMap,x,y,true))
                 return;//Can't do at the bottom!
@@ -275,14 +269,12 @@ void MapVisualiserPlayer::keyPressParse()
         //look in this direction
         else
         {
-            Tiled::Cell cell=playerMapObject->cell();
-            cell.tile=playerTileset->tileAt(7);
-            playerMapObject->setCell(cell);
-            direction=CatchChallenger::Direction_look_at_bottom;
+            playerMapObject->lookAtDown();
+            //direction=CatchChallenger::Direction_look_at_bottom;
             lookToMove.start();
             updateFollowingMonsterPosition();
             updateFollowingMonster(CatchChallenger::DrawSmallTiledPosition::walkLeftFoot_Bottom);
-            emit send_player_direction(direction);
+            emit send_player_direction(playerMapObject->getState());
             parseStop();
         }
     }

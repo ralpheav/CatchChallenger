@@ -3,6 +3,7 @@
 
 #include "MapVisualiser.h"
 #include "../../general/base/GeneralStructures.h"
+#include "../../characters/Player.h"
 
 #include <QSet>
 #include <QString>
@@ -65,7 +66,7 @@ protected:
     std::string datapackMapPathBase;
     std::string datapackMapPathSpec;
     //player
-    Tiled::MapObject* playerMapObject;
+    Character::Player* playerMapObject;
     Tiled::Tileset* playerTileset;
     std::string playerSkinPath;
     std::string followingMonsterSkinPath;

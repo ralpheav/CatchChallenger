@@ -32,6 +32,7 @@
 
 #include "tiled_layer.h"
 #include "tiled_tiled.h"
+#include "tiled_tile.h"
 
 #include <QMargins>
 #include <QString>
@@ -84,6 +85,16 @@ public:
     bool flippedHorizontally;
     bool flippedVertically;
     bool flippedAntiDiagonally;
+
+    /**
+     * @brief change the tile from tileset indexed by the Id
+     * @param tileId
+     */
+    void change(int tileId)
+    {
+        Tileset* set = tile->tileset();
+        tile = set->tileAt(tileId);
+    }
 };
 
 /**
