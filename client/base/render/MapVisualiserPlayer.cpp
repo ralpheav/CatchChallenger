@@ -405,9 +405,7 @@ void MapVisualiserPlayer::moveStepSlot()
                 qDebug() << QStringLiteral("moveStepSlot(): moveStep: %1, wrong direction").arg(moveStep);
                 return;
             }
-            Tiled::Cell cell=playerMapObject->cell();
-            cell.tile=playerTileset->tileAt(baseTile+0);
-            playerMapObject->setCell(cell);
+            playerMapObject->setState(baseTile + 0);
             updateFollowingMonster(baseMonster);
             return;
         }
@@ -434,7 +432,7 @@ void MapVisualiserPlayer::moveStepSlot()
             case 2:
             case 3:
             case 4:
-            playerMapObject->setX(playerMapObject->x()-0.20);
+            playerMapObject->stepAtTheLeft();
             followingMonsterMapObject->setX(followingMonsterMapObject->x() - 0.20);
             break;
         }
@@ -448,7 +446,7 @@ void MapVisualiserPlayer::moveStepSlot()
             case 2:
             case 3:
             case 4:
-            playerMapObject->setX(playerMapObject->x()+0.20);
+            playerMapObject->stepAtTheRight();
             followingMonsterMapObject->setX(followingMonsterMapObject->x() + 0.20);
             break;
         }
@@ -462,7 +460,7 @@ void MapVisualiserPlayer::moveStepSlot()
             case 2:
             case 3:
             case 4:
-            playerMapObject->setY(playerMapObject->y()-0.20);
+            playerMapObject->stepAtTheTop();
             followingMonsterMapObject->setY(followingMonsterMapObject->y()-0.20);
             break;
         }
@@ -476,7 +474,7 @@ void MapVisualiserPlayer::moveStepSlot()
             case 2:
             case 3:
             case 4:
-            playerMapObject->setY(playerMapObject->y()+0.20);
+            playerMapObject->stepAtTheBottom();
             followingMonsterMapObject->setY(followingMonsterMapObject->y() + 0.20);
             break;
         }
@@ -492,9 +490,7 @@ void MapVisualiserPlayer::moveStepSlot()
         //stopped step
         case 0:
         {
-            Tiled::Cell cell=playerMapObject->cell();
-            cell.tile=playerTileset->tileAt(baseTile+0);
-            playerMapObject->setCell(cell);
+            playerMapObject->setState(baseTile + 0);
             updateFollowingMonster(baseMonster);
         }
         break;
@@ -504,23 +500,19 @@ void MapVisualiserPlayer::moveStepSlot()
         //transition step
         case 2:
         {
-            Tiled::Cell cell=playerMapObject->cell();
             if(stepAlternance) {
-                cell.tile=playerTileset->tileAt(baseTile-1);
+                playerMapObject->setState(baseTile - 1);
             } else {
-                cell.tile=playerTileset->tileAt(baseTile+1);
+                playerMapObject->setState(baseTile + 1);
             }
             transitionMonster(baseMonster);
-            playerMapObject->setCell(cell);
             stepAlternance=!stepAlternance;
         }
         break;
         //stopped step
         case 4:
         {
-            Tiled::Cell cell=playerMapObject->cell();
-            cell.tile=playerTileset->tileAt(baseTile+0);
-            playerMapObject->setCell(cell);
+            playerMapObject->setState(baseTile + 0);
             updateFollowingMonster(baseMonster);
         }
         break;
@@ -528,6 +520,7 @@ void MapVisualiserPlayer::moveStepSlot()
 
     if(centerOnPlayer)
         centerOn(MapObjectItem::objectLink.at(playerMapObject));
+
     loadGrassTile();
 
     moveStep++;
@@ -574,8 +567,9 @@ void MapVisualiserPlayer::moveStepSlot()
                 finalPlayerStep();
         }
     }
-    else
+    else {
         moveTimer.start();
+    }
 }
 
 void MapVisualiserPlayer::transitionMonster(int baseMonster) {
@@ -901,9 +895,7 @@ void MapVisualiserPlayer::finalPlayerStep()
         {
             keyPressed.erase(Qt::Key_Left);
             direction=CatchChallenger::Direction_look_at_left;
-            Tiled::Cell cell=playerMapObject->cell();
-            cell.tile=playerTileset->tileAt(10);
-            playerMapObject->setCell(cell);
+            playerMapObject->lookAtLeft();
             updateFollowingMonster(CatchChallenger::DrawSmallTiledPosition::walkLeftFoot_Left);
             inMove=false;
             emit send_player_direction(direction);//see the top note
@@ -929,9 +921,7 @@ void MapVisualiserPlayer::finalPlayerStep()
         {
             keyPressed.erase(Qt::Key_Right);
             direction=CatchChallenger::Direction_look_at_right;
-            Tiled::Cell cell=playerMapObject->cell();
-            cell.tile=playerTileset->tileAt(4);
-            playerMapObject->setCell(cell);
+            playerMapObject->lookAtRight();
             updateFollowingMonster(CatchChallenger::DrawSmallTiledPosition::walkLeftFoot_Right);
             inMove=false;
             emit send_player_direction(direction);//see the top note
@@ -952,15 +942,12 @@ void MapVisualiserPlayer::finalPlayerStep()
     }
     else if(keyPressed.find(Qt::Key_Up)!=keyPressed.cend())
     {
-
         //can't go into this direction, then just look into this direction
         if(!canGoTo(CatchChallenger::Direction_move_at_top,current_map_pointer->logicalMap,x,y,true))
         {
             keyPressed.erase(Qt::Key_Up);
             direction=CatchChallenger::Direction_look_at_top;
-            Tiled::Cell cell=playerMapObject->cell();
-            cell.tile=playerTileset->tileAt(1);
-            playerMapObject->setCell(cell);
+            playerMapObject->lookAtUp();
             updateFollowingMonster(CatchChallenger::DrawSmallTiledPosition::walkRightFoot_Top);
             inMove=false;
             emit send_player_direction(direction);//see the top note
@@ -986,6 +973,7 @@ void MapVisualiserPlayer::finalPlayerStep()
         {
             keyPressed.erase(Qt::Key_Down);
             direction=CatchChallenger::Direction_look_at_bottom;
+            playerMapObject->lookAtDown();
             Tiled::Cell cell=playerMapObject->cell();
             cell.tile=playerTileset->tileAt(7);
             playerMapObject->setCell(cell);
