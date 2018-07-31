@@ -1,5 +1,7 @@
 #include "MapVisualiser.h"
 
+#include "../../characters/MapObjectImproved.h"
+
 #include <QCoreApplication>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
@@ -186,13 +188,8 @@ void MapVisualiser::eventOnMap(CatchChallenger::MapEvent event,MapVisualiserThre
             if(mapObject!=NULL)
                 ObjectGroupItem::objectGroupLink.value(mapObject->objectGroup())->removeObject(mapObject);
         }*/
-        Tiled::MapObject *mapObject=new Tiled::MapObject();
-        mapObject->setName("Mark for path finding");
-        Tiled::Cell cell=mapObject->cell();
-        cell.tile=markPathFinding->tileAt(0);
-        if(cell.tile==NULL)
-            qDebug() << "Tile NULL before map mark contructor";
-        mapObject->setCell(cell);
+        Character::MapObjectImproved* mapObject = new Character::MapObjectImproved();
+        mapObject->updateTileSet(markPathFinding, 0, "Mark for path finding");
         mapObject->setPosition(QPointF(x,y+1));
         mark=new MapMark(mapObject);
         ObjectGroupItem::objectGroupLink.at(tempMapObject->objectGroup)->addObject(mapObject);

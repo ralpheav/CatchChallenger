@@ -5,6 +5,7 @@
 #include "../../general/base/GeneralStructures.h"
 #include "../../characters/Player.h"
 
+#include <memory>
 #include <QSet>
 #include <QString>
 #include <QTimer>
@@ -35,6 +36,7 @@ public:
     std::string StepToSTring(int step);
     void updateTilesetForNewTerrain();
     void updateFollowingMonsterPosition();
+    void deleteTilesCache();
     enum BlockedOn
     {
         BlockedOn_ZoneItem,
@@ -118,7 +120,8 @@ protected:
     std::unordered_map<uint16_t, CatchChallenger::PlayerQuest> *quests;
     std::unordered_set<uint16_t> *itemOnMap;
     std::unordered_map<uint16_t/*dirtOnMap*/,CatchChallenger::PlayerPlant> *plantOnMap;
-    Tiled::MapObject * followingMonsterMapObject;
+    //Tiled::MapObject * followingMonsterMapObject;
+    std::unique_ptr<Tiled::MapObject> followingMonsterMapObject;
     Tiled::Tileset * followingMonsterTileset;
 protected:
     static std::string text_slashtrainerpng;

@@ -2,15 +2,14 @@
 #define PLAYER_H
 
 #include "../../general/base/GeneralStructures.h"
-#include "../tiled/tiled_mapobject.h"
-#include "../tiled/tiled_tile.h"
+#include "MapObjectImproved.h"
 
 namespace Character {
 
 /**
  * Defined for the player only
  */
-class Player : public Tiled::MapObject
+class Player : public MapObjectImproved
 {
 protected:
 
@@ -28,14 +27,14 @@ protected:
 
 public:
 
-    Player() : Tiled::MapObject() {}
+    Player() : MapObjectImproved() {}
 
     Player(
             const QString &name,
             const QString &type,
             const QPointF &pos,
             const QSizeF &size
-            ) : Tiled::MapObject(
+            ) : MapObjectImproved(
                     name,
                     type,
                     pos,
@@ -130,15 +129,9 @@ public:
         this->setY(this->y() + mStep);
     }
 
-    inline void setState(int state)
+    inline CatchChallenger::Direction getDirection()
     {
-        const_cast<Tiled::Cell &>(cell()).change(state);
-        mState = state;
-    }
-
-    inline CatchChallenger::Direction getState()
-    {
-        return static_cast<CatchChallenger::Direction>(mState);
+         return static_cast<CatchChallenger::Direction>(mState);
     }
 
 private:

@@ -534,11 +534,12 @@ bool MapControllerMP::setMonster(const CatchChallenger::Player_public_informatio
             followingMonsterInformation.speed = player.speed;
             followingMonsterInformation.monsterId = player.monsterId;
 
-            if (followingMonsterMapObject != nullptr) {
-                delete followingMonsterMapObject;
-                followingMonsterMapObject = nullptr;
-            }
-            followingMonsterMapObject = new Tiled::MapObject();
+//            if (followingMonsterMapObject != nullptr) {
+//                delete followingMonsterMapObject;
+//                followingMonsterMapObject = nullptr;
+//            }
+//            followingMonsterMapObject.reset(new Tiled::MapObject());
+
             if (followingMonsterTileset != nullptr) {
                 delete followingMonsterTileset;
                 followingMonsterTileset = nullptr;

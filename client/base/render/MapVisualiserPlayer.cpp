@@ -87,7 +87,7 @@ MapVisualiserPlayer::MapVisualiserPlayer(const bool &centerOnPlayer, const bool 
     lastMonsterTileset = defaultMonsterTileset = "following";
 
     playerMapObject = new Character::Player();
-    followingMonsterMapObject = new Tiled::MapObject();
+    followingMonsterMapObject.reset(new Tiled::MapObject());
     grassCurrentObject->setName("playerMapObject");
 
     playerTileset = new Tiled::Tileset(QStringLiteral("player"),16,24);
@@ -110,17 +110,23 @@ MapVisualiserPlayer::~MapVisualiserPlayer()
     delete nextCurrentObject;
     delete grassCurrentObject;
     delete playerMapObject;
-    delete followingMonsterMapObject;
+    //delete followingMonsterMapObject;
     //delete playerTileset;
+    deleteTilesCache();
+}
+
+void MapVisualiserPlayer::deleteTilesCache()
+{
     std::unordered_set<Tiled::Tileset *> deletedTileset;
-    for(auto i : playerTilesetCache) {
-            Tiled::Tileset * cur = i.second;
-            if(deletedTileset.find(cur)==deletedTileset.cend())
-            {
-                deletedTileset.insert(cur);
-                delete cur;
-            }
+    for(auto index : playerTilesetCache) {
+        Tiled::Tileset* cur = index.second;
+        if(deletedTileset.find(cur) == deletedTileset.cend())
+        {
+            deletedTileset.insert(cur);
+            delete cur;
         }
+    }
+    playerTilesetCache.clear();
 }
 
 bool MapVisualiserPlayer::haveMapInMemory(const std::string &mapPath)
@@ -130,6 +136,11 @@ bool MapVisualiserPlayer::haveMapInMemory(const std::string &mapPath)
 
 void MapVisualiserPlayer::keyPressEvent(QKeyEvent * event)
 {
+//    for (const auto& kv : all_map) {
+//        std::cout << kv.first << " has value " << kv.second << std::endl;
+//    }
+//    std::cout <<"map: "<< current_map << " is here" << std::endl;
+
     if(current_map.empty() || all_map.find(current_map)==all_map.cend())
         return;
 
@@ -188,7 +199,7 @@ void MapVisualiserPlayer::keyPressParse()
             lookToMove.start();
             updateFollowingMonsterPosition();
             updateFollowingMonster(CatchChallenger::DrawSmallTiledPosition::walkLeftFoot_Left);
-            emit send_player_direction(playerMapObject->getState());
+            emit send_player_direction(playerMapObject->getDirection());
             parseStop();
         }
     }
@@ -216,7 +227,7 @@ void MapVisualiserPlayer::keyPressParse()
             lookToMove.start();
             updateFollowingMonsterPosition();
             updateFollowingMonster(CatchChallenger::DrawSmallTiledPosition::walkLeftFoot_Right);
-            emit send_player_direction(playerMapObject->getState());
+            emit send_player_direction(playerMapObject->getDirection());
             parseStop();
         }
     }
@@ -244,7 +255,7 @@ void MapVisualiserPlayer::keyPressParse()
             lookToMove.start();
             updateFollowingMonsterPosition();
             updateFollowingMonster(CatchChallenger::DrawSmallTiledPosition::walkLeftFoot_Top);
-            emit send_player_direction(playerMapObject->getState());
+            emit send_player_direction(playerMapObject->getDirection());
             parseStop();
         }
     }
@@ -272,7 +283,7 @@ void MapVisualiserPlayer::keyPressParse()
             lookToMove.start();
             updateFollowingMonsterPosition();
             updateFollowingMonster(CatchChallenger::DrawSmallTiledPosition::walkLeftFoot_Bottom);
-            emit send_player_direction(playerMapObject->getState());
+            emit send_player_direction(playerMapObject->getDirection());
             parseStop();
         }
     }
@@ -796,11 +807,8 @@ void MapVisualiserPlayer::fetchFollowingMonster() {
 
 void MapVisualiserPlayer::updateTilesetForNewTerrain()
 {
-    Tiled::Cell cell = playerMapObject->cell();
-    int tileId = cell.tile->id();
-    cell.tile = playerTileset->tileAt(tileId);//new contents of playerTileset according terrain
-    playerMapObject->setCell(cell);
-
+    //new contents of playerTileset according terrain
+    playerMapObject->updateTileSet(playerTileset);
     updateFollowingMonster();
 }
 
@@ -1416,17 +1424,7 @@ void MapVisualiserPlayer::resetAll()
     mapVisualiserThread.start(QThread::IdlePriority);
 
     //delete playerTileset;
-    {
-        std::unordered_set<Tiled::Tileset *> deletedTileset;
-        for(auto iter = playerTilesetCache.begin(); iter != playerTilesetCache.end(); ++iter){
-                if(deletedTileset.find(iter->second)==deletedTileset.cend())
-                {
-                    deletedTileset.insert(iter->second);
-                    delete iter->second;
-                }
-            }
-        playerTilesetCache.clear();
-    }
+    deleteTilesCache();
     lastTileset = defaultTileset;
     lastMonsterTileset = defaultMonsterTileset;
     playerTileset = new Tiled::Tileset(QStringLiteral("player"),16,24);
@@ -1512,7 +1510,7 @@ void MapVisualiserPlayer::loadPlayerFromCurrentMap()
     if (othercurrentGroup != NULL)
     {
         if (ObjectGroupItem::objectGroupLink.find(othercurrentGroup) != ObjectGroupItem::objectGroupLink.cend()) {
-            ObjectGroupItem::objectGroupLink.at(othercurrentGroup)->removeObject(followingMonsterMapObject);
+            ObjectGroupItem::objectGroupLink.at(othercurrentGroup)->removeObject(followingMonsterMapObject.get());
         }
 
         if (othercurrentGroup!=all_map.at(current_map)->objectGroup) {
@@ -1523,7 +1521,7 @@ void MapVisualiserPlayer::loadPlayerFromCurrentMap()
     Tiled::ObjectGroup *currentMapGroup = all_map.at(current_map)->objectGroup;
     if (ObjectGroupItem::objectGroupLink.find(currentMapGroup) != ObjectGroupItem::objectGroupLink.cend()) {
         ObjectGroupItem::objectGroupLink.at(currentMapGroup)->addObject(playerMapObject);
-        ObjectGroupItem::objectGroupLink.at(currentMapGroup)->addObject(followingMonsterMapObject);
+        ObjectGroupItem::objectGroupLink.at(currentMapGroup)->addObject(followingMonsterMapObject.get());
     } else {
         qDebug() << QStringLiteral("loadPlayerFromCurrentMap(), ObjectGroupItem::objectGroupLink not contains current_map->objectGroup");
     }
@@ -1534,12 +1532,12 @@ void MapVisualiserPlayer::loadPlayerFromCurrentMap()
     MapObjectItem::objectLink.at(playerMapObject)->setZValue(y);
     //move following to the final position (integer), x + 2 because the tile lib start x behind the player
     updateFollowingMonsterPosition();
-    MapObjectItem::objectLink.at(followingMonsterMapObject)->setZValue(-1);
+    MapObjectItem::objectLink.at(followingMonsterMapObject.get())->setZValue(-1);
 
     if (centerOnPlayer) {
         centerOn(MapObjectItem::objectLink.at(playerMapObject));
     }
-    centerOn(MapObjectItem::objectLink.at(followingMonsterMapObject));
+    centerOn(MapObjectItem::objectLink.at(followingMonsterMapObject.get()));
 }
 
 //call before leave the old map (and before loadPlayerFromCurrentMap())
@@ -1566,7 +1564,7 @@ void MapVisualiserPlayer::unloadFollowingMonsterFromCurrentMap()
     }
     //unload the following monster sprite
     if (ObjectGroupItem::objectGroupLink.find(currentGroup) != ObjectGroupItem::objectGroupLink.cend()) {
-        ObjectGroupItem::objectGroupLink.at(currentGroup)->removeObject(followingMonsterMapObject);
+        ObjectGroupItem::objectGroupLink.at(currentGroup)->removeObject(followingMonsterMapObject.get());
     } else {
         qDebug() << QStringLiteral("unloadFollowingMonsterFromCurrentMap(), ObjectGroupItem::objectGroupLink not contains followingMonsterMapObject->objectGroup()");
     }
