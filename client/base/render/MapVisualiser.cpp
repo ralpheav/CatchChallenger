@@ -114,7 +114,7 @@ MapVisualiser::~MapVisualiser()
 
 MapVisualiserThread::Map_full * MapVisualiser::getMap(const std::string &map) const
 {
-    if(all_map.find(map)!=all_map.cend())
+    if(all_map.exists(map))
         return all_map.at(map);
     abort();
     return NULL;

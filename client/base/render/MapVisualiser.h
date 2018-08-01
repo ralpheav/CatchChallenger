@@ -30,6 +30,8 @@
 #include <QDateTime>
 //#include <QGLWidget>
 
+#include "../../../general/base/UMapDecorator.h"
+
 #include "MapVisualiserThread.h"
 
 class MapVisualiser : public QGraphicsView
@@ -48,8 +50,9 @@ public:
     MapVisualiserThread::Map_full * getMap(const std::string &map) const;
 
     std::string current_map;
-    std::unordered_map<std::string,MapVisualiserThread::Map_full *> all_map,old_all_map;
-    std::unordered_map<std::string,QDateTime> old_all_map_time;
+    CatchChallenger::UMapDecorator<std::string, MapVisualiserThread::Map_full *> all_map;
+    CatchChallenger::UMapDecorator<std::string, MapVisualiserThread::Map_full *> old_all_map;
+    CatchChallenger::UMapDecorator<std::string, QDateTime> old_all_map_time;
 protected:
     Tiled::MapReader reader;
     QGraphicsScene *mScene;
