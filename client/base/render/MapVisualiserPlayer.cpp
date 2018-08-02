@@ -131,7 +131,7 @@ void MapVisualiserPlayer::deleteTilesCache()
 
 bool MapVisualiserPlayer::haveMapInMemory(const std::string &mapPath)
 {
-    return all_map.exists(mapPath) || old_all_map.exists(mapPath);
+    return all_map.has(mapPath) || old_all_map.has(mapPath);
 }
 
 void MapVisualiserPlayer::keyPressEvent(QKeyEvent * event)
@@ -141,7 +141,7 @@ void MapVisualiserPlayer::keyPressEvent(QKeyEvent * event)
 //    }
 //    std::cout <<"map: "<< current_map << " is here" << std::endl;
 
-    if(current_map.empty() || !all_map.exists(current_map))
+    if(current_map.empty() || !all_map.has(current_map))
         return;
 
     //ignore the no arrow key
@@ -566,7 +566,7 @@ void MapVisualiserPlayer::moveStepSlot()
             unloadPlayerFromCurrentMap();
             passMapIntoOld();
             current_map=map->map_file;
-            if(!old_all_map.exists(current_map))
+            if(!old_all_map.has(current_map))
                 emit inWaitingOfMap();
             loadOtherMap(current_map);
             hideNotloadedMap();
@@ -814,7 +814,7 @@ void MapVisualiserPlayer::updateTilesetForNewTerrain()
 
 void MapVisualiserPlayer::finalPlayerStep()
 {
-    if(!all_map.exists(current_map))
+    if(!all_map.has(current_map))
     {
         qDebug() << "current map not loaded, unable to do finalPlayerStep()";
         return;
@@ -1300,7 +1300,7 @@ void MapVisualiserPlayer::transformLookToMove()
 
 void MapVisualiserPlayer::keyReleaseEvent(QKeyEvent * event)
 {
-    if(current_map.empty() || !all_map.exists(current_map))
+    if(current_map.empty() || !all_map.has(current_map))
         return;
 
     //ignore the no arrow key
@@ -1340,12 +1340,12 @@ MapVisualiserThread::Map_full * MapVisualiserPlayer::currentMapFull() const
 
 bool MapVisualiserPlayer::currentMapIsLoaded() const
 {
-    return !all_map.exists(current_map);
+    return !all_map.has(current_map);
 }
 
 std::string MapVisualiserPlayer::currentMapType() const
 {
-    if(!all_map.exists(current_map))
+    if(!all_map.has(current_map))
         return std::string();
     const MapVisualiserThread::Map_full * const mapFull=all_map.at(current_map);
     const Tiled::Map * const tiledMap=mapFull->tiledMap;
@@ -1488,7 +1488,7 @@ bool MapVisualiserPlayer::canGoTo(const CatchChallenger::Direction &direction, C
 //TODO: separate following monster from player
 void MapVisualiserPlayer::loadPlayerFromCurrentMap()
 {
-    if (!all_map.exists(current_map))
+    if (!all_map.has(current_map))
     {
         qDebug() << QStringLiteral("all_map have not the current map: %1").arg(QString::fromStdString(current_map));
         return;
@@ -1691,7 +1691,7 @@ uint8_t MapVisualiserPlayer::getY()
 
 CatchChallenger::Map_client * MapVisualiserPlayer::getMapObject()
 {
-    if(all_map.exists(current_map))
+    if(all_map.has(current_map))
         return &all_map.at(current_map)->logicalMap;
     else
         return NULL;

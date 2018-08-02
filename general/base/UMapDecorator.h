@@ -9,7 +9,7 @@ namespace CatchChallenger {
     class UMapDecorator : public std::unordered_map<Key, Value>
     {
         public:
-            bool exists(const Key& key) const
+            bool has(const Key& key) const
             {
                 return this->find(key) != this->cend();
             }

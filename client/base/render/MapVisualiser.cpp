@@ -114,7 +114,7 @@ MapVisualiser::~MapVisualiser()
 
 MapVisualiserThread::Map_full * MapVisualiser::getMap(const std::string &map) const
 {
-    if(all_map.exists(map))
+    if(all_map.has(map))
         return all_map.at(map);
     abort();
     return NULL;
@@ -138,7 +138,7 @@ void MapVisualiser::paintEvent(QPaintEvent * event)
     else
         timerRender.start(waitRenderTime-elapsed);
 
-    if(frameCounter<65535)
+    if(frameCounter<USHRT_MAX)
         frameCounter++;
 }
 
